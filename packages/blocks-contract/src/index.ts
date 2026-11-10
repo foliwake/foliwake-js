@@ -1,6 +1,6 @@
 // The block ↔ app contract `foliwake-blocks/1` (docs/contracts/blocks-contract.md), generalised from
 // gaiare-lessons-site's `gaiare-blocks/1` (#14 §1, #15 `scripts/blocks-types.d.ts`). Types only: a code
-// release implements `BlocksModule`; an app builds a `BlockHost` (or lets @foliwake/react build it).
+// release implements `BlocksModule`; an app builds a `BlockHost` (or lets @foliwake/client build it).
 // Minor versions only add; a major version changes anything else.
 
 export type ChannelName = 'live' | 'preview';

@@ -1,5 +1,5 @@
-// Page types shared by @foliwake/server (which produces them) and @foliwake/react (which shows them), so the
-// React package's declarations never import the server package.
+// Page types shared by @foliwake/server (which produces them) and @foliwake/client / @foliwake/react (which show
+// them), so the browser packages' declarations never import the server package.
 import type { BlockMode, ChannelName } from './index.js';
 
 export type { ChannelName } from './index.js';
