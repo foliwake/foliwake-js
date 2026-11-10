@@ -31,10 +31,12 @@ the runtime import (build-time mode, later).
 Lifecycle hooks (an extension point; the full hooks contract comes later): `hooks: { site?, template? }`, each
 `{ beforeBlocks?, afterFirstSection?, lazy?, delayed? }` of `({ phase, container, page, signal }) => void | Promise`.
 Phases run in that order; in each phase the site's hook runs before the template's, and a returned promise is
-awaited. In 0.1: `beforeBlocks` after the module loaded and passed the contract check, before `mountBlocks`;
+awaited (raced against the mount's `signal`, so a slow hook never holds up dispose or the next mount). In 0.1: `beforeBlocks` after the module loaded and passed the contract check, before `mountBlocks`;
 `afterFirstSection` right after `mountBlocks` (a body is one section); `lazy` once the blocks are ready;
 `delayed` after that, on a later task. A failing hook is reported (`onError` `HOOK_FAILED`) and the mount goes
-on; nothing runs after dispose. `<FoliwakePage hooks={…}>` passes them through.
+on. After dispose no further hook starts, but a hook that is already running is not stopped: cancellation is
+cooperative. A hook must check `signal.aborted` after every `await` and stop there, and remove what it added
+itself (listeners, timers, nodes): after dispose the same element may already hold the next page's mount. `<FoliwakePage hooks={…}>` passes them through.
 
 Also exported: `createHost(init, { signal, page, shell })`, `subscribeBlockEvents(element, handlers, { prefix })`,
 `listenBlockEvents`, `BLOCK_EVENT_TYPES`, `pageIdentity(page)` (the key an adapter remounts on),

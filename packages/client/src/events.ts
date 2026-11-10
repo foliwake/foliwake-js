@@ -28,13 +28,21 @@ export function listenBlockEvents(target: Element, prefix: string, deliver: (eve
  */
 export function subscribeBlockEvents(target: Element, handlers: FoliwakeEventHandlers | (() => FoliwakeEventHandlers), opts: { prefix: string; signal?: AbortSignal }): () => void {
   const current = typeof handlers === 'function' ? handlers : () => handlers;
-  const stop = listenBlockEvents(target, opts.prefix, (event) => {
+  const { signal } = opts;
+  if (signal?.aborted) return () => {};
+  const remove = listenBlockEvents(target, opts.prefix, (event) => {
     const handler = current()[event.type] as ((e: FoliwakeEvent) => void) | undefined;
     handler?.(event);
   });
-  if (opts.signal) {
-    if (opts.signal.aborted) stop();
-    else opts.signal.addEventListener('abort', stop, { once: true });
-  }
+  let stopped = false;
+  // Idempotent; also removes its listener on the external signal, so subscribe/unsubscribe cycles against a
+  // long-lived signal leave nothing behind.
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    signal?.removeEventListener('abort', stop);
+    remove();
+  };
+  signal?.addEventListener('abort', stop, { once: true });
   return stop;
 }

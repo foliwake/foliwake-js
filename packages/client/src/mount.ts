@@ -40,8 +40,11 @@ export type FoliwakeHook = (context: FoliwakeHookContext) => void | Promise<void
 export type FoliwakePhaseHooks = { [P in FoliwakeHookPhase]?: FoliwakeHook };
 /**
  * Lifecycle hooks (extension point; the full hooks contract comes later). In each phase the site's hook runs
- * before the template's; a hook's promise is awaited before the next one. A failing hook is reported
- * (`onError` HOOK_FAILED) and the lifecycle goes on. Nothing runs after dispose.
+ * before the template's; a hook's promise is awaited before the next one, raced against the mount's signal (a
+ * slow hook never holds up dispose). A failing hook is reported (`onError` HOOK_FAILED) and the lifecycle goes
+ * on. No hook starts after dispose, but a hook already running is not stopped: cancellation is cooperative,
+ * so a hook checks `signal.aborted` after each await and cleans up what it started (the same element may
+ * already hold the next page's mount).
  * 0.1 timing: `beforeBlocks` after the module loaded and passed the contract check, before `mountBlocks`;
  * `afterFirstSection` right after `mountBlocks` returned (a body is one section in 0.1); `lazy` once
  * `handle.ready` settled; `delayed` after `lazy`, on a later task.
@@ -121,7 +124,10 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
   const external = options.signal;
   // An already aborted signal: nothing starts (no body change, no import, no callback).
   let disposed = external?.aborted === true;
-  let session: Session = disposed ? { status: 'idle', dispose() {} } : start(element, () => opts, opts.page);
+  let session: Session = { status: 'idle', dispose() {} };
+  // start() registers its session before it calls any app callback, so a dispose(), an external abort or an
+  // update() from inside a callback always reaches the session that is running (never a stale one).
+  const begin = () => start(element, () => opts, opts.page, (created) => (session = created));
 
   const mount: FoliwakeMount = {
     element,
@@ -137,7 +143,7 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
       opts = { ...opts, ...next };
       if (remount) {
         session.dispose();
-        session = start(element, () => opts, opts.page);
+        begin();
       }
     },
     dispose() {
@@ -148,11 +154,15 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
     },
   };
   const onAbort = () => mount.dispose();
-  if (!disposed) external?.addEventListener('abort', onAbort, { once: true });
+  if (!disposed) {
+    // The external signal is watched before anything runs, so an abort from the first callback is seen.
+    external?.addEventListener('abort', onAbort, { once: true });
+    begin();
+  }
   return mount;
 }
 
-function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page: FoliwakePageData): Session {
+function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page: FoliwakePageData, register: (session: Session) => void): Session {
   const controller = new AbortController();
   const { signal } = controller;
   let handle: MountHandle | null = null;
@@ -174,6 +184,8 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
       releaseCss?.();
     },
   };
+  register(session);
+  const aborted = new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve(), { once: true }));
 
   const status = (s: FoliwakePageStatus, reports?: BlockReport[]) => {
     if (signal.aborted) return;
@@ -192,7 +204,9 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
       const hook = latest().hooks?.[level]?.[phase];
       if (!hook) continue;
       try {
-        await hook({ phase, container, page, signal });
+        // Raced against the mount's signal: a slow hook never holds up dispose or the next mount. The hook
+        // itself is cooperative: it gets the signal and must check it after each await (README, "hooks").
+        await Promise.race([hook({ phase, container, page, signal }), aborted]);
       } catch (error) {
         if (!signal.aborted) latest().onError?.({ code: 'HOOK_FAILED', message: `${level} ${phase} hook: ${error instanceof Error ? error.message : String(error)}` });
       }
@@ -230,6 +244,7 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
     return session;
   }
   status('mounting');
+  if (signal.aborted) return session; // disposed from onStatus
   load().then(
     async (mod) => {
       if (signal.aborted) return;
@@ -256,13 +271,26 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
         },
         { signal, page, shell: latest().shell },
       );
+      let returned: MountHandle;
       try {
-        handle = mod.mountBlocks(container, host);
+        returned = mod.mountBlocks(container, host);
       } catch (error) {
         fail('BLOCKS_MOUNT_FAILED', error instanceof Error ? error.message : String(error));
         return;
       }
+      if (signal.aborted) {
+        // Disposed during mountBlocks (e.g. from onEvent on a synchronous block event): the session's dispose
+        // ran before the handle existed, so the returned handle is disposed here and onMount never runs.
+        try {
+          returned?.dispose();
+        } catch (error) {
+          console.error('[foliwake] dispose failed', error);
+        }
+        return;
+      }
+      handle = returned;
       latest().onMount?.(container, handle);
+      if (signal.aborted) return;
       const ready = handle.ready.then(
         (reports) => {
           if (signal.aborted) return;
