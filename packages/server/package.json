@@ -17,6 +17,7 @@
     "./handlers": { "types": "./dist/handlers.d.ts", "default": "./dist/handlers.js" },
     "./html": { "types": "./dist/html.d.ts", "default": "./dist/html.js" },
     "./csp": { "types": "./dist/csp.d.ts", "default": "./dist/csp.js" },
+    "./preload": { "types": "./dist/preload.d.ts", "default": "./dist/preload.js" },
     "./schemas/remote-2.schema.json": "./schemas/remote-2.schema.json",
     "./package.json": "./package.json"
   },

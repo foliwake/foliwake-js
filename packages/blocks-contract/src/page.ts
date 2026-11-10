@@ -48,6 +48,15 @@ export interface FoliwakePageData {
   codeBase: string | null;
   /** `foliwake-blocks/<major>` the app expects, and the event prefix it expects. */
   contract: { major: number; eventPrefix: string };
+  /** Same-origin preload hints of the blocks on this page (filled by the server read; empty from preparePage). */
+  preload: PreloadHint[];
+}
+
+/** `<link rel="modulepreload" href>` or `<link rel="preload" as="style" href>`, href on the app's code proxy. */
+export interface PreloadHint {
+  rel: 'modulepreload' | 'preload';
+  href: string;
+  as?: 'style';
 }
 
 /** The settings a browser may know (`clientSettings(config)`); nothing else is serialised to it. */

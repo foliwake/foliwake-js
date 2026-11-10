@@ -161,5 +161,6 @@ export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, o
     blocksUrl: blocks?.url ?? null,
     codeBase: blocks?.base ?? null,
     contract: { major: app.blocks.major, eventPrefix: app.blocks.eventPrefix },
+    preload: [],
   };
 }

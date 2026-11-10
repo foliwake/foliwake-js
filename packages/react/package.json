@@ -1,0 +1,27 @@
+{
+  "name": "@foliwake/react",
+  "version": "0.1.0",
+  "private": true,
+  "description": "React components for Foliwake pages: <FoliwakePage> mounts a page's blocks from its code release, useFoliwakeEvents, createHost. Framework-agnostic, SSR-safe.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": { "type": "git", "url": "git+https://github.com/adjioev/foliwake.git", "directory": "packages/react" },
+  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "foliwake": { "plain": 2, "blocksContract": 1, "remoteConfig": 2 },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@foliwake/blocks-contract": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
+  },
+  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md"]
+}
