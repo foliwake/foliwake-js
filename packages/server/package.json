@@ -1,0 +1,28 @@
+{
+  "name": "@foliwake/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Server toolkit for apps that show Foliwake pages: config v2, origin client, envelope read, page check and preparation, code/media proxy handlers, CSP. Web Request/Response, no framework.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": { "node": ">=22.22" },
+  "repository": { "type": "git", "url": "git+https://github.com/adjioev/foliwake.git", "directory": "packages/server" },
+  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "foliwake": { "plain": 2, "blocksContract": 1, "remoteConfig": 2 },
+  "exports": {
+    "./config": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },
+    "./origin": { "types": "./dist/origin.d.ts", "default": "./dist/origin.js" },
+    "./page": { "types": "./dist/page.d.ts", "default": "./dist/page.js" },
+    "./handlers": { "types": "./dist/handlers.d.ts", "default": "./dist/handlers.js" },
+    "./html": { "types": "./dist/html.d.ts", "default": "./dist/html.js" },
+    "./csp": { "types": "./dist/csp.d.ts", "default": "./dist/csp.js" },
+    "./schemas/remote-2.schema.json": "./schemas/remote-2.schema.json",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@foliwake/blocks-contract": "workspace:*",
+    "htmlparser2": "10.1.0"
+  },
+  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "schemas/", "LICENSE", "README.md"]
+}

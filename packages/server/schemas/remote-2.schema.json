@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foliwake.dev/schemas/remote-2.schema.json",
+  "title": "foliwake.remote.json version 2",
+  "description": "Which Foliwake site an app (or `foliwake dev --remote`) reads, the NAMES of the variables holding its credentials, and the app's settings. No secrets: values are read from the environment on the server. The TypeScript parser (@foliwake/server/config) is the authority; test/packages/server-config-schema.test.js keeps both in step.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "site"],
+  "anyOf": [{ "required": ["live"] }, { "required": ["preview"] }],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "version": { "const": 2 },
+    "site": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,62}$" },
+    "live": { "$ref": "#/$defs/endpoint" },
+    "preview": { "$ref": "#/$defs/endpoint" },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pages"],
+      "properties": {
+        "pages": {
+          "description": "Page globs the app may read (query-index grammar: [a-z0-9-] literals, * within a segment, ** as a whole segment; /x/** also matches /x).",
+          "type": "array", "minItems": 1, "maxItems": 20,
+          "items": { "type": "string", "maxLength": 200, "pattern": "^/(?:(?:\\*\\*|[a-z0-9*-]+)(?:/(?:\\*\\*|[a-z0-9*-]+))*)?$" }
+        },
+        "proxies": {
+          "description": "App-origin URL prefixes of the proxies. Not /, /_next, /api, /code, /media or below them; code and media differ and neither is inside the other.",
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "code": { "$ref": "#/$defs/prefix", "default": "/foliwake-code" },
+            "media": { "$ref": "#/$defs/prefix", "default": "/foliwake-media" },
+            "pages": { "type": "null" }
+          }
+        },
+        "blocks": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "entry": {
+              "description": "Path of the blocks module inside a code release; absent or null: bodies stay static.",
+              "type": ["string", "null"],
+              "pattern": "^(?:scripts|components|_foliwake)(?:/[A-Za-z0-9_][A-Za-z0-9_.-]*){1,7}\\.js$"
+            },
+            "contract": { "type": "string", "pattern": "^foliwake-blocks/[1-9][0-9]{0,2}$", "default": "foliwake-blocks/1" },
+            "eventPrefix": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$", "default": "block" }
+          }
+        },
+        "media": {
+          "description": "Live pictures through a transforming host (preview pictures always go through the media proxy).",
+          "type": ["object", "null"], "additionalProperties": false, "required": ["base"],
+          "properties": {
+            "base": { "type": "string", "pattern": "^https://[^/?#@]+$" },
+            "transform": { "enum": ["cloudflare-images", null] }
+          }
+        },
+        "revalidate": { "description": "Seconds before a cached envelope is stale (stale-while-revalidate; expire is 24 h).", "type": "integer", "minimum": 1, "maximum": 86400, "default": 300 }
+      }
+    }
+  },
+  "$defs": {
+    "prefix": { "type": "string", "pattern": "^(?:/[a-z0-9-]+)+$" },
+    "endpoint": {
+      "type": "object", "additionalProperties": false, "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "description": "Site origin only: https (http only for loopback hosts), no credentials, path, query or fragment." },
+        "auth": {
+          "type": ["object", "null"], "additionalProperties": false, "required": ["type", "username", "passwordEnv"],
+          "properties": {
+            "type": { "const": "basic" },
+            "username": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^:\\u0000-\\u001f\\u007f]+$" },
+            "passwordEnv": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]{0,127}$", "description": "The NAME of the environment variable holding the password." }
+          }
+        }
+      }
+    }
+  }
+}
