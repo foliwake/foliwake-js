@@ -29,6 +29,9 @@ function invalid(message: string, cause?: unknown): FoliwakePageError {
 /** Why a URL value is not allowed for this element/attribute, or null. Values are entity-decoded already. */
 export function urlProblem(element: string, attribute: string, value: string, pagePath = '/'): string | null {
   if (attribute === 'src' && element === 'img' && DATA_IMAGE.test(value.trim())) return null;
+  // As the URL parser sees it: tabs and newlines removed, leading C0 controls and spaces stripped.
+  const stripped = value.replace(/[\t\n\r]/g, '').replace(/^[\u0000-\u0020]+/, '');
+  if (/^[\\/]{2}/.test(stripped)) return `<${element} ${attribute}> is a scheme-relative URL (another host)`;
   let url: URL;
   try {
     url = new URL(value, `${BASE}${pagePath}`);

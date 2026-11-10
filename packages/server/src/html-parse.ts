@@ -14,6 +14,7 @@ export class HtmlParseError extends Error {
   override name = 'HtmlParseError';
 }
 
+const RAW_NEWLINE = new Set(['pre', 'textarea', 'listing']);
 export const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']);
 
 class StrictParser extends Parser {
@@ -53,6 +54,8 @@ export function parseStrict(html: string): HtmlNode[] {
   const top = () => stack[stack.length - 1]!;
   let openText: HtmlText | null = null;
   let attributes = new Set<string>();
+  // The HTML parser drops one newline right after <pre>, <textarea> and <listing>; so does this reader.
+  let dropNewline = false;
   const parser: StrictParser = new StrictParser(
     {
       onopentagname() {
@@ -69,14 +72,21 @@ export function parseStrict(html: string): HtmlNode[] {
         top().children.push(element);
         if (stack.length > LIMITS.depth) throw new HtmlParseError('nested too deeply');
         stack.push(element);
+        dropNewline = RAW_NEWLINE.has(name);
       },
       onclosetag(name, isImplied) {
+        dropNewline = false;
         if (isImplied && !VOID.has(name) && !parser.selfClosing) throw new HtmlParseError(`unclosed <${name}>`);
         if (!isImplied) parser.closed += 1;
         openText = null;
         stack.pop();
       },
       ontext(data) {
+        if (dropNewline) {
+          dropNewline = false;
+          if (data.startsWith('\n')) data = data.slice(1);
+          if (data === '') return;
+        }
         if (openText) {
           openText.data += data;
           return;
@@ -85,6 +95,7 @@ export function parseStrict(html: string): HtmlNode[] {
         top().children.push(openText);
       },
       oncomment() {
+        dropNewline = false;
         openText = null;
       },
       onprocessinginstruction(name) {
@@ -100,7 +111,6 @@ export function parseStrict(html: string): HtmlNode[] {
   return root.children;
 }
 
-const RAW_NEWLINE = new Set(['pre', 'textarea', 'listing']);
 const escapeText = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/ /g, '&nbsp;');
 const escapeAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/ /g, '&nbsp;');
 
