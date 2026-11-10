@@ -168,17 +168,21 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
   return mount;
 }
 
-// Where app or page code can run synchronously inside start() (each may dispose the mount, abort its external
-// signal or call update()):
-//  - setting the body's innerHTML (custom elements' constructors and connectedCallback) and the container's
-//    attributes (attributeChangedCallback when the container is a custom element);
-//  - every app callback (onStatus, onError, onEvent, onMount), the host function and its getters;
+// App or page code can run synchronously inside start(), and any of it may dispose the mount, abort its external
+// signal or call update(). The known points (not a proof that there are no others):
+//  - setting the body's innerHTML: custom elements' constructors, connectedCallback of the new children and
+//    disconnectedCallback of the replaced ones; the container's attributes (attributeChangedCallback when the
+//    container is a custom element);
+//  - every app callback (onStatus, onError, onEvent, onMount), the host function and getters on objects the
+//    caller supplied (options, host, page);
 //  - a custom `blocks()` loader (called synchronously), module evaluation (inside the import, async);
 //  - mountBlocks() (block constructors, synchronous block events → onEvent), hooks, handle.ready continuations;
-//  - abort listeners while a session is disposed (re-entrancy; see `generation` in mountFoliwakePage).
-// Hence every resource is taken through own(): it acquires only while the session is live and registers the
-// release with the session; when the session was disposed during the acquisition, the release runs at once.
-// After each point above the code checks `live()` before going on.
+//  - handle.dispose() and abort listeners while a session is disposed (re-entrancy; see `generation`).
+// Resources are taken through own(): it acquires only while the session is live and registers the release with
+// the session; when the session was disposed during the acquisition, the release runs at once. After each of
+// the points above the code checks `live()` before going on. This is cooperative, best-effort hygiene against
+// app and page code that re-enters the mount; it is not a sandbox against hostile synchronous page code (which
+// runs with the page's full authority anyway).
 function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page: FoliwakePageData, register: (session: Session) => void): Session {
   const controller = new AbortController();
   const { signal } = controller;
@@ -254,8 +258,12 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
   if (body === 'insert' || (body === 'auto' && (mountedOnce.has(container) || !container.hasChildNodes()))) container.innerHTML = page.html;
   mountedOnce.add(container);
   if (!live()) return session;
-  if (!container.hasAttribute('data-foliwake-body')) container.setAttribute('data-foliwake-body', '');
-  if (!container.hasAttribute('data-html-contract')) container.setAttribute('data-html-contract', page.htmlContract);
+  // One attribute at a time, each only while live: attributeChangedCallback of a custom-element container may
+  // dispose the mount between two writes.
+  for (const [name, value] of [['data-foliwake-body', ''], ['data-html-contract', page.htmlContract]] as const) {
+    if (!live()) return session;
+    if (!container.hasAttribute(name)) container.setAttribute(name, value);
+  }
   if (!live()) return session;
   if (stylesheets && !holdCss(true)) return session;
 
@@ -274,6 +282,9 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
   } catch (error) {
     loading = Promise.reject(error);
   }
+  // Settled in every case: a loader that disposed the mount and then threw or returned a rejected promise must
+  // not leave an unhandled rejection (its failure is not reported after the dispose).
+  loading.catch(() => undefined);
   if (!live()) return session; // disposed from a custom loader
   loading.then(
     async (mod) => {

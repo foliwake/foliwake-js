@@ -47,7 +47,10 @@ Invariants: the page's identity (`page.identity`, prepared by `@foliwake/server`
 remounts: the same identity never remounts, another one (a new body, code release, channel or mode) disposes
 and mounts again. Callbacks and host data are read at call time. Every async step is abort-guarded, and dispose is
 idempotent with no event after it. Mount, dispose and mount again on the same element starts from the
-pristine body. Block stylesheets are counted per code release. The module is imported at run time from a
+pristine body. App or page code that runs synchronously during a mount (callbacks, custom elements in the body
+or as the container, a custom loader, block code) may dispose or update the mount; the mount then takes no
+further resources and releases what it took. This is cooperative, best-effort hygiene, not a sandbox against
+hostile page code. Block stylesheets are counted per code release. The module is imported at run time from a
 same-origin URL (`import(/* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ url)`).
 The package never fetches from a Foliwake origin. Apache-2.0.
 
