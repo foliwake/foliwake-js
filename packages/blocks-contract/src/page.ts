@@ -29,7 +29,11 @@ export interface PageEnvelope {
 
 /** What a client component receives: serialisable, prepared per request. */
 export interface FoliwakePageData {
-  /** `${site}|${channel}|${path}|${etag}|${codeRelease}|${mode}`: the React key of the body (design §6.2). */
+  /**
+   * `${site}|${channel}|${path}|${etag}|${codeRelease}|${mode}|${digest}`: the React key of the body (design §6.2).
+   * `digest` is a SHA-256 prefix of the final prepared HTML and the mount-defining settings (blocks URL, contract,
+   * HTML contract, language), so any change of what is mounted gives a new identity and nothing else does.
+   */
   identity: string;
   site: string;
   channel: ChannelName;

@@ -69,10 +69,12 @@ async function forward(request: Request, client: OriginClient, channel: ChannelN
     return badGateway(errorCc);
   }
   const headers: Record<string, string> = { 'Content-Type': expectedType === 'text/javascript' ? 'text/javascript; charset=utf-8' : expectedType === 'text/css' ? 'text/css; charset=utf-8' : expectedType, 'Cache-Control': cacheControl, 'X-Content-Type-Options': 'nosniff', ...extra };
-  const length = upstream.headers.get('content-length');
-  if (length && /^\d+$/.test(length)) headers['Content-Length'] = length;
+  // No Content-Length: fetch decodes a gzip/br/deflate body but keeps the encoded length, so the upstream value
+  // may not describe what is sent (the platform sets the length or chunks the body itself). The ETag is passed on
+  // only for an unencoded body: it names the encoded representation otherwise.
+  const encoded = (upstream.headers.get('content-encoding') ?? 'identity').trim().toLowerCase() !== 'identity';
   const etag = upstream.headers.get('etag');
-  if (etag && etag.length <= 200) headers.ETag = etag;
+  if (etag && etag.length <= 200 && !encoded) headers.ETag = etag;
   if (head || !upstream.body) return new Response(null, { status: 200, headers });
   return new Response(limitStream(upstream.body, limit), { status: 200, headers });
 }

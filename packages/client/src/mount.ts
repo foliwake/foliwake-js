@@ -3,7 +3,8 @@
 // component) is a wrapper around this function.
 //
 // Invariants (docs/plan/react-packages.md §6.2):
-//  1. page.identity is the mount's identity: a new body, code release, channel or mode is a new mount
+//  1. page.identity is the mount's identity (it includes a digest of the final prepared body): a new body,
+//     code release, channel or mode is a new mount
 //     (`update({ page })` with another identity disposes and mounts again); nothing else remounts.
 //  2. Callbacks and host members are read from the latest options at call time (`update()`; latest wins).
 //  3. Every async step checks the mount's AbortSignal first; nothing runs after dispose.
@@ -94,7 +95,7 @@ export interface FoliwakeMount {
   dispose(): void;
 }
 
-/** The key a framework adapter remounts on (its `key`): site, channel, path, ETag, code release, mode. */
+/** The key a framework adapter remounts on (its `key`): site, channel, path, ETag, code release, mode and a digest of the final body and its mount settings. */
 export function pageIdentity(page: FoliwakePageData): string {
   return page.identity;
 }

@@ -1,5 +1,6 @@
 // Reading a page from the origin (the envelope: the only thing an app caches) and preparing it per request
 // (design §6.5, §9.4): check → rewrite media and links → the app's transform → check again.
+import { createHash } from 'node:crypto';
 import type { ChannelName, CodeReleaseId, FoliwakePageData, PageEnvelope } from '@foliwake/blocks-contract/page';
 import type { BlockMode } from '@foliwake/blocks-contract';
 import { appOf, isLoopbackName, pageAllowed, type FoliwakeAppConfig } from './config.js';
@@ -147,8 +148,15 @@ export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, o
   const final = checkBody(html, envelope.path); // a transform cannot add what the first check refused
   html = serialize(final);
   const blocks = blocksUrlOf(config, envelope.channel, envelope.codeRelease);
+  const contract = { major: app.blocks.major, eventPrefix: app.blocks.eventPrefix };
+  // The digest covers what the browser mounts: the final prepared body (after the app's transform, so two
+  // transforms of one envelope differ, and a missing ETag cannot collide) and every mount-defining setting.
+  const digest = createHash('sha256')
+    .update(JSON.stringify([html, blocks?.url ?? null, contract.major, contract.eventPrefix, envelope.htmlContract, envelope.lang]))
+    .digest('base64url')
+    .slice(0, 22);
   return {
-    identity: [envelope.site, envelope.channel, envelope.path, envelope.etag ?? '', envelope.codeRelease ?? '', mode].join('|'),
+    identity: [envelope.site, envelope.channel, envelope.path, envelope.etag ?? '', envelope.codeRelease ?? '', mode, digest].join('|'),
     site: envelope.site,
     channel: envelope.channel,
     path: envelope.path,
@@ -160,7 +168,7 @@ export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, o
     blocks: componentNames(final),
     blocksUrl: blocks?.url ?? null,
     codeBase: blocks?.base ?? null,
-    contract: { major: app.blocks.major, eventPrefix: app.blocks.eventPrefix },
+    contract,
     preload: [],
   };
 }
