@@ -1,0 +1,19 @@
+{
+  "name": "@foliwake/client",
+  "version": "0.1.0",
+  "description": "Framework-free browser client for Foliwake pages: mountFoliwakePage mounts a page's blocks from its own code release into a DOM element (body, host, events, abort guards, block CSS). No framework dependency; the base of @foliwake/react and other adapters.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "repository": { "type": "git", "url": "git+https://github.com/adjioev/foliwake.git", "directory": "packages/client" },
+  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "foliwake": { "plain": 2, "blocksContract": 1, "remoteConfig": 2 },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@foliwake/blocks-contract": "workspace:*"
+  },
+  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md"]
+}

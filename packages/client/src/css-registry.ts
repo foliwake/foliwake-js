@@ -1,6 +1,8 @@
 // Block stylesheet ownership per code release (design §6.2 invariant 6): a document-level count of mounts
-// per code release. The release's loader-added links (`link[data-component-css][data-code-release]` in
-// <head>) are removed when its last mount disposes. Links this package renders itself are removed by React.
+// per code release. The release's links in <head> (`link[data-component-css][data-code-release]`, added by the
+// blocks loader or by mountFoliwakePage's `stylesheets` option) are removed when its last mount disposes.
+// Links an adapter renders next to the body (FoliwakePage in @foliwake/react) are removed by its framework.
+import { isDevelopment } from './dev.js';
 
 const counts = new WeakMap<Document, Map<string, number>>();
 
@@ -38,10 +40,3 @@ export function cssMounts(doc: Document): Record<string, number> {
   return Object.fromEntries(table(doc));
 }
 
-function isDevelopment(): boolean {
-  try {
-    return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV === 'development';
-  } catch {
-    return false;
-  }
-}

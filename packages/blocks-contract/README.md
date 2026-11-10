@@ -2,7 +2,7 @@
 
 Types only (no runtime code) of the Foliwake blocks contract `foliwake-blocks/1`
 ([docs/contracts/blocks-contract.md](https://github.com/adjioev/foliwake/blob/main/docs/contracts/blocks-contract.md)),
-and the page types shared by `@foliwake/server` and `@foliwake/react`.
+and the page types shared by `@foliwake/server` and `@foliwake/client` / `@foliwake/react`.
 
 ```ts
 import type { BlocksModule, BlockHost, FoliwakeEvent, BlockReport } from '@foliwake/blocks-contract';
