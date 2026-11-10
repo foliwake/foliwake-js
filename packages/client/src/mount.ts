@@ -168,45 +168,65 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
   return mount;
 }
 
+// Where app or page code can run synchronously inside start() (each may dispose the mount, abort its external
+// signal or call update()):
+//  - setting the body's innerHTML (custom elements' constructors and connectedCallback) and the container's
+//    attributes (attributeChangedCallback when the container is a custom element);
+//  - every app callback (onStatus, onError, onEvent, onMount), the host function and its getters;
+//  - a custom `blocks()` loader (called synchronously), module evaluation (inside the import, async);
+//  - mountBlocks() (block constructors, synchronous block events → onEvent), hooks, handle.ready continuations;
+//  - abort listeners while a session is disposed (re-entrancy; see `generation` in mountFoliwakePage).
+// Hence every resource is taken through own(): it acquires only while the session is live and registers the
+// release with the session; when the session was disposed during the acquisition, the release runs at once.
+// After each point above the code checks `live()` before going on.
 function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page: FoliwakePageData, register: (session: Session) => void): Session {
   const controller = new AbortController();
   const { signal } = controller;
-  let handle: MountHandle | null = null;
-  let stopEvents: (() => void) | null = null;
-  let releaseCss: (() => void) | null = null;
-  let disposed = false;
+  const live = () => !signal.aborted;
+  const releases: (() => void)[] = [];
+  const safely = (release: () => void) => {
+    try {
+      release();
+    } catch (error) {
+      console.error('[foliwake] dispose failed', error);
+    }
+  };
   const session: Session = {
     status: 'idle',
     dispose() {
-      if (disposed) return;
-      disposed = true;
+      if (signal.aborted) return;
       controller.abort();
-      stopEvents?.();
-      try {
-        handle?.dispose();
-      } catch (error) {
-        console.error('[foliwake] dispose failed', error);
-      }
-      releaseCss?.();
+      // Last acquired, first released: the blocks' handle before the event listener and the CSS count.
+      while (releases.length > 0) safely(releases.pop()!);
     },
+  };
+  /** Takes a resource only while live; its release runs on dispose, or at once if dispose came meanwhile. */
+  const own = (acquire: () => (() => void) | null | undefined): boolean => {
+    if (!live()) return false;
+    const release = acquire();
+    if (release) {
+      if (live()) releases.push(release);
+      else safely(release);
+    }
+    return live();
   };
   register(session);
   const aborted = new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve(), { once: true }));
 
   const status = (s: FoliwakePageStatus, reports?: BlockReport[]) => {
-    if (signal.aborted) return;
+    if (!live()) return;
     session.status = s;
     latest().onStatus?.(s, reports);
   };
   const fail = (code: string, message: string) => {
-    if (signal.aborted) return;
+    if (!live()) return;
     latest().onError?.({ code, message });
     status(latest().requireBlocks ? 'error' : 'static');
   };
   // The phase's hooks, site then template, each awaited; read from the latest options at call time.
   const runHooks = async (phase: FoliwakeHookPhase) => {
     for (const level of ['site', 'template'] as const) {
-      if (signal.aborted) return;
+      if (!live()) return;
       const hook = latest().hooks?.[level]?.[phase];
       if (!hook) continue;
       try {
@@ -214,33 +234,30 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
         // itself is cooperative: it gets the signal and must check it after each await (README, "hooks").
         await Promise.race([hook({ phase, container, page, signal }), aborted]);
       } catch (error) {
-        if (!signal.aborted) latest().onError?.({ code: 'HOOK_FAILED', message: `${level} ${phase} hook: ${error instanceof Error ? error.message : String(error)}` });
+        if (live()) latest().onError?.({ code: 'HOOK_FAILED', message: `${level} ${phase} hook: ${error instanceof Error ? error.message : String(error)}` });
       }
     }
   };
-  const holdCss = () => {
-    if (page.codeRelease && !releaseCss) releaseCss = acquireCss(container.ownerDocument, page.codeRelease);
-  };
+  let cssHeld = false;
+  // The CSS count of the page's code release, once per session; with `stylesheets`, also its links (removed by
+  // the count's release when the last mount of the release goes).
+  const holdCss = (addLinks: boolean) =>
+    own(() => {
+      if (cssHeld || !page.codeRelease) return null;
+      cssHeld = true;
+      const release = acquireCss(container.ownerDocument, page.codeRelease);
+      if (addLinks) appendStylesheets(container.ownerDocument, page);
+      return release;
+    });
 
   const { body = 'auto', stylesheets = false } = latest();
   if (body === 'insert' || (body === 'auto' && (mountedOnce.has(container) || !container.hasChildNodes()))) container.innerHTML = page.html;
   mountedOnce.add(container);
+  if (!live()) return session;
   if (!container.hasAttribute('data-foliwake-body')) container.setAttribute('data-foliwake-body', '');
   if (!container.hasAttribute('data-html-contract')) container.setAttribute('data-html-contract', page.htmlContract);
-  if (stylesheets) {
-    const head = container.ownerDocument.head;
-    for (const sheet of pageStylesheets(page)) {
-      const present = [...head.querySelectorAll('link[data-component-css][data-code-release]')].some((l) => (l as HTMLLinkElement).dataset.codeRelease === sheet.codeRelease && (l as HTMLLinkElement).dataset.componentCss === sheet.name);
-      if (present) continue;
-      const link = container.ownerDocument.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = sheet.href;
-      link.dataset.componentCss = sheet.name;
-      link.dataset.codeRelease = sheet.codeRelease;
-      head.append(link);
-    }
-    holdCss();
-  }
+  if (!live()) return session;
+  if (stylesheets && !holdCss(true)) return session;
 
   const custom = latest().blocks;
   const load = custom ?? (page.blocksUrl ? () => importBlocksModule(page.blocksUrl!) : null);
@@ -250,10 +267,17 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
     return session;
   }
   status('mounting');
-  if (signal.aborted) return session; // disposed from onStatus
-  load().then(
+  if (!live()) return session; // disposed from onStatus
+  let loading: Promise<BlocksModule>;
+  try {
+    loading = Promise.resolve(load());
+  } catch (error) {
+    loading = Promise.reject(error);
+  }
+  if (!live()) return session; // disposed from a custom loader
+  loading.then(
     async (mod) => {
-      if (signal.aborted) return;
+      if (!live()) return;
       const declared = mod?.BLOCKS_CONTRACT;
       if (typeof mod?.mountBlocks !== 'function' || !declared || declared.major !== page.contract.major) {
         fail('BLOCKS_CONTRACT_UNSUPPORTED', `The blocks module speaks foliwake-blocks/${declared?.major ?? '?'}; this app expects foliwake-blocks/${page.contract.major}.`);
@@ -265,11 +289,13 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
         latest().onError?.({ code: 'EVENT_PREFIX_MISMATCH', message: `Blocks emit "${prefix}:" events, the config says "${page.contract.eventPrefix}".` });
       }
       await runHooks('beforeBlocks');
-      if (signal.aborted) return;
-      stopEvents = listenBlockEvents(container, prefix, (event) => {
-        if (!signal.aborted) latest().onEvent?.(event);
-      });
-      holdCss();
+      if (!holdCss(false)) return;
+      const listening = own(() =>
+        listenBlockEvents(container, prefix, (event) => {
+          if (live()) latest().onEvent?.(event);
+        }),
+      );
+      if (!listening) return;
       const host = createHost(
         () => {
           const init = latest().host;
@@ -277,29 +303,31 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
         },
         { signal, page, shell: latest().shell },
       );
-      let returned: MountHandle;
-      try {
-        returned = mod.mountBlocks(container, host);
-      } catch (error) {
-        fail('BLOCKS_MOUNT_FAILED', error instanceof Error ? error.message : String(error));
-        return;
-      }
-      if (signal.aborted) {
-        // Disposed during mountBlocks (e.g. from onEvent on a synchronous block event): the session's dispose
-        // ran before the handle existed, so the returned handle is disposed here and onMount never runs.
+      let handle: MountHandle | null = null;
+      let failure: unknown = null;
+      // mountBlocks runs block code (which may emit events → onEvent → dispose); through own(), a handle
+      // returned after a dispose is disposed at once and nothing below runs.
+      const mounted = own(() => {
         try {
-          returned?.dispose();
+          handle = mod.mountBlocks(container, host);
         } catch (error) {
-          console.error('[foliwake] dispose failed', error);
+          failure = error;
+          return null;
         }
+        const h = handle;
+        return h ? () => h.dispose() : null;
+      });
+      if (failure !== null) {
+        fail('BLOCKS_MOUNT_FAILED', failure instanceof Error ? failure.message : String(failure));
         return;
       }
-      handle = returned;
-      latest().onMount?.(container, handle);
-      if (signal.aborted) return;
-      const ready = handle.ready.then(
+      if (!mounted || !handle) return;
+      const current: MountHandle = handle;
+      latest().onMount?.(container, current);
+      if (!live()) return;
+      const ready = current.ready.then(
         (reports) => {
-          if (signal.aborted) return;
+          if (!live()) return;
           const failed = reports.filter((r) => r.status === 'error').length;
           status(failed === 0 ? 'ready' : failed === reports.length && reports.length > 0 && latest().requireBlocks ? 'error' : 'partial', reports);
         },
@@ -308,11 +336,26 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
       await runHooks('afterFirstSection');
       await ready;
       await runHooks('lazy');
-      if (signal.aborted) return;
+      if (!live()) return;
       await new Promise((resolve) => setTimeout(resolve, 0));
       await runHooks('delayed');
     },
     (error) => fail('BLOCKS_MODULE_FAILED', `The blocks module could not be loaded: ${error instanceof Error ? error.message : String(error)}`),
   ).catch((error) => fail('BLOCKS_MOUNT_FAILED', error instanceof Error ? error.message : String(error))); // onMount threw
   return session;
+}
+
+/** Adds the links of the body's block stylesheets to <head> unless a link for that block and release is there. */
+function appendStylesheets(doc: Document, page: FoliwakePageData): void {
+  const head = doc.head;
+  for (const sheet of pageStylesheets(page)) {
+    const present = [...head.querySelectorAll('link[data-component-css][data-code-release]')].some((l) => (l as HTMLLinkElement).dataset.codeRelease === sheet.codeRelease && (l as HTMLLinkElement).dataset.componentCss === sheet.name);
+    if (present) continue;
+    const link = doc.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = sheet.href;
+    link.dataset.componentCss = sheet.name;
+    link.dataset.codeRelease = sheet.codeRelease;
+    head.append(link);
+  }
 }
