@@ -9,13 +9,15 @@ export type { HtmlElement, HtmlNode, HtmlText } from './html-parse.js';
 
 /**
  * Elements a body may not hold (incl. foreign content: no inline SVG or MathML in 0.1). `<form>` is allowed only
- * as the engine writes it for the question block (`method="dialog"`, no `action`): it can submit nowhere.
+ * as the engine writes it for the question block: an explicit `method="dialog"`, no `action`, `target` or
+ * `enctype`; no control may override the submission (`formmethod`, `formaction`, `formtarget`, `formenctype`)
+ * or associate itself with another form (`form`). Such a form closes a dialog at most; it submits nowhere.
  */
 export const REFUSED_ELEMENTS: ReadonlySet<string> = new Set([
   'script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'base', 'meta', 'link',
   'noscript', 'template', 'svg', 'math', 'xmp', 'plaintext', 'noembed', 'noframes', 'portal', 'fencedframe',
 ]);
-const REFUSED_ATTRIBUTES = new Set(['srcdoc', 'formaction', 'style', 'is', 'ping']);
+const REFUSED_ATTRIBUTES = new Set(['srcdoc', 'formaction', 'formmethod', 'formtarget', 'formenctype', 'form', 'style', 'is', 'ping']);
 const ELEMENT_NAME = /^[a-z][a-z0-9-]*$/;
 const ATTRIBUTE_NAME = /^[a-z_][a-z0-9_.-]*$/;
 /** Attributes holding one URL. */
@@ -74,9 +76,9 @@ function checkElement(element: HtmlElement, pagePath: string): void {
   if (!ELEMENT_NAME.test(element.name)) throw invalid(`the element <${element.name.slice(0, 30)}> is not allowed`);
   if (REFUSED_ELEMENTS.has(element.name)) throw invalid(`the element <${element.name}> is not allowed`);
   if (element.name === 'form') {
-    const method = element.attribs.method;
-    if ('action' in element.attribs || 'target' in element.attribs || (method !== undefined && method.toLowerCase() !== 'dialog')) {
-      throw invalid('a <form> may only be <form method="dialog"> without action or target');
+    const a = element.attribs;
+    if (a.method?.trim().toLowerCase() !== 'dialog' || 'action' in a || 'target' in a || 'enctype' in a) {
+      throw invalid('a <form> may only be <form method="dialog"> without action, target or enctype');
     }
   }
   for (const [name, value] of Object.entries(element.attribs)) {

@@ -19,8 +19,8 @@ import { FoliwakePage } from '@foliwake/react';
 Also exported: `useFoliwakeEvents(ref, handlers, { prefix })`, `createHost(init, { signal, page })`,
 `FoliwakeProvider` / `useFoliwakeSettings`, and the contract types.
 
-Invariants: the page's identity (site, channel, path, ETag, code release, mode) is the only thing that
-remounts. Callbacks and host data are read at call time. Every async step is abort-guarded, and dispose is
+Invariants: the page's identity (site, channel, path, ETag, code release, mode and a digest of the final
+prepared body and its mount settings) is the only thing that remounts. Callbacks and host data are read at call time. Every async step is abort-guarded, and dispose is
 idempotent with no event after it. A second mount on the same element starts from the pristine body
 (StrictMode). Block stylesheets are counted per code release. The module is imported at run time from a
 same-origin URL (`import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url)`). The package never
