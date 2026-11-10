@@ -61,7 +61,7 @@ const Body = memo(
 );
 
 function isDevelopment(): boolean {
-  return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV !== 'production';
+  return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV === 'development';
 }
 
 function Mounted(props: FoliwakePageProps): ReactNode {

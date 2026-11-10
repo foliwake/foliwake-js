@@ -40,7 +40,7 @@ export function cssMounts(doc: Document): Record<string, number> {
 
 function isDevelopment(): boolean {
   try {
-    return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV !== 'production';
+    return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV === 'development';
   } catch {
     return false;
   }
