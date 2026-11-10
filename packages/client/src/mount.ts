@@ -128,6 +128,11 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
   // start() registers its session before it calls any app callback, so a dispose(), an external abort or an
   // update() from inside a callback always reaches the session that is running (never a stale one).
   const begin = () => start(element, () => opts, opts.page, (created) => (session = created));
+  // Bumped by every remounting update(). Disposing a session runs foreign code (the blocks' dispose, abort
+  // listeners of hooks) that may re-enter dispose() or update(); the outer update starts its session only when
+  // the mount is still live and no newer update superseded it, so nothing starts on a disposed mount and no
+  // session is started twice or orphaned.
+  let generation = 0;
 
   const mount: FoliwakeMount = {
     element,
@@ -142,8 +147,9 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
       const remount = next.page !== undefined && next.page.identity !== opts.page.identity;
       opts = { ...opts, ...next };
       if (remount) {
+        const mine = ++generation;
         session.dispose();
-        begin();
+        if (!disposed && mine === generation) begin();
       }
     },
     dispose() {
