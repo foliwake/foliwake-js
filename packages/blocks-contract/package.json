@@ -1,7 +1,6 @@
 {
   "name": "@foliwake/blocks-contract",
   "version": "0.1.0",
-  "private": true,
   "description": "Types of the Foliwake blocks contract (foliwake-blocks/1) and the page types shared by @foliwake/server and @foliwake/react. No runtime code.",
   "license": "Apache-2.0",
   "type": "module",
