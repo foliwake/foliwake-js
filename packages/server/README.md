@@ -9,7 +9,7 @@ Server toolkit for apps that show Foliwake pages. Web `Request`/`Response`, no f
 | `./page` | `readEnvelope(config, client, site, channel, path)` (primitive inputs: safe in a cache function), `preparePage(config, envelope, { rewriteLink, transform, mode })`, `FoliwakePageError` |
 | `./html` | `checkPlainBody`, `checkBody`, `serialize`, `srcsetCandidates` (the strict body check) |
 | `./handlers` | `codeHandler`, `mediaHandler` (`{ authorizePreview }` required) |
-| `./csp` | `foliwakeCsp({ strategy: 'self-inline', mediaBase, reportUri, extra, dev })` |
+| `./csp` | `foliwakeCsp({ strategy: 'self-inline', mediaBase, reportUri, extra, dev })`; `mediaBase` (https; origin only) is the media host, or the site's image CDN when it uses `media.resize: "cdn"` |
 | `./preload` | `preloadHints(config, client, page)`: modulepreload / preload hints of a page's blocks |
 
 ```ts
