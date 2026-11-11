@@ -15,7 +15,11 @@ export interface CspOptions {
   strategy: 'self-inline' | 'nonce';
   /** Required with 'nonce'. */
   nonce?: string;
-  /** `app.media.base` (live pictures through a transforming host). */
+  /**
+   * The media host whose pictures pages show: `app.media.base` (live pictures through a transforming host),
+   * or the site's own CDN when the site resizes images on one (`media.resize: "cdn"`, whose `cdnBase` is in
+   * every live `srcset`). An https address; only its origin (scheme and host) is added to `img-src`.
+   */
   mediaBase?: string | null;
   /** Development: adds 'unsafe-eval' (React's debugging) and websocket connections for HMR. */
   dev?: boolean;
@@ -28,6 +32,20 @@ export interface CspOptions {
 const SOURCE = /^(?:'[a-z0-9-]+(?:-[A-Za-z0-9+/=_-]+)?'|[a-z][a-z0-9+.-]*:|https:\/\/[A-Za-z0-9.*-]+(?::\d+)?(?:\/[^\s;,]*)?|wss?:\/\/[A-Za-z0-9.*-]+(?::\d+)?)$/;
 const DIRECTIVE = /^[a-z-]+$/;
 const NONCE = /^[A-Za-z0-9+/=_-]{16,128}$/;
+
+// The origin of an https media host; never a scheme, wildcard or credentials in the policy.
+function mediaOrigin(value: string): string {
+  let url: URL | null = null;
+  try {
+    url = new URL(value);
+  } catch {
+    // refused below
+  }
+  if (!url || url.protocol !== 'https:' || url.username || url.password || url.hostname.includes('*')) {
+    throw new TypeError('foliwakeCsp: mediaBase must be an https:// address such as https://media.example.org.');
+  }
+  return url.origin;
+}
 
 /** The policy as one header value. */
 export function foliwakeCsp(opts: CspOptions): string {
@@ -47,7 +65,7 @@ export function foliwakeCsp(opts: CspOptions): string {
   }
   if (opts.dev) add('script-src', "'unsafe-eval'");
   add('img-src', "'self'", 'data:', 'blob:');
-  if (opts.mediaBase) add('img-src', new URL(opts.mediaBase).origin);
+  if (opts.mediaBase) add('img-src', mediaOrigin(opts.mediaBase));
   add('font-src', "'self'");
   add('connect-src', "'self'");
   if (opts.dev) add('connect-src', 'ws:', 'wss:');
