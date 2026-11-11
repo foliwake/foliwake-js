@@ -44,6 +44,16 @@ export type Verdict = { correct: boolean; correctIds?: string[]; reveal?: Record
 /** `pending`: an answer the app has not confirmed yet (an offline outbox). */
 export type SavedAnswer = Answer & { correct: boolean | null; verdict?: Verdict; pending?: boolean };
 
+/**
+ * React for blocks that render with it (block-kit `mountReact`): the app's own `createElement` (from
+ * `react`) and `createRoot` (from `react-dom/client`), so an embedded page uses the app's React instead
+ * of loading its own. Announced by `has('react')`; blocks fall back to their own React without it.
+ */
+export interface HostReact {
+  createElement(type: unknown, props?: Record<string, unknown> | null, ...children: unknown[]): unknown;
+  createRoot(container: Element, options?: Record<string, unknown>): { render(children: unknown): void; unmount(): void };
+}
+
 /** The object an app gives every block. Optional members are announced by `has(name)`. */
 export interface BlockHost {
   contract: ContractVersion;
@@ -73,6 +83,8 @@ export interface BlockHost {
   check?(key: string, answer: Answer, opts: { signal: AbortSignal }): Promise<Verdict>;
   media?(url: string, hint?: { width?: number }): string;
   track?(name: string, data: Record<string, unknown>): void;
+  /** The app's React (optional, `has('react')`; added 2026-11-11 within minor 1, as an optional member). */
+  react?: HostReact;
   has(feature: string): boolean;
 }
 

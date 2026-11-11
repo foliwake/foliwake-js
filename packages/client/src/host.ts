@@ -9,7 +9,7 @@ export type HostInit = Partial<Omit<BlockHost, 'signal' | 'contract' | 'htmlCont
 
 /** The contract minor this package speaks (foliwake-blocks/1.1: `BLOCKS_CONTRACT.eventPrefix`). */
 export const HOST_CONTRACT_MINOR = 1;
-const OPTIONAL = ['saved', 'check', 'media', 'track', 'labels'] as const;
+const OPTIONAL = ['saved', 'check', 'media', 'track', 'labels', 'react'] as const;
 
 function prefers(query: string): boolean {
   try {
@@ -45,6 +45,8 @@ export function createHost(init: HostInit | (() => HostInit), base: { signal: Ab
     get lang() { return get().lang ?? page.lang ?? docLang(); },
     get uiLang() { return get().uiLang ?? docLang(); },
     get labels() { return get().labels; },
+    // The app's React for blocks that render with it (block-kit mountReact); undefined: they use their own.
+    get react() { return get().react; },
     get theme() { return get().theme ?? documentTheme(); },
     get reducedMotion() { return get().reducedMotion ?? prefers('(prefers-reduced-motion: reduce)'); },
     signal,
