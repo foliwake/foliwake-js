@@ -52,9 +52,10 @@ export function describe(page: FoliwakePageData, blocks: BlocksModule): string {
 
 ### Write a block's init by hand
 
-A block's module exports `init(root, host, meta)` as its default; the loader calls it once per root with the
-page's host and what `components/components.json` says about the block (its name and its `ui` labels). The
-block-kit's `defineBlock` writes it for you; by hand it looks like this.
+A block's module exports `init(root, host, meta)` as its default; a loader calls it once per root with the
+page's host and, when it has it, `meta`: what the code release says about the block (its name and its `ui`
+labels). `meta` is optional; the loader of a `foliwake create` project passes only `root` and `host` in this
+version, so a block falls back without it. By hand it looks like this.
 
 ```ts
 // components/note/note.ts (compiled to note.js)
@@ -265,7 +266,7 @@ interface CoreEventDetails
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `{ contract: number; }` | The block finished its setup (the block-kit sends it when the block did not). |
+| `ready` | `{ contract: number; }` | The block finished its setup; a block sends it itself (block-kit 1 does not send it for the block). |
 | `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
 
 #### `HostCore`
