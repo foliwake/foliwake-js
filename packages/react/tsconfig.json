@@ -8,7 +8,7 @@
     "types": [],
     "strict": true,
     "noEmitOnError": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "declaration": true,
     "removeComments": false,
     "verbatimModuleSyntax": true,
