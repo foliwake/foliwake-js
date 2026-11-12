@@ -79,7 +79,7 @@ function acquireCss(doc: Document, codeRelease: string): () => void
 
 #### `createHost()`
 
-The host a page's blocks receive. `init` (or what it returns) is read at every call. `base.shell` is the shell named when the app names none (default `'web'`;
+The host a page's blocks receive. `init` (or what it returns) is read at every call. `base.shell` is the shell named when the app names none (default `'web'`; the React package passes `'react'`).
 
 ```ts
 function createHost(init: HostInit | (() => HostInit), base: {
@@ -89,7 +89,12 @@ function createHost(init: HostInit | (() => HostInit), base: {
 }): BlockHost
 ```
 
-**Returns** `BlockHost`
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `init` | `HostInit \| (() => HostInit)` | The app's part of the host, or a function returning it (called at every member read). |
+| `base` | `{ signal: AbortSignal; page: FoliwakePageData; shell?: string; }` | The mount's signal, the page and the default shell. |
+
+**Returns** `BlockHost`: A `BlockHost` for `mountBlocks`: contract, signal, HTML contract and channel come from the page; `has(name)` is true for the optional members the app gave.
 
 #### `cssMounts()`
 
@@ -102,6 +107,8 @@ function cssMounts(doc: Document): Record<string, number>
 **Returns** `Record<string, number>`
 
 #### `importBlocksModule()`
+
+Imports a code release's blocks module from a same-origin URL at run time (bundlers leave the import alone). `mountFoliwakePage` calls it with `page.blocksUrl`.
 
 ```ts
 function importBlocksModule(url: string): Promise<BlocksModule>
@@ -117,17 +124,28 @@ Listens on `target` for every block event type; returns the function that remove
 function listenBlockEvents(target: Element, prefix: string, deliver: (event: FoliwakeEvent) => void): () => void
 ```
 
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `target` | `Element` |  |
+| `prefix` | `string` | The event prefix (`app.blocks.eventPrefix`), without the colon. |
+| `deliver` | `(event: FoliwakeEvent) => void` | Called with each event; native events that are not `CustomEvent`s are ignored. |
+
 **Returns** `() => void`
 
 #### `mountFoliwakePage()`
 
-Shows `options.page` in `element` and mounts its blocks.
+Shows `options.page` in `element` and mounts its blocks from the page's own code release. Problems of the blocks (no code release, another contract, a failing module) go to `onError` / `onStatus`; the body stays.
 
 ```ts
 function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOptions): FoliwakeMount
 ```
 
-**Returns** `FoliwakeMount`
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `element` | `HTMLElement` | The element that holds (or will hold) the page body, already in the document. |
+| `options` | `FoliwakeMountOptions` |  |
+
+**Returns** `FoliwakeMount`: The mount: `update()` for new callbacks or another page, `dispose()` on unmount.
 
 #### `pageIdentity()`
 
@@ -164,11 +182,19 @@ function subscribeBlockEvents(target: Element, handlers: FoliwakeEventHandlers |
 }): () => void
 ```
 
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `target` | `Element` |  |
+| `handlers` | `FoliwakeEventHandlers \| (() => FoliwakeEventHandlers)` |  |
+| `opts` | `{ prefix: string; signal?: AbortSignal; }` | `prefix`: the event prefix, without the colon; `signal`: aborting it unsubscribes. |
+
 **Returns** `() => void`
 
 **Constants**
 
 #### `BLOCK_EVENT_TYPES`
+
+Every block event type, in a fixed order; an event is `<prefix>:<type>` (for example `demo:answer`).
 
 ```ts
 const BLOCK_EVENT_TYPES: readonly BlockEventType[]
@@ -193,6 +219,8 @@ const HOST_CONTRACT_MINOR = 1
 **Interfaces**
 
 #### `FoliwakeHookContext`
+
+What a lifecycle hook receives.
 
 ```ts
 interface FoliwakeHookContext
@@ -220,14 +248,16 @@ interface FoliwakeHooks
 
 #### `FoliwakeMount`
 
+A running mount, returned by `mountFoliwakePage`.
+
 ```ts
 interface FoliwakeMount
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `readonly element` | `HTMLElement` |  |
-| `readonly page` | `FoliwakePageData` |  |
+| `readonly element` | `HTMLElement` | The element the page is mounted in. |
+| `readonly page` | `FoliwakePageData` | The current page (the latest one passed to `update`). |
 | `readonly status` | `FoliwakePageStatus \| 'idle' \| 'disposed'` | The last status reported; 'disposed' after dispose. |
 | `update()` | `(next: FoliwakeMountCallbacks & { page?: FoliwakePageData; }) => void` | New callbacks or host (latest wins, no remount); a `page` with another identity remounts. |
 | `dispose()` | `() => void` | Idempotent. Leaves the DOM as it is; no callback runs after it. |
@@ -243,14 +273,16 @@ interface FoliwakeMountCallbacks
 | Member | Type | Description |
 | --- | --- | --- |
 | `host?` | `HostInit \| (() => HostInit)` | The app's part of the block host; a function is called at every member read. |
-| `onEvent?` | `(event: FoliwakeEvent) => void` |  |
+| `onEvent?` | `(event: FoliwakeEvent) => void` | Every block event under the element (`<prefix>:<type>`), as a typed `FoliwakeEvent`. |
 | `requireBlocks?` | `boolean` | Without blocks the page is `error` instead of `static`. |
-| `onStatus?` | `(status: FoliwakePageStatus, reports?: BlockReport[]) => void` |  |
-| `onError?` | `(error: FoliwakePageError) => void` |  |
+| `onStatus?` | `(status: FoliwakePageStatus, reports?: BlockReport[]) => void` | Each status change; `reports` (one per block root) once the blocks settled. |
+| `onError?` | `(error: FoliwakePageError) => void` | Why blocks are missing or failed (the page still shows its body). |
 | `onMount?` | `(container: HTMLElement, handle: MountHandle) => void` | Imperative app logic on the mounted container (slides, focus). |
 | `hooks?` | `FoliwakeHooks` | Lifecycle hooks by phase, site-level then template-level (FoliwakeHooks). |
 
 #### `FoliwakeMountOptions`
+
+Options of `mountFoliwakePage`: the page, how to treat the element's body, and the callbacks.
 
 ```ts
 interface FoliwakeMountOptions extends FoliwakeMountCallbacks
@@ -258,7 +290,7 @@ interface FoliwakeMountOptions extends FoliwakeMountCallbacks
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `page` | `FoliwakePageData` |  |
+| `page` | `FoliwakePageData` | The prepared page (from `preparePage` / `readPage` on the server). |
 | `body?` | `'auto' \| 'insert' \| 'keep'` | The body in the element before blocks mount. `'auto'` (default): insert `page.html` when the element is empty or was mounted before (a remount starts pristine), keep server-rendered or framework-rendered HTML otherwise. `'insert'`: always insert. `'keep'`: never touch it (the caller restores it). |
 | `stylesheets?` | `boolean` | Add `<link rel="stylesheet">` for the body's blocks to &lt;head&gt;, owned by the CSS count (default false). |
 | `shell?` | `string` | `host.shell` when the app's host names none (default 'web'). |
@@ -266,6 +298,8 @@ interface FoliwakeMountOptions extends FoliwakeMountCallbacks
 | `signal?` | `AbortSignal` | Aborting it disposes the mount. |
 
 #### `FoliwakePageError`
+
+What `onError` receives. Codes: `NO_CODE_RELEASE`, `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`, `BLOCKS_MODULE_FAILED`, `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
 
 ```ts
 interface FoliwakePageError
@@ -280,6 +314,8 @@ interface FoliwakePageError
 
 #### `FoliwakeEventHandlers`
 
+One optional handler per block event type, each receiving the typed event.
+
 ```ts
 type FoliwakeEventHandlers = {
     [T in BlockEventType]?: (event: FoliwakeEvent<T>) => void;
@@ -288,11 +324,15 @@ type FoliwakeEventHandlers = {
 
 #### `FoliwakeHook`
 
+A lifecycle hook; a returned promise is awaited (raced against `signal`).
+
 ```ts
 type FoliwakeHook = (context: FoliwakeHookContext) => void | Promise<void>
 ```
 
 #### `FoliwakeHookPhase`
+
+One of `HOOK_PHASES`.
 
 ```ts
 type FoliwakeHookPhase = (typeof HOOK_PHASES)[number]
@@ -300,11 +340,15 @@ type FoliwakeHookPhase = (typeof HOOK_PHASES)[number]
 
 #### `FoliwakePageStatus`
 
+Where a mount is: `mounting` (module loading), `ready` (every block mounted), `partial` (some blocks failed), `static` (the body is shown without blocks; `onError` says why), `error` (only with `requireBlocks`: no blocks, or every block failed).
+
 ```ts
 type FoliwakePageStatus = 'mounting' | 'ready' | 'partial' | 'static' | 'error'
 ```
 
 #### `FoliwakePhaseHooks`
+
+Hooks of one level (site or template), by phase.
 
 ```ts
 type FoliwakePhaseHooks = {

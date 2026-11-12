@@ -6,12 +6,14 @@ import { configFilePath, parseFoliwakeConfig } from '@foliwake/server/config';
 import { foliwakeCsp, type CspOptions } from '@foliwake/server/csp';
 import { CONFIG_ENV_KEY } from './settings.js';
 
+/** Options of `withFoliwake`. */
 export interface WithFoliwakeOptions {
   /** The config file (default FOLIWAKE_REMOTE, else ./foliwake.remote.json). */
   configFile?: string;
   /**
-   * Adds the Content-Security-Policy header (strategy 'self-inline', design §5 decision A) to every route.
-   * `false` (default): the app sets its own; use foliwakeCspHeader() for the value.
+   * Adds the Content-Security-Policy header (strategy 'self-inline': `script-src 'self' 'unsafe-inline'`) to the
+   * routes matching `source` (default every route, `/:path*`). `reportUri` adds `report-uri`; `extra` adds sources
+   * per directive. `false` (default): the app sets its own; use foliwakeCspHeader() for the value.
    */
   csp?: false | { reportUri?: string; extra?: CspOptions['extra']; source?: string };
 }
@@ -31,7 +33,11 @@ export function foliwakeCspHeader(opts: { configFile?: string; reportUri?: strin
 
 /**
  * Validates the Foliwake config when Next loads next.config (build and start) and makes it available to the
- * server-only modules of @foliwake/next; adds @foliwake/next to transpilePackages (its 'use cache' read).
+ * package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages
+ * (its 'use cache' read). Throws when the file is missing or invalid, naming the field.
+ *
+ * @param nextConfig - The app's own Next config; its `transpilePackages`, `env` and `headers` are kept.
+ * @returns The Next config to export from next.config.ts.
  */
 export function withFoliwake(nextConfig: NextConfig = {}, opts: WithFoliwakeOptions = {}): NextConfig {
   const file = configFilePath({ file: opts.configFile });

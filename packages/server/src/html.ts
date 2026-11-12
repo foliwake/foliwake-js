@@ -25,6 +25,7 @@ const URL_ATTRIBUTES = new Set(['href', 'src', 'poster', 'cite', 'background', '
 const DATA_IMAGE = /^data:image\/(png|jpeg|webp|gif)[;,]/i;
 const BASE = 'https://page.invalid';
 const DESCRIPTOR = /^(?:\d+w|\d+(?:\.\d+)?x)$/;
+/** A valid `data-component` name. */
 export const COMPONENT_NAME = /^[a-z][a-z0-9-]*$/;
 
 function invalid(message: string, cause?: unknown): FoliwakePageError {
@@ -114,7 +115,7 @@ export function checkBody(html: string, pagePath = '/'): HtmlNode[] {
   return nodes;
 }
 
-/** Checks a body (design §9.4); throws FoliwakePageError('invalid'). */
+/** Checks a body (the strict body check); throws FoliwakePageError('invalid'). */
 export function checkPlainBody(html: string, pagePath = '/'): void {
   checkBody(html, pagePath);
 }

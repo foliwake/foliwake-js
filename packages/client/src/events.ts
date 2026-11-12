@@ -1,11 +1,18 @@
 // Block events (`<prefix>:<type>` CustomEvents bubbling from block roots) as FoliwakeEvent objects.
 import type { BlockEventType, FoliwakeEvent } from '@foliwake/blocks-contract';
 
+/** Every block event type, in a fixed order; an event is `<prefix>:<type>` (for example `demo:answer`). */
 export const BLOCK_EVENT_TYPES: readonly BlockEventType[] = Object.freeze(['ready', 'select', 'check', 'answer', 'reset', 'complete', 'error']);
 
+/** One optional handler per block event type, each receiving the typed event. */
 export type FoliwakeEventHandlers = { [T in BlockEventType]?: (event: FoliwakeEvent<T>) => void };
 
-/** Listens on `target` for every block event type; returns the function that removes the listeners (idempotent). */
+/**
+ * Listens on `target` for every block event type; returns the function that removes the listeners (idempotent).
+ *
+ * @param prefix - The event prefix (`app.blocks.eventPrefix`), without the colon.
+ * @param deliver - Called with each event; native events that are not `CustomEvent`s are ignored.
+ */
 export function listenBlockEvents(target: Element, prefix: string, deliver: (event: FoliwakeEvent) => void): () => void {
   const controller = new AbortController();
   for (const type of BLOCK_EVENT_TYPES) {
@@ -25,6 +32,8 @@ export function listenBlockEvents(target: Element, prefix: string, deliver: (eve
 /**
  * Block events under `target` to typed handlers by type. `handlers` may be a function returning the current
  * handlers: it is read at event time (latest wins, no re-subscribe). Returns the unsubscribe function.
+ *
+ * @param opts - `prefix`: the event prefix, without the colon; `signal`: aborting it unsubscribes.
  */
 export function subscribeBlockEvents(target: Element, handlers: FoliwakeEventHandlers | (() => FoliwakeEventHandlers), opts: { prefix: string; signal?: AbortSignal }): () => void {
   const current = typeof handlers === 'function' ? handlers : () => handlers;

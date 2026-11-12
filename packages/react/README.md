@@ -43,6 +43,8 @@ fetches from a Foliwake origin. Apache-2.0.
 
 #### `createHost()`
 
+`createHost` of `@foliwake/client` with the shell `'react'` when the app names none.
+
 ```ts
 function createHost(init: HostInit | (() => HostInit), base: {
     signal: AbortSignal;
@@ -89,6 +91,8 @@ function useFoliwakeEvents(target: RefObject<Element | null>, handlers: Foliwake
 
 #### `useFoliwakeSettings()`
 
+The settings given to the nearest `FoliwakeProvider`, or null outside one.
+
 ```ts
 function useFoliwakeSettings(): ClientSettings | null
 ```
@@ -99,17 +103,19 @@ function useFoliwakeSettings(): ClientSettings | null
 
 #### `FoliwakePageProps`
 
+Props of `<FoliwakePage>`: the page, the mount callbacks of `@foliwake/client`, and how to render the body.
+
 ```ts
 interface FoliwakePageProps extends FoliwakeMountCallbacks
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `page` | `FoliwakePageData` |  |
+| `page` | `FoliwakePageData` | The prepared page from the server; its `identity` is the component's key. |
 | `blocks?` | `() => Promise<BlocksModule>` | Build-time mode (later): the blocks module from the app's bundle instead of the code release. |
 | `preloadCss?` | `boolean` | Render &lt;link rel="stylesheet"&gt; for the body's blocks with the body (default true). |
-| `as?` | `'div' \| 'article' \| 'main' \| 'section'` |  |
-| `className?` | `string` |  |
+| `as?` | `'div' \| 'article' \| 'main' \| 'section'` | The body element's tag (default `div`). |
+| `className?` | `string` | The body element's class. |
 
 **Also exported** (documented where they are defined)
 

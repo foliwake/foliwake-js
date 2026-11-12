@@ -47,6 +47,10 @@ let warnedPlain1 = false;
 /**
  * Reads `<path>.plain.html` from the channel's origin. Primitive inputs only, no callbacks and no signal
  * (an internal 10 s timeout), so it can run inside a cache function. Refuses paths outside `app.pages`.
+ *
+ * @param site - The config's site (`config.site`); another site is refused.
+ * @param path - The page path (`/`, `/lessons/a`).
+ * @returns The envelope; throws FoliwakePageError (`not_found`, `not_allowed`, `origin`, `unauthorized`, …).
  */
 export async function readEnvelope(config: FoliwakeAppConfig, client: OriginClient, site: string, channel: ChannelName, path: string): Promise<PageEnvelope> {
   if (site !== config.site) throw new FoliwakePageError('not_allowed', `This app reads the site ${config.site}, not ${site}.`);
@@ -104,8 +108,9 @@ export async function readEnvelope(config: FoliwakeAppConfig, client: OriginClie
   return { site, channel, path, html, codeRelease, htmlContract, lang, pageId, etag: etag && etag.length <= 200 ? etag : null, generation };
 }
 
+/** Options of `preparePage`. */
 export interface PrepareOptions {
-  /** 'exam' only once exam mode exists (design §9.5). */
+  /** The blocks' mode (default `practice`); `exam` comes later. */
   mode?: 'practice' | 'review';
   /** Root-relative links (`/x`) of `<a href>`; returns the app's URL. */
   rewriteLink?: (href: string) => string;
@@ -136,7 +141,13 @@ export function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, cod
   return { base, url: `${base}${app.blocks.entry}` };
 }
 
-/** Per request, after the cache: check → rewrite media/links → transform → check again → serialise. */
+/**
+ * Per request, after the cache: check → rewrite media/links → transform → check again → serialise.
+ *
+ * @param envelope - What readEnvelope (or a cached copy of it) returned.
+ * @returns The serialisable page for a client component (`preload` is empty; readPage of the Next package
+ *   fills it). Throws FoliwakePageError('invalid') when the body or the transform's output is refused.
+ */
 export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, opts: PrepareOptions = {}): FoliwakePageData {
   const app = appOf(config);
   const mode: BlockMode = opts.mode ?? 'practice';

@@ -18,12 +18,24 @@ function route(make: typeof codeHandler, opts: { authorizePreview: AuthorizePrev
   return { GET: run, HEAD: run };
 }
 
-/** `export const { GET, HEAD } = codeRoute({ authorizePreview: isAuthor })` */
+/**
+ * Route handlers for `app/<proxies.code>/[...path]/route.ts`: serve the files of a code release from the app's
+ * origin (`codeHandler` of `@foliwake/server/handlers`). Usage:
+ * `export const { GET, HEAD } = codeRoute({ authorizePreview: isAuthor })`. Each handler takes
+ * `(request, { params })` and returns a `Response`.
+ *
+ * @param opts - `authorizePreview`: the app's author check for preview files, or `false`; required.
+ */
 export function codeRoute(opts: { authorizePreview: AuthorizePreview }) {
   return route(codeHandler, opts);
 }
 
-/** `export const { GET, HEAD } = mediaRoute({ authorizePreview: isAuthor })` */
+/**
+ * Route handlers for `app/<proxies.media>/[...path]/route.ts`: serve hashed pictures (`mediaHandler` of
+ * `@foliwake/server/handlers`). Usage: `export const { GET, HEAD } = mediaRoute({ authorizePreview: isAuthor })`.
+ *
+ * @param opts - `authorizePreview`: the app's author check for preview pictures, or `false`; required.
+ */
 export function mediaRoute(opts: { authorizePreview: AuthorizePreview }) {
   return route(mediaHandler, opts);
 }

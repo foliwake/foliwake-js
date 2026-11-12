@@ -7,7 +7,7 @@ export type { ChannelName } from './index.js';
 /** A code release id (`cd_` + 32–64 hex), or `local` from `foliwake dev`. */
 export type CodeReleaseId = `cd_${string}` | 'local';
 
-/** What the origin answered for `<path>.plain.html`: the only thing cached (design §6.5). */
+/** What the origin answered for `<path>.plain.html`: the only thing an app caches. */
 export interface PageEnvelope {
   site: string;
   channel: ChannelName;
@@ -30,7 +30,7 @@ export interface PageEnvelope {
 /** What a client component receives: serialisable, prepared per request. */
 export interface FoliwakePageData {
   /**
-   * `${site}|${channel}|${path}|${etag}|${codeRelease}|${mode}|${digest}`: the React key of the body (design §6.2).
+   * `${site}|${channel}|${path}|${etag}|${codeRelease}|${mode}|${digest}`: the React key of the body.
    * `digest` is a SHA-256 prefix of the final prepared HTML and the mount-defining settings (blocks URL, contract,
    * HTML contract, language), so any change of what is mounted gives a new identity and nothing else does.
    */
@@ -70,6 +70,7 @@ export interface ClientSettings {
   blocks: { contract: string; eventPrefix: string };
 }
 
+/** A page of a site's query index (rows of string columns). */
 export interface QueryIndex<Row = Record<string, string>> {
   total: number;
   offset: number;

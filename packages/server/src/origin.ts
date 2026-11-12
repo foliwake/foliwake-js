@@ -6,6 +6,7 @@ import { endpointOf, type FoliwakeAppConfig } from './config.js';
 import { LIMITS } from './constants.js';
 import { FoliwakeConfigError } from './errors.js';
 
+/** Options of one origin request. */
 export interface OriginRequestOptions {
   method?: 'GET' | 'HEAD';
   signal?: AbortSignal;
@@ -13,6 +14,7 @@ export interface OriginRequestOptions {
   headers?: Record<string, string>;
 }
 
+/** Requests to the configured live and preview origins, with the credential added per request. */
 export interface OriginClient {
   readonly config: FoliwakeAppConfig;
   /** The origin of a channel (for messages and loopback checks). */
@@ -21,6 +23,7 @@ export interface OriginClient {
   request(channel: ChannelName, path: string, opts?: OriginRequestOptions): Promise<Response>;
 }
 
+/** Options of `createOriginClient`. */
 export interface OriginClientOptions {
   /** A fetch implementation (tests); default globalThis.fetch. */
   fetch?: typeof fetch;
@@ -37,6 +40,12 @@ function authorization(config: FoliwakeAppConfig, channel: ChannelName, env: Nod
   return `Basic ${Buffer.from(`${auth.username}:${password}`, 'utf8').toString('base64')}`;
 }
 
+/**
+ * The client for the config's origins. The password is read from `env[passwordEnv]` at each request (a rotated
+ * secret takes effect without a restart) and goes only into the Authorization header.
+ *
+ * @param env - Where passwords are read (default `process.env`).
+ */
 export function createOriginClient(config: FoliwakeAppConfig, env: NodeJS.ProcessEnv = process.env, opts: OriginClientOptions = {}): OriginClient {
   const doFetch = opts.fetch ?? ((input, init) => globalThis.fetch(input, init));
   const timeoutMs = opts.timeoutMs ?? LIMITS.timeoutMs;

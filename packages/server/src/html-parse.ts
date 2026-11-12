@@ -6,10 +6,14 @@
 import { Parser } from 'htmlparser2';
 import { LIMITS } from './constants.js';
 
+/** A text node of a parsed body. */
 export type HtmlText = { type: 'text'; data: string };
+/** An element of a parsed body. */
 export type HtmlElement = { type: 'tag'; name: string; attribs: Record<string, string>; children: HtmlNode[] };
+/** A node of a parsed body. */
 export type HtmlNode = HtmlText | HtmlElement;
 
+/** A body that cannot be parsed strictly. */
 export class HtmlParseError extends Error {
   override name = 'HtmlParseError';
 }

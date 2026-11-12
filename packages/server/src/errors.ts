@@ -3,6 +3,7 @@ export class FoliwakeConfigError extends Error {
   override name = 'FoliwakeConfigError';
 }
 
+/** Why a page cannot be shown (`FoliwakePageError.kind`). */
 export type PageErrorKind = 'not_found' | 'not_allowed' | 'origin' | 'invalid' | 'unauthorized' | 'too_large';
 
 /** A page that cannot be shown. `status`: the origin's HTTP status when there was one. */

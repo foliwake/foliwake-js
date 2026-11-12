@@ -11,6 +11,7 @@ import { foliwakeConfig, foliwakeTags, originClient } from './server.js';
 /** What the cache stores: an envelope, or the fact that the page does not exist. */
 export type CachedEnvelope = { found: true; envelope: PageEnvelope } | { found: false; path: string };
 
+/** The cached entry itself (`'use cache'`, tags of `foliwakeTags('live', path)`); readEnvelopeCached unwraps it. */
 export async function readEnvelopeCachedEntry(path: string): Promise<CachedEnvelope> {
   'use cache';
   const config = foliwakeConfig();

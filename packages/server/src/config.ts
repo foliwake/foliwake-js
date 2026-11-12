@@ -14,8 +14,11 @@ import { compileGlob, globMatches, globProblem, GLOB_LIMITS, type CompiledGlob }
 export { FoliwakeConfigError } from './errors.js';
 export type { ClientSettings } from '@foliwake/blocks-contract/page';
 
+/** The default config file name, looked up in the current directory. */
 export const CONFIG_FILE = 'foliwake.remote.json';
+/** The environment variable that names another config file. */
 export const CONFIG_ENV = 'FOLIWAKE_REMOTE';
+/** The channels a config can name. */
 export const CHANNELS: readonly ChannelName[] = Object.freeze(['live', 'preview']);
 
 /** HTTP Basic credentials: a user name and the NAME of the variable holding the password. */
@@ -25,12 +28,14 @@ export interface RemoteAuth {
   passwordEnv: string;
 }
 
+/** A channel's origin and its optional credential. */
 export interface FoliwakeEndpoint {
   /** Origin only: scheme, host, port. */
   origin: string;
   auth: RemoteAuth | null;
 }
 
+/** The `app` part of the config, with defaults applied. */
 export interface FoliwakeAppSettings {
   /** Page globs the app may read. */
   pages: readonly string[];
@@ -44,6 +49,7 @@ export interface FoliwakeAppSettings {
   revalidate: number;
 }
 
+/** A parsed and validated `foliwake.remote.json` (version 2). It holds credential variable names, never secrets. */
 export interface FoliwakeAppConfig {
   version: 2;
   site: string;
@@ -55,6 +61,7 @@ export interface FoliwakeAppConfig {
   from: string;
 }
 
+/** Options of `parseFoliwakeConfig`. */
 export interface ParseOptions {
   /** For messages (default foliwake.remote.json). */
   file?: string;
@@ -116,6 +123,7 @@ export function checkEnvName(value: unknown, where: string, extra?: ParseOptions
   return value as string;
 }
 
+/** Validates a Basic user name (no `:` or control characters, at most 128 characters). */
 export function checkUsername(value: unknown, where: string): string {
   if (typeof value !== 'string' || value === '' || value.length > 128 || /[:\u0000-\u001f\u007f]/.test(value)) {
     throw new FoliwakeConfigError(`${where}: give a user name without ":" or control characters.`);

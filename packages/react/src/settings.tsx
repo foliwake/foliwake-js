@@ -8,6 +8,7 @@ export function FoliwakeProvider(props: { settings: ClientSettings; children?: R
   return <SettingsContext.Provider value={props.settings}>{props.children}</SettingsContext.Provider>;
 }
 
+/** The settings given to the nearest `FoliwakeProvider`, or null outside one. */
 export function useFoliwakeSettings(): ClientSettings | null {
   return useContext(SettingsContext);
 }

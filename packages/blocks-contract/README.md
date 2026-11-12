@@ -28,6 +28,8 @@ A change here is a contract change. Apache-2.0.
 
 #### `BlockEventDetails`
 
+The `detail` of each block event type (besides `key` and `block`).
+
 ```ts
 interface BlockEventDetails
 ```
@@ -75,7 +77,7 @@ interface BlockHost
 
 #### `BlockReport`
 
-A root's outcome (Gaiare's `MountReport`).
+The outcome of one block root.
 
 ```ts
 interface BlockReport
@@ -145,6 +147,8 @@ interface HostReact
 
 #### `MountHandle`
 
+What `mountBlocks` returns.
+
 ```ts
 interface MountHandle
 ```
@@ -157,6 +161,8 @@ interface MountHandle
 **Types**
 
 #### `Answer`
+
+A block answer: the `selected` option ids, optionally `refused` ones.
 
 ```ts
 type Answer = {
@@ -178,6 +184,8 @@ type BlockEventDetail<T extends BlockEventType> = BlockEventDetails[T] & {
 
 #### `BlockEventType`
 
+The block event types (`<prefix>:<type>`).
+
 ```ts
 type BlockEventType = 'ready' | 'select' | 'check' | 'answer' | 'reset' | 'complete' | 'error'
 ```
@@ -192,6 +200,8 @@ type BlockEventTypes = readonly BlockEventType[]
 
 #### `BlockMode`
 
+The mode blocks run in.
+
 ```ts
 type BlockMode = 'practice' | 'exam' | 'review'
 ```
@@ -205,6 +215,8 @@ type BlocksContractName = `foliwake-blocks/${number}`
 ```
 
 #### `ChannelName`
+
+The site channel a page comes from.
 
 ```ts
 type ChannelName = 'live' | 'preview'
@@ -262,7 +274,7 @@ interface FoliwakePageData
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `identity` | `string` | `${site}\|${channel}\|${path}\|${etag}\|${codeRelease}\|${mode}\|${digest}`: the React key of the body (design §6.2). `digest` is a SHA-256 prefix of the final prepared HTML and the mount-defining settings (blocks URL, contract, HTML contract, language), so any change of what is mounted gives a new identity and nothing else does. |
+| `identity` | `string` | `${site}\|${channel}\|${path}\|${etag}\|${codeRelease}\|${mode}\|${digest}`: the React key of the body. `digest` is a SHA-256 prefix of the final prepared HTML and the mount-defining settings (blocks URL, contract, HTML contract, language), so any change of what is mounted gives a new identity and nothing else does. |
 | `site` | `string` |  |
 | `channel` | `ChannelName` |  |
 | `path` | `string` |  |
@@ -279,7 +291,7 @@ interface FoliwakePageData
 
 #### `PageEnvelope`
 
-What the origin answered for `<path>.plain.html`: the only thing cached (design §6.5).
+What the origin answered for `<path>.plain.html`: the only thing an app caches.
 
 ```ts
 interface PageEnvelope
@@ -313,6 +325,8 @@ interface PreloadHint
 | `as?` | `'style'` |  |
 
 #### `QueryIndex`
+
+A page of a site's query index (rows of string columns).
 
 ```ts
 interface QueryIndex<Row = Record<string, string>>

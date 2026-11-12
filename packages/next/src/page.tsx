@@ -12,7 +12,9 @@ import { preloadHints } from '@foliwake/server/preload';
 import { readEnvelopeCached } from './cache.js';
 import { foliwakeConfig, originClient } from './server.js';
 
+/** Options of `readPage`: the channel, the reader, hints, and `preparePage`'s options. */
 export interface ReadPageOptions extends PrepareOptions {
+  /** `live` (default, cached) or `preview` (read per request, never cached). */
   channel?: ChannelName;
   /** The live envelope reader; default readEnvelopeCached (or the app's own 'use cache' wrapper). */
   read?: (path: string) => Promise<PageEnvelope>;
@@ -47,10 +49,15 @@ export function emitPreloadHints(page: FoliwakePageData): void {
   }
 }
 
+/** Props of `<FoliwakeServerPage>`. */
 export interface FoliwakeServerPageProps {
+  /** The site's page path (`/`, `/lessons/a`); it must match `app.pages`. */
   path: string;
+  /** `live` (default, cached) or `preview` (per request, never cached; protect the route). */
   channel?: ChannelName;
+  /** `preparePage` options: `rewriteLink`, `transform`, `mode`. */
   prepare?: PrepareOptions;
+  /** The live envelope reader; default readEnvelopeCached. */
   read?: (path: string) => Promise<PageEnvelope>;
   /** Preload hints for the blocks (default true): modulepreload/preload links in <head>, same-origin. */
   hints?: boolean;

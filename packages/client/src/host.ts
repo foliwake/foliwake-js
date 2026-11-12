@@ -27,7 +27,12 @@ function documentTheme(): 'light' | 'dark' {
 
 /**
  * The host a page's blocks receive. `init` (or what it returns) is read at every call. `base.shell` is the
- * shell named when the app names none (default `'web'`; @foliwake/react passes `'react'`).
+ * shell named when the app names none (default `'web'`; the React package passes `'react'`).
+ *
+ * @param init - The app's part of the host, or a function returning it (called at every member read).
+ * @param base - The mount's signal, the page and the default shell.
+ * @returns A `BlockHost` for `mountBlocks`: contract, signal, HTML contract and channel come from the page;
+ *   `has(name)` is true for the optional members the app gave.
  */
 export function createHost(init: HostInit | (() => HostInit), base: { signal: AbortSignal; page: FoliwakePageData; shell?: string }): BlockHost {
   const get: () => HostInit = typeof init === 'function' ? init : () => init;

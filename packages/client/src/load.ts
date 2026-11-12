@@ -3,6 +3,10 @@
 // dist/ (removeComments: false; test/packages/packages-dist.test.js asserts it).
 import type { BlocksModule } from '@foliwake/blocks-contract';
 
+/**
+ * Imports a code release's blocks module from a same-origin URL at run time (bundlers leave the import alone).
+ * `mountFoliwakePage` calls it with `page.blocksUrl`.
+ */
 export function importBlocksModule(url: string): Promise<BlocksModule> {
   return import(/* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ url) as Promise<BlocksModule>;
 }

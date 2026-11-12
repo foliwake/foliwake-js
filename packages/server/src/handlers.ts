@@ -8,8 +8,11 @@ import { CODE_FILE_TYPES, CODE_ID_PATTERN, CODE_ROOTS, CODE_SEGMENT, LIMITS, MED
 import type { OriginClient } from './origin.js';
 import { declaredTooLarge, limitStream } from './stream.js';
 
+/** A proxy handler: the request and the path segments after the proxy prefix. */
 export type Handler = (request: Request, params: { path: string[] }) => Promise<Response>;
+/** The app's author check for preview requests, or `false` (preview answers 404). */
 export type AuthorizePreview = ((request: Request) => boolean | Promise<boolean>) | false;
+/** Options of `codeHandler` and `mediaHandler`. */
 export interface ProxyOptions {
   /** The app's author check for `preview/…` requests, or `false` to answer them 404. Required. */
   authorizePreview: AuthorizePreview;

@@ -20,7 +20,16 @@ import { listenBlockEvents } from './events.js';
 import { createHost, type HostInit } from './host.js';
 import { importBlocksModule } from './load.js';
 
+/**
+ * Where a mount is: `mounting` (module loading), `ready` (every block mounted), `partial` (some blocks failed),
+ * `static` (the body is shown without blocks; `onError` says why), `error` (only with `requireBlocks`: no blocks,
+ * or every block failed).
+ */
 export type FoliwakePageStatus = 'mounting' | 'ready' | 'partial' | 'static' | 'error';
+/**
+ * What `onError` receives. Codes: `NO_CODE_RELEASE`, `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`,
+ * `BLOCKS_MODULE_FAILED`, `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
+ */
 export interface FoliwakePageError {
   code: string;
   message: string;
@@ -28,7 +37,9 @@ export interface FoliwakePageError {
 
 /** The lifecycle phases a hook can run in, in phase order. */
 export const HOOK_PHASES = Object.freeze(['beforeBlocks', 'afterFirstSection', 'lazy', 'delayed'] as const);
+/** One of `HOOK_PHASES`. */
 export type FoliwakeHookPhase = (typeof HOOK_PHASES)[number];
+/** What a lifecycle hook receives. */
 export interface FoliwakeHookContext {
   phase: FoliwakeHookPhase;
   container: HTMLElement;
@@ -36,7 +47,9 @@ export interface FoliwakeHookContext {
   /** Aborted on dispose: a hook stops its work. */
   signal: AbortSignal;
 }
+/** A lifecycle hook; a returned promise is awaited (raced against `signal`). */
 export type FoliwakeHook = (context: FoliwakeHookContext) => void | Promise<void>;
+/** Hooks of one level (site or template), by phase. */
 export type FoliwakePhaseHooks = { [P in FoliwakeHookPhase]?: FoliwakeHook };
 /**
  * Lifecycle hooks (extension point; the full hooks contract comes later). In each phase the site's hook runs
@@ -58,10 +71,13 @@ export interface FoliwakeHooks {
 export interface FoliwakeMountCallbacks {
   /** The app's part of the block host; a function is called at every member read. */
   host?: HostInit | (() => HostInit);
+  /** Every block event under the element (`<prefix>:<type>`), as a typed `FoliwakeEvent`. */
   onEvent?: (event: FoliwakeEvent) => void;
   /** Without blocks the page is `error` instead of `static`. */
   requireBlocks?: boolean;
+  /** Each status change; `reports` (one per block root) once the blocks settled. */
   onStatus?: (status: FoliwakePageStatus, reports?: BlockReport[]) => void;
+  /** Why blocks are missing or failed (the page still shows its body). */
   onError?: (error: FoliwakePageError) => void;
   /** Imperative app logic on the mounted container (slides, focus). */
   onMount?: (container: HTMLElement, handle: MountHandle) => void;
@@ -69,7 +85,9 @@ export interface FoliwakeMountCallbacks {
   hooks?: FoliwakeHooks;
 }
 
+/** Options of `mountFoliwakePage`: the page, how to treat the element's body, and the callbacks. */
 export interface FoliwakeMountOptions extends FoliwakeMountCallbacks {
+  /** The prepared page (from `preparePage` / `readPage` on the server). */
   page: FoliwakePageData;
   /**
    * The body in the element before blocks mount. `'auto'` (default): insert `page.html` when the element is
@@ -87,8 +105,11 @@ export interface FoliwakeMountOptions extends FoliwakeMountCallbacks {
   signal?: AbortSignal;
 }
 
+/** A running mount, returned by `mountFoliwakePage`. */
 export interface FoliwakeMount {
+  /** The element the page is mounted in. */
   readonly element: HTMLElement;
+  /** The current page (the latest one passed to `update`). */
   readonly page: FoliwakePageData;
   /** The last status reported; 'disposed' after dispose. */
   readonly status: FoliwakePageStatus | 'idle' | 'disposed';
@@ -118,7 +139,13 @@ interface Session {
   dispose(): void;
 }
 
-/** Shows `options.page` in `element` and mounts its blocks. */
+/**
+ * Shows `options.page` in `element` and mounts its blocks from the page's own code release. Problems of the
+ * blocks (no code release, another contract, a failing module) go to `onError` / `onStatus`; the body stays.
+ *
+ * @param element - The element that holds (or will hold) the page body, already in the document.
+ * @returns The mount: `update()` for new callbacks or another page, `dispose()` on unmount.
+ */
 export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOptions): FoliwakeMount {
   let opts: FoliwakeMountOptions = { ...options };
   const external = options.signal;

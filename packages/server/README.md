@@ -64,6 +64,8 @@ function checkEnvName(value: unknown, where: string, extra?: ParseOptions['envNa
 
 #### `checkUsername()`
 
+Validates a Basic user name (no `:` or control characters, at most 128 characters).
+
 ```ts
 function checkUsername(value: unknown, where: string): string
 ```
@@ -176,17 +178,23 @@ class FoliwakeConfigError extends Error
 
 #### `CHANNELS`
 
+The channels a config can name.
+
 ```ts
 const CHANNELS: readonly ChannelName[]
 ```
 
 #### `CONFIG_ENV`
 
+The environment variable that names another config file.
+
 ```ts
 const CONFIG_ENV = "FOLIWAKE_REMOTE"
 ```
 
 #### `CONFIG_FILE`
+
+The default config file name, looked up in the current directory.
 
 ```ts
 const CONFIG_FILE = "foliwake.remote.json"
@@ -195,6 +203,8 @@ const CONFIG_FILE = "foliwake.remote.json"
 **Interfaces**
 
 #### `FoliwakeAppConfig`
+
+A parsed and validated `foliwake.remote.json` (version 2). It holds credential variable names, never secrets.
 
 ```ts
 interface FoliwakeAppConfig
@@ -211,6 +221,8 @@ interface FoliwakeAppConfig
 
 #### `FoliwakeAppSettings`
 
+The `app` part of the config, with defaults applied.
+
 ```ts
 interface FoliwakeAppSettings
 ```
@@ -225,6 +237,8 @@ interface FoliwakeAppSettings
 
 #### `FoliwakeEndpoint`
 
+A channel's origin and its optional credential.
+
 ```ts
 interface FoliwakeEndpoint
 ```
@@ -235,6 +249,8 @@ interface FoliwakeEndpoint
 | `auth` | `RemoteAuth \| null` |  |
 
 #### `ParseOptions`
+
+Options of `parseFoliwakeConfig`.
 
 ```ts
 interface ParseOptions
@@ -270,15 +286,25 @@ interface RemoteAuth
 
 #### `createOriginClient()`
 
+The client for the config's origins. The password is read from `env[passwordEnv]` at each request (a rotated secret takes effect without a restart) and goes only into the Authorization header.
+
 ```ts
 function createOriginClient(config: FoliwakeAppConfig, env?: NodeJS.ProcessEnv, opts?: OriginClientOptions): OriginClient
 ```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `config` | `FoliwakeAppConfig` |  |
+| `env?` | `NodeJS.ProcessEnv` | Where passwords are read (default `process.env`). |
+| `opts?` | `OriginClientOptions` |  |
 
 **Returns** `OriginClient`
 
 **Interfaces**
 
 #### `OriginClient`
+
+Requests to the configured live and preview origins, with the credential added per request.
 
 ```ts
 interface OriginClient
@@ -292,6 +318,8 @@ interface OriginClient
 
 #### `OriginClientOptions`
 
+Options of `createOriginClient`.
+
 ```ts
 interface OriginClientOptions
 ```
@@ -302,6 +330,8 @@ interface OriginClientOptions
 | `timeoutMs?` | `number` |  |
 
 #### `OriginRequestOptions`
+
+Options of one origin request.
 
 ```ts
 interface OriginRequestOptions
@@ -348,7 +378,13 @@ Per request, after the cache: check → rewrite media/links → transform → ch
 function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, opts?: PrepareOptions): FoliwakePageData
 ```
 
-**Returns** `FoliwakePageData`
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `config` | `FoliwakeAppConfig` |  |
+| `envelope` | `PageEnvelope` | What readEnvelope (or a cached copy of it) returned. |
+| `opts?` | `PrepareOptions` |  |
+
+**Returns** `FoliwakePageData`: The serialisable page for a client component (`preload` is empty; readPage of the Next package fills it). Throws FoliwakePageError('invalid') when the body or the transform's output is refused.
 
 #### `readEnvelope()`
 
@@ -358,7 +394,15 @@ Reads `<path>.plain.html` from the channel's origin. Primitive inputs only, no c
 function readEnvelope(config: FoliwakeAppConfig, client: OriginClient, site: string, channel: ChannelName, path: string): Promise<PageEnvelope>
 ```
 
-**Returns** `Promise<PageEnvelope>`
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `config` | `FoliwakeAppConfig` |  |
+| `client` | `OriginClient` |  |
+| `site` | `string` | The config's site (`config.site`); another site is refused. |
+| `channel` | `ChannelName` |  |
+| `path` | `string` | The page path (`/`, `/lessons/a`). |
+
+**Returns** `Promise<PageEnvelope>`: The envelope; throws FoliwakePageError (`not_found`, `not_allowed`, `origin`, `unauthorized`, …).
 
 **Classes**
 
@@ -384,19 +428,23 @@ new FoliwakePageError(kind: PageErrorKind, message: string, opts?: {
 
 #### `PrepareOptions`
 
+Options of `preparePage`.
+
 ```ts
 interface PrepareOptions
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `mode?` | `'practice' \| 'review'` | 'exam' only once exam mode exists (design §9.5). |
+| `mode?` | `'practice' \| 'review'` | The blocks' mode (default `practice`); `exam` comes later. |
 | `rewriteLink?` | `(href: string) => string` | Root-relative links (`/x`) of `<a href>`; returns the app's URL. |
 | `transform?` | `(html: string, envelope: PageEnvelope) => string` | The app's own change of the body (allow-list, artwork, …); its output is checked again. |
 
 **Types**
 
 #### `PageErrorKind`
+
+Why a page cannot be shown (`FoliwakePageError.kind`).
 
 ```ts
 type PageErrorKind = 'not_found' | 'not_allowed' | 'origin' | 'invalid' | 'unauthorized' | 'too_large'
@@ -434,6 +482,8 @@ function mediaHandler(config: FoliwakeAppConfig, client: OriginClient, opts: Pro
 
 #### `ProxyOptions`
 
+Options of `codeHandler` and `mediaHandler`.
+
 ```ts
 interface ProxyOptions
 ```
@@ -446,11 +496,15 @@ interface ProxyOptions
 
 #### `AuthorizePreview`
 
+The app's author check for preview requests, or `false` (preview answers 404).
+
 ```ts
 type AuthorizePreview = ((request: Request) => boolean | Promise<boolean>) | false
 ```
 
 #### `Handler`
+
+A proxy handler: the request and the path segments after the proxy prefix.
 
 ```ts
 type Handler = (request: Request, params: {
@@ -474,7 +528,7 @@ function checkBody(html: string, pagePath?: string): HtmlNode[]
 
 #### `checkPlainBody()`
 
-Checks a body (design §9.4); throws FoliwakePageError('invalid').
+Checks a body (the strict body check); throws FoliwakePageError('invalid').
 
 ```ts
 function checkPlainBody(html: string, pagePath?: string): void
@@ -559,6 +613,8 @@ function urlProblem(element: string, attribute: string, value: string, pagePath?
 
 #### `HtmlParseError`
 
+A body that cannot be parsed strictly.
+
 ```ts
 class HtmlParseError extends Error
 ```
@@ -570,6 +626,8 @@ class HtmlParseError extends Error
 **Constants**
 
 #### `COMPONENT_NAME`
+
+A valid `data-component` name.
 
 ```ts
 const COMPONENT_NAME: RegExp
@@ -587,6 +645,8 @@ const REFUSED_ELEMENTS: ReadonlySet<string>
 
 #### `HtmlElement`
 
+An element of a parsed body.
+
 ```ts
 type HtmlElement = {
     type: 'tag';
@@ -598,11 +658,15 @@ type HtmlElement = {
 
 #### `HtmlNode`
 
+A node of a parsed body.
+
 ```ts
 type HtmlNode = HtmlText | HtmlElement
 ```
 
 #### `HtmlText`
+
+A text node of a parsed body.
 
 ```ts
 type HtmlText = {
@@ -637,6 +701,8 @@ const REACT_SHELL_SCRIPT = "requestAnimationFrame(function(){$RT=performance.now
 
 #### `REACT_SHELL_SCRIPT_HASH`
 
+The CSP hash source of `REACT_SHELL_SCRIPT` (used by the `nonce` strategy).
+
 ```ts
 const REACT_SHELL_SCRIPT_HASH = "'sha256-7mu4H06fwDCjmnxxr/xNHyuQC6pLTHr4M2E4jXw5WZs='"
 ```
@@ -645,13 +711,15 @@ const REACT_SHELL_SCRIPT_HASH = "'sha256-7mu4H06fwDCjmnxxr/xNHyuQC6pLTHr4M2E4jXw
 
 #### `CspOptions`
 
+Options of `foliwakeCsp`.
+
 ```ts
 interface CspOptions
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `strategy` | `'self-inline' \| 'nonce'` |  |
+| `strategy` | `'self-inline' \| 'nonce'` | `self-inline` (recommended; works with partial prerendering) or `nonce` (experimental, not recommended). |
 | `nonce?` | `string` | Required with 'nonce'. |
 | `mediaBase?` | `string \| null` | The media host whose pictures pages show: `app.media.base` (live pictures through a transforming host), or the site's own CDN when the site resizes images on one (`media.resize: "cdn"`, whose `cdnBase` is in every live `srcset`). An https address; only its origin (scheme and host) is added to `img-src`. |
 | `dev?` | `boolean` | Development: adds 'unsafe-eval' (React's debugging) and websocket connections for HMR. |

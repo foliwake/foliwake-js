@@ -3,7 +3,9 @@
 // release implements `BlocksModule`; an app builds a `BlockHost` (or lets @foliwake/client build it).
 // Minor versions only add; a major version changes anything else.
 
+/** The site channel a page comes from. */
 export type ChannelName = 'live' | 'preview';
+/** The mode blocks run in. */
 export type BlockMode = 'practice' | 'exam' | 'review';
 
 /** The version a code release or a host speaks. */
@@ -20,6 +22,7 @@ export interface BlocksModule {
   mountBlocks(container: Element, host?: BlockHost): MountHandle;
 }
 
+/** What `mountBlocks` returns. */
 export interface MountHandle {
   /** One report per root once every root settled. */
   ready: Promise<BlockReport[]>;
@@ -27,7 +30,7 @@ export interface MountHandle {
   dispose(): void;
 }
 
-/** A root's outcome (Gaiare's `MountReport`). */
+/** The outcome of one block root. */
 export interface BlockReport {
   root?: Element;
   /** The `data-component` name. */
@@ -38,6 +41,7 @@ export interface BlockReport {
   code?: string;
 }
 
+/** A block answer: the `selected` option ids, optionally `refused` ones. */
 export type Answer = { selected: string[]; refused?: string[] };
 /** `reveal`: sanitised HTML of fields stripped in exam mode, by field name. */
 export type Verdict = { correct: boolean; correctIds?: string[]; reveal?: Record<string, string> };
@@ -88,8 +92,10 @@ export interface BlockHost {
   has(feature: string): boolean;
 }
 
+/** The block event types (`<prefix>:<type>`). */
 export type BlockEventType = 'ready' | 'select' | 'check' | 'answer' | 'reset' | 'complete' | 'error';
 
+/** The `detail` of each block event type (besides `key` and `block`). */
 export interface BlockEventDetails {
   ready: { contract: number; required: boolean; restored: boolean };
   select: { selected: string[] };

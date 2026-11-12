@@ -10,13 +10,17 @@ import type { BlocksModule } from '@foliwake/blocks-contract';
 import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 import { mountFoliwakePage, pageStylesheets, type FoliwakeMount, type FoliwakeMountCallbacks } from '@foliwake/client';
 
+/** Props of `<FoliwakePage>`: the page, the mount callbacks of `@foliwake/client`, and how to render the body. */
 export interface FoliwakePageProps extends FoliwakeMountCallbacks {
+  /** The prepared page from the server; its `identity` is the component's key. */
   page: FoliwakePageData;
   /** Build-time mode (later): the blocks module from the app's bundle instead of the code release. */
   blocks?: () => Promise<BlocksModule>;
   /** Render <link rel="stylesheet"> for the body's blocks with the body (default true). */
   preloadCss?: boolean;
+  /** The body element's tag (default `div`). */
   as?: 'div' | 'article' | 'main' | 'section';
+  /** The body element's class. */
   className?: string;
 }
 

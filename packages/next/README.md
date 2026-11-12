@@ -112,20 +112,24 @@ function readPage(path: string, opts?: ReadPageOptions): Promise<FoliwakePageDat
 
 #### `FoliwakeServerPageProps`
 
+Props of `<FoliwakeServerPage>`.
+
 ```ts
 interface FoliwakeServerPageProps
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `path` | `string` |  |
-| `channel?` | `ChannelName` |  |
-| `prepare?` | `PrepareOptions` |  |
-| `read?` | `(path: string) => Promise<PageEnvelope>` |  |
+| `path` | `string` | The site's page path (`/`, `/lessons/a`); it must match `app.pages`. |
+| `channel?` | `ChannelName` | `live` (default, cached) or `preview` (per request, never cached; protect the route). |
+| `prepare?` | `PrepareOptions` | `preparePage` options: `rewriteLink`, `transform`, `mode`. |
+| `read?` | `(path: string) => Promise<PageEnvelope>` | The live envelope reader; default readEnvelopeCached. |
 | `hints?` | `boolean` | Preload hints for the blocks (default true): modulepreload/preload links in &lt;head&gt;, same-origin. |
 | `render` | `(page: FoliwakePageData) => ReactNode` | Runs on the server; returns the app's client component with the page. |
 
 #### `ReadPageOptions`
+
+Options of `readPage`: the channel, the reader, hints, and `preparePage`'s options.
 
 ```ts
 interface ReadPageOptions extends PrepareOptions
@@ -133,7 +137,7 @@ interface ReadPageOptions extends PrepareOptions
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `channel?` | `ChannelName` |  |
+| `channel?` | `ChannelName` | `live` (default, cached) or `preview` (read per request, never cached). |
 | `read?` | `(path: string) => Promise<PageEnvelope>` | The live envelope reader; default readEnvelopeCached (or the app's own 'use cache' wrapper). |
 | `hints?` | `boolean` | Compute same-origin preload hints for the page's blocks into `page.preload` (default true). |
 
@@ -175,17 +179,24 @@ function foliwakeCspHeader(opts?: {
 
 #### `withFoliwake()`
 
-Validates the Foliwake config when Next loads next.config (build and start) and makes it available to the server-only modules of
+Validates the Foliwake config when Next loads next.config (build and start) and makes it available to the package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages (its 'use cache' read). Throws when the file is missing or invalid, naming the field.
 
 ```ts
 function withFoliwake(nextConfig?: NextConfig, opts?: WithFoliwakeOptions): NextConfig
 ```
 
-**Returns** `NextConfig`
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `nextConfig?` | `NextConfig` | The app's own Next config; its `transpilePackages`, `env` and `headers` are kept. |
+| `opts?` | `WithFoliwakeOptions` |  |
+
+**Returns** `NextConfig`: The Next config to export from next.config.ts.
 
 **Interfaces**
 
 #### `WithFoliwakeOptions`
+
+Options of `withFoliwake`.
 
 ```ts
 interface WithFoliwakeOptions
@@ -194,7 +205,7 @@ interface WithFoliwakeOptions
 | Member | Type | Description |
 | --- | --- | --- |
 | `configFile?` | `string` | The config file (default FOLIWAKE_REMOTE, else ./foliwake.remote.json). |
-| `csp?` | `false \| { reportUri?: string; extra?: CspOptions['extra']; source?: string; }` | Adds the Content-Security-Policy header (strategy 'self-inline', design §5 decision A) to every route. `false` (default): the app sets its own; use foliwakeCspHeader() for the value. |
+| `csp?` | `false \| { reportUri?: string; extra?: CspOptions['extra']; source?: string; }` | Adds the Content-Security-Policy header (strategy 'self-inline': `script-src 'self' 'unsafe-inline'`) to the routes matching `source` (default every route, `/:path*`). `reportUri` adds `report-uri`; `extra` adds sources per directive. `false` (default): the app sets its own; use foliwakeCspHeader() for the value. |
 
 ### `@foliwake/next/routes`
 
@@ -202,7 +213,7 @@ interface WithFoliwakeOptions
 
 #### `codeRoute()`
 
-`export const { GET, HEAD } = codeRoute({ authorizePreview: isAuthor })`
+Route handlers for `app/<proxies.code>/[...path]/route.ts`: serve the files of a code release from the app's origin (`codeHandler` of `@foliwake/server/handlers`). Usage: `export const { GET, HEAD } = codeRoute({ authorizePreview: isAuthor })`. Each handler takes `(request, { params })` and returns a `Response`.
 
 ```ts
 function codeRoute(opts: {
@@ -213,11 +224,15 @@ function codeRoute(opts: {
 }
 ```
 
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `opts` | `{ authorizePreview: AuthorizePreview; }` | `authorizePreview`: the app's author check for preview files, or `false`; required. |
+
 **Returns** `{ GET: RouteHandler; HEAD: RouteHandler; }`
 
 #### `mediaRoute()`
 
-`export const { GET, HEAD } = mediaRoute({ authorizePreview: isAuthor })`
+Route handlers for `app/<proxies.media>/[...path]/route.ts`: serve hashed pictures (`mediaHandler` of `@foliwake/server/handlers`). Usage: `export const { GET, HEAD } = mediaRoute({ authorizePreview: isAuthor })`.
 
 ```ts
 function mediaRoute(opts: {
@@ -228,6 +243,10 @@ function mediaRoute(opts: {
 }
 ```
 
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `opts` | `{ authorizePreview: AuthorizePreview; }` | `authorizePreview`: the app's author check for preview pictures, or `false`; required. |
+
 **Returns** `{ GET: RouteHandler; HEAD: RouteHandler; }`
 
 ### `@foliwake/next/cache`
@@ -235,6 +254,8 @@ function mediaRoute(opts: {
 **Functions and components**
 
 #### `readEnvelopeCachedEntry()`
+
+The cached entry itself (`'use cache'`, tags of `foliwakeTags('live', path)`); readEnvelopeCached unwraps it.
 
 ```ts
 function readEnvelopeCachedEntry(path: string): Promise<CachedEnvelope>

@@ -9,9 +9,12 @@
 
 /** React DOM 19.2's inline `requestAnimationFrame(function(){$RT=performance.now()});` in PPR static shells. */
 export const REACT_SHELL_SCRIPT = 'requestAnimationFrame(function(){$RT=performance.now()});';
+/** The CSP hash source of `REACT_SHELL_SCRIPT` (used by the `nonce` strategy). */
 export const REACT_SHELL_SCRIPT_HASH = "'sha256-7mu4H06fwDCjmnxxr/xNHyuQC6pLTHr4M2E4jXw5WZs='";
 
+/** Options of `foliwakeCsp`. */
 export interface CspOptions {
+  /** `self-inline` (recommended; works with partial prerendering) or `nonce` (experimental, not recommended). */
   strategy: 'self-inline' | 'nonce';
   /** Required with 'nonce'. */
   nonce?: string;
