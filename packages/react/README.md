@@ -59,7 +59,7 @@ import { createRoot } from 'react-dom/client';
 import { FoliwakePage, type FoliwakeEvent, type FoliwakePageData } from '@foliwake/react';
 import type { AssessmentEvents, AssessmentHostMembers, SavedAnswer } from '@foliwake/blocks-contract/assessment';
 
-const ASSESSMENT_EVENTS = ['select', 'check', 'answer', 'reset', 'complete'];
+const ASSESSMENT_EVENTS = ['select', 'check', 'answer', 'reset', 'complete'] as const;
 
 export function Lesson({ page, initial }: { page: FoliwakePageData; initial: Record<string, SavedAnswer> }) {
   const [answers, setAnswers] = useState(initial);
@@ -196,17 +196,17 @@ License: Apache-2.0.
 function createHost<Ext extends object = Record<never, never>>(init: HostInit<Ext> | (() => HostInit<Ext>), base: {
     signal: AbortSignal;
     page: FoliwakePageData;
-}): BlockHost<Ext>
+}): CreatedHost<Ext>
 ```
 
-**Returns** `BlockHost<Ext>`
+**Returns** `CreatedHost<Ext>`
 
 #### `FoliwakePage()`
 
 Shows a prepared Foliwake page and mounts its blocks. Remounts only when `page.identity` changes.
 
 ```ts
-function FoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(props: FoliwakePageProps<Ext, Events>): ReactNode
+function FoliwakePage<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents>(props: FoliwakePageProps<Ext, Events>): ReactNode
 ```
 
 **Returns** `ReactNode`
@@ -229,9 +229,9 @@ function FoliwakeProvider(props: {
 Block events under `target` to typed handlers; handlers are read at event time (latest wins, no re-subscribe). `opts.types`: event types besides the core `ready` and `error`.
 
 ```ts
-function useFoliwakeEvents<Events extends object = BlockEvents>(target: RefObject<Element | null>, handlers: FoliwakeEventHandlers<Events>, opts: {
+function useFoliwakeEvents<Events extends CoreEventDetails = BlockEvents, T extends BlockEventType<Events> = BlockEventType<Events>>(target: RefObject<Element | null>, handlers: FoliwakeEventHandlers<Events>, opts: {
     prefix: string;
-    types?: readonly string[];
+    types?: readonly T[];
 }): void
 ```
 
@@ -254,7 +254,7 @@ function useFoliwakeSettings(): ClientSettings | null
 Props of `<FoliwakePage>`: the page, the mount callbacks of `@foliwake/client`, and how to render the body.
 
 ```ts
-interface FoliwakePageProps<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events>
+interface FoliwakePageProps<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events>
 ```
 
 | Member | Type | Description |
@@ -269,6 +269,6 @@ interface FoliwakePageProps<Ext extends object = Record<never, never>, Events ex
 
 - from `@foliwake/blocks-contract`: `BlockEventDetail`, `BlockEvents`, `BlockEventType`, `BlockHost`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `HostCore`, `MountHandle`, `MountReport`, `MountStatus`
 - from `@foliwake/blocks-contract/page`: `ClientSettings`, `FoliwakePageData`
-- from `@foliwake/client`: `BLOCK_EVENT_TYPES`, `cssMounts`, `FoliwakeEventHandlers`, `FoliwakeHooks`, `FoliwakePageError`, `FoliwakePageStatus`, `HOST_CONTRACT_MINOR`, `HostInit`, `listenBlockEvents`
+- from `@foliwake/client`: `BLOCK_EVENT_TYPES`, `CreatedHost`, `cssMounts`, `FoliwakeEventHandlers`, `FoliwakeHooks`, `FoliwakePageError`, `FoliwakePageStatus`, `HOST_CONTRACT_MINOR`, `HostInit`, `listenBlockEvents`
 
 <!-- apistop -->

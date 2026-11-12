@@ -7,7 +7,7 @@ export {
   type FoliwakeMount, type FoliwakeMountOptions, type FoliwakeMountCallbacks, type FoliwakePageStatus, type FoliwakePageError,
 } from './mount.js';
 export { listenBlockEvents, subscribeBlockEvents, BLOCK_EVENT_TYPES, type FoliwakeEventHandlers } from './events.js';
-export { createHost, HOST_CONTRACT_MINOR, type HostInit } from './host.js';
+export { createHost, HOST_CONTRACT_MINOR, type CreatedHost, type HostInit } from './host.js';
 export { importBlocksModule } from './load.js';
 export { ensureImportMap, pageImportMap } from './import-map.js';
 export { acquireCss, cssMounts } from './css-registry.js';

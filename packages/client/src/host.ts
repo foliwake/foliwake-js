@@ -9,6 +9,12 @@ import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 /** The app's part of the host: the core members it may set, and the members of its extension (`Ext`). */
 export type HostInit<Ext extends object = Record<never, never>> = Partial<Omit<HostCore, 'signal' | 'contract' | 'htmlContract' | 'channel' | 'has'>> & Partial<Ext>;
 
+/**
+ * The host `createHost` returns: the core, and the extension's members as optional ones (the app may give any of
+ * them or none, and may stop giving one; a block checks `has(name)` first).
+ */
+export type CreatedHost<Ext extends object = Record<never, never>> = BlockHost<Partial<Ext>>;
+
 /** The contract minor this package speaks. */
 export const HOST_CONTRACT_MINOR = 0;
 /** Optional core members; `has(name)` is true when the app gave one. */
@@ -31,13 +37,13 @@ function documentTheme(): 'light' | 'dark' {
  *
  * @param init - The app's part of the host, or a function returning it (called at every member read).
  * @param base - The mount's signal, the page and the default shell.
- * @returns A `BlockHost<Ext>` for `mountBlocks`: contract, signal, HTML contract and channel come from the page;
+ * @returns A host for `mountBlocks` (extension members optional, `CreatedHost<Ext>`): contract, signal, HTML contract and channel come from the page;
  *   `has(name)` is true for the optional members the app gave (core and extension alike).
  */
 export function createHost<Ext extends object = Record<never, never>>(
   init: HostInit<Ext> | (() => HostInit<Ext>),
   base: { signal: AbortSignal; page: FoliwakePageData; shell?: string },
-): BlockHost<Ext> {
+): CreatedHost<Ext> {
   const get: () => HostInit<Ext> = typeof init === 'function' ? init : () => init;
   const { page, signal } = base;
   const shell = base.shell ?? 'web';
@@ -70,13 +76,18 @@ export function createHost<Ext extends object = Record<never, never>>(
       return !(feature in core) && extension(feature) !== undefined;
     },
   };
-  // An extension member as the app gives it now; its functions are bound to the app's object and return
-  // undefined after dispose (no app callback runs once the mount is gone).
+  // An extension member as the app gives it now. A function is a wrapper that looks the member up again at
+  // every call, after the abort check: a block that kept `host.saved` calls the app's latest one, and no app
+  // callback runs once the mount is gone (it returns undefined then, or when the app no longer gives it).
+  const member = (name: string): unknown => (get() as Record<string, unknown>)[name];
   const extension = (name: string): unknown => {
-    const source = get() as Record<string, unknown>;
-    const value = source[name];
-    if (typeof value !== 'function') return value;
-    return (...args: unknown[]) => (signal.aborted ? undefined : (value as (...a: unknown[]) => unknown).apply(source, args));
+    if (typeof member(name) !== 'function') return member(name);
+    return (...args: unknown[]) => {
+      if (signal.aborted) return undefined;
+      const source = get() as Record<string, unknown>;
+      const current = source[name];
+      return typeof current === 'function' ? (current as (...a: unknown[]) => unknown).apply(source, args) : undefined;
+    };
   };
   return new Proxy(core, {
     get(target, name, receiver) {
@@ -86,5 +97,5 @@ export function createHost<Ext extends object = Record<never, never>>(
     has(target, name) {
       return name in target || (typeof name === 'string' && extension(name) !== undefined);
     },
-  }) as BlockHost<Ext>;
+  }) as CreatedHost<Ext>;
 }

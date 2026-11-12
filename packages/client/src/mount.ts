@@ -12,7 +12,7 @@
 //  5. mount → dispose → mount on the same element starts from the pristine body (StrictMode, Fast Refresh,
 //     a framework that keeps the element): the second mount restores page.html.
 //  6. Block CSS is counted per code release (css-registry.ts).
-import type { BlockEvents, BlocksModule, FoliwakeEvent, MountHandle, MountReport } from '@foliwake/blocks-contract';
+import type { BlockEvents, BlockEventType, CoreEventDetails, BlocksModule, FoliwakeEvent, MountHandle, MountReport } from '@foliwake/blocks-contract';
 import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 import { acquireCss } from './css-registry.js';
 import { isDevelopment } from './dev.js';
@@ -69,13 +69,16 @@ export interface FoliwakeHooks {
 }
 
 /** What may change during a mount (`update()`); read at call time. */
-export interface FoliwakeMountCallbacks<Ext extends object = Record<never, never>, Events extends object = BlockEvents> {
+export interface FoliwakeMountCallbacks<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents> {
   /** The app's part of the block host (core members and its extension's); a function is called at every member read. */
   host?: HostInit<Ext> | (() => HostInit<Ext>);
   /** Every block event under the element (`<prefix>:<type>`) of the core types and `events`, as a typed `FoliwakeEvent`. */
   onEvent?: (event: FoliwakeEvent<Events>) => void;
-  /** Event types delivered to `onEvent` besides the core `ready` and `error` (an extension's, the site's own). */
-  events?: readonly string[];
+  /**
+   * Event types of `Events` delivered to `onEvent` besides the core `ready` and `error` (an extension's, the site's
+   * own). A change through `update()` (or a React prop) changes the subscription.
+   */
+  events?: readonly BlockEventType<Events>[];
   /** Without blocks the page is `error` instead of `static`. */
   requireBlocks?: boolean;
   /** Each status change; `reports` (one per block root) once the blocks settled. */
@@ -89,7 +92,7 @@ export interface FoliwakeMountCallbacks<Ext extends object = Record<never, never
 }
 
 /** Options of `mountFoliwakePage`: the page, how to treat the element's body, and the callbacks. */
-export interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events> {
+export interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events> {
   /** The prepared page (from `preparePage` / `readPage` on the server). */
   page: FoliwakePageData;
   /**
@@ -109,7 +112,7 @@ export interface FoliwakeMountOptions<Ext extends object = Record<never, never>,
 }
 
 /** A running mount, returned by `mountFoliwakePage`. */
-export interface FoliwakeMount<Ext extends object = Record<never, never>, Events extends object = BlockEvents> {
+export interface FoliwakeMount<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents> {
   /** The element the page is mounted in. */
   readonly element: HTMLElement;
   /** The current page (the latest one passed to `update`). */
@@ -139,6 +142,8 @@ const mountedOnce = new WeakSet<Element>();
 
 interface Session {
   status: FoliwakePageStatus | 'idle';
+  /** The latest options may name other event types: follow them (no-op before the blocks listen, or when equal). */
+  eventsChanged(): void;
   dispose(): void;
 }
 
@@ -149,7 +154,7 @@ interface Session {
  * @param element - The element that holds (or will hold) the page body, already in the document.
  * @returns The mount: `update()` for new callbacks or another page, `dispose()` on unmount.
  */
-export function mountFoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(
+export function mountFoliwakePage<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents>(
   element: HTMLElement,
   options: FoliwakeMountOptions<Ext, Events>,
 ): FoliwakeMount<Ext, Events> {
@@ -157,7 +162,7 @@ export function mountFoliwakePage<Ext extends object = Record<never, never>, Eve
   const external = options.signal;
   // An already aborted signal: nothing starts (no body change, no import, no callback).
   let disposed = external?.aborted === true;
-  let session: Session = { status: 'idle', dispose() {} };
+  let session: Session = { status: 'idle', eventsChanged() {}, dispose() {} };
   // start() registers its session before it calls any app callback, so a dispose(), an external abort or an
   // update() from inside a callback always reaches the session that is running (never a stale one).
   const begin = () => start(element, () => opts, opts.page, (created) => (session = created));
@@ -183,6 +188,8 @@ export function mountFoliwakePage<Ext extends object = Record<never, never>, Eve
         const mine = ++generation;
         session.dispose();
         if (!disposed && mine === generation) begin();
+      } else if ('events' in next) {
+        session.eventsChanged();
       }
     },
     dispose() {
@@ -216,7 +223,7 @@ export function mountFoliwakePage<Ext extends object = Record<never, never>, Eve
 // the points above the code checks `live()` before going on. This is cooperative, best-effort hygiene against
 // app and page code that re-enters the mount; it is not a sandbox against hostile synchronous page code (which
 // runs with the page's full authority anyway).
-function start<Ext extends object, Events extends object>(container: HTMLElement, latest: () => FoliwakeMountOptions<Ext, Events>, page: FoliwakePageData, register: (session: Session) => void): Session {
+function start<Ext extends object, Events extends CoreEventDetails>(container: HTMLElement, latest: () => FoliwakeMountOptions<Ext, Events>, page: FoliwakePageData, register: (session: Session) => void): Session {
   const controller = new AbortController();
   const { signal } = controller;
   const live = () => !signal.aborted;
@@ -228,8 +235,14 @@ function start<Ext extends object, Events extends object>(container: HTMLElement
       console.error('[foliwake] dispose failed', error);
     }
   };
+  // The event listeners of the blocks: started once the module passed its checks, replaced when the latest
+  // options name other types (follow() is set then).
+  let follow: (() => void) | null = null;
   const session: Session = {
     status: 'idle',
+    eventsChanged() {
+      if (live()) follow?.();
+    },
     dispose() {
       if (signal.aborted) return;
       controller.abort();
@@ -336,16 +349,31 @@ function start<Ext extends object, Events extends object>(container: HTMLElement
       }
       await runHooks('beforeBlocks');
       if (!holdCss(false)) return;
-      const listening = own(() =>
-        listenBlockEvents<Events>(
+      let types = '';
+      let stop: (() => void) | null = null;
+      const subscribe = () => {
+        const wanted = latest().events ?? [];
+        const key = [...new Set(wanted)].sort().join(' ');
+        if (stop && key === types) return;
+        stop?.();
+        types = key;
+        stop = listenBlockEvents<Events, BlockEventType<Events>>(
           container,
           prefix,
           (event) => {
             if (live()) latest().onEvent?.(event);
           },
-          latest().events,
-        ),
-      );
+          wanted,
+        );
+      };
+      const listening = own(() => {
+        subscribe();
+        follow = subscribe;
+        return () => {
+          follow = null;
+          stop?.();
+        };
+      });
       if (!listening) return;
       const host = createHost<Ext>(
         () => {

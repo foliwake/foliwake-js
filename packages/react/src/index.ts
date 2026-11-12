@@ -7,7 +7,7 @@ export { createHost } from './host.js';
 export { FoliwakeProvider, useFoliwakeSettings } from './settings.js';
 export {
   listenBlockEvents, BLOCK_EVENT_TYPES, HOST_CONTRACT_MINOR, cssMounts,
-  type FoliwakeEventHandlers, type FoliwakePageStatus, type FoliwakePageError, type HostInit, type FoliwakeHooks,
+  type FoliwakeEventHandlers, type FoliwakePageStatus, type FoliwakePageError, type HostInit, type CreatedHost, type FoliwakeHooks,
 } from '@foliwake/client';
 export type {
   BlockEventDetail, BlockEvents, BlockEventType, BlockHost, BlocksModule, ContractVersion, FoliwakeEvent, HostCore, MountHandle, MountReport, MountStatus,

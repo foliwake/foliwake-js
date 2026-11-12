@@ -6,12 +6,12 @@
 //  3. The body is a memoised element React never re-renders; a second mount on it (StrictMode, Fast Refresh,
 //     a hidden <Activity>) starts from the pristine body (the client's mount/dispose/mount contract).
 import { memo, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import type { BlockEvents, BlocksModule } from '@foliwake/blocks-contract';
+import type { BlockEvents, CoreEventDetails, BlocksModule } from '@foliwake/blocks-contract';
 import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 import { mountFoliwakePage, pageStylesheets, type FoliwakeMount, type FoliwakeMountCallbacks } from '@foliwake/client';
 
 /** Props of `<FoliwakePage>`: the page, the mount callbacks of `@foliwake/client`, and how to render the body. */
-export interface FoliwakePageProps<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events> {
+export interface FoliwakePageProps<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events> {
   /** The prepared page from the server; its `identity` is the component's key. */
   page: FoliwakePageData;
   /** Build-time mode (later): the blocks module from the app's bundle instead of the code release. */
@@ -44,7 +44,7 @@ const Body = memo(
   (a, b) => a.html === b.html && a.className === b.className && a.tag === b.tag,
 );
 
-const callbacks = <Ext extends object, Events extends object>(props: FoliwakePageProps<Ext, Events>): FoliwakeMountCallbacks<Ext, Events> => ({
+const callbacks = <Ext extends object, Events extends CoreEventDetails>(props: FoliwakePageProps<Ext, Events>): FoliwakeMountCallbacks<Ext, Events> => ({
   host: props.host,
   onEvent: props.onEvent,
   events: props.events,
@@ -55,7 +55,7 @@ const callbacks = <Ext extends object, Events extends object>(props: FoliwakePag
   hooks: props.hooks,
 });
 
-function Mounted<Ext extends object, Events extends object>(props: FoliwakePageProps<Ext, Events>): ReactNode {
+function Mounted<Ext extends object, Events extends CoreEventDetails>(props: FoliwakePageProps<Ext, Events>): ReactNode {
   const { page, as = 'div', className, preloadCss = true } = props;
   const bodyRef = useRef<HTMLElement | null>(null);
   const latest = useRef(props);
@@ -92,6 +92,6 @@ function Mounted<Ext extends object, Events extends object>(props: FoliwakePageP
 }
 
 /** Shows a prepared Foliwake page and mounts its blocks. Remounts only when `page.identity` changes. */
-export function FoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(props: FoliwakePageProps<Ext, Events>): ReactNode {
+export function FoliwakePage<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents>(props: FoliwakePageProps<Ext, Events>): ReactNode {
   return <Mounted key={props.page.identity} {...props} />;
 }

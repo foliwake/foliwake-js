@@ -241,7 +241,7 @@ function createHost<Ext extends object = Record<never, never>>(init: HostInit<Ex
     signal: AbortSignal;
     page: FoliwakePageData;
     shell?: string;
-}): BlockHost<Ext>
+}): CreatedHost<Ext>
 ```
 
 | Parameter | Type | Description |
@@ -249,7 +249,7 @@ function createHost<Ext extends object = Record<never, never>>(init: HostInit<Ex
 | `init` | `HostInit<Ext> \| (() => HostInit<Ext>)` | The app's part of the host, or a function returning it (called at every member read). |
 | `base` | `{ signal: AbortSignal; page: FoliwakePageData; shell?: string; }` | The mount's signal, the page and the default shell. |
 
-**Returns** `BlockHost<Ext>`: A `BlockHost<Ext>` for `mountBlocks`: contract, signal, HTML contract and channel come from the page; `has(name)` is true for the optional members the app gave (core and extension alike).
+**Returns** `CreatedHost<Ext>`: A host for `mountBlocks` (extension members optional, `CreatedHost<Ext>`): contract, signal, HTML contract and channel come from the page; `has(name)` is true for the optional members the app gave (core and extension alike).
 
 #### `cssMounts()`
 
@@ -286,15 +286,15 @@ function importBlocksModule(url: string): Promise<BlocksModule>
 Listens on `target` for the core event types and `types`; returns the function that removes the listeners (idempotent).
 
 ```ts
-function listenBlockEvents<Events extends object = BlockEvents>(target: Element, prefix: string, deliver: (event: FoliwakeEvent<Events>) => void, types?: readonly string[]): () => void
+function listenBlockEvents<Events extends CoreEventDetails = BlockEvents, T extends BlockEventType<Events> = BlockEventType<Events>>(target: Element, prefix: string, deliver: (event: FoliwakeEvent<Events, DeliveredType<Events, T>>) => void, types?: readonly T[]): () => void
 ```
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `target` | `Element` |  |
 | `prefix` | `string` | The event prefix (`app.blocks.eventPrefix`), without the colon. |
-| `deliver` | `(event: FoliwakeEvent<Events>) => void` | Called with each event; native events that are not `CustomEvent`s are ignored. |
-| `types?` | `readonly string[]` | Event types besides the core ones (an extension's, the site's own). |
+| `deliver` | `(event: FoliwakeEvent<Events, DeliveredType<Events, T>>) => void` | Called with each event; native events that are not `CustomEvent`s are ignored. |
+| `types?` | `readonly T[]` | Event types of `Events` besides the core ones (an extension's, the site's own); `deliver` gets those and the core `ready` and `error`. |
 
 **Returns** `() => void`
 
@@ -303,7 +303,7 @@ function listenBlockEvents<Events extends object = BlockEvents>(target: Element,
 Shows `options.page` in `element` and mounts its blocks from the page's own code release. Problems of the blocks (no code release, another contract, a failing module) go to `onError` / `onStatus`; the body stays.
 
 ```ts
-function mountFoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(element: HTMLElement, options: FoliwakeMountOptions<Ext, Events>): FoliwakeMount<Ext, Events>
+function mountFoliwakePage<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents>(element: HTMLElement, options: FoliwakeMountOptions<Ext, Events>): FoliwakeMount<Ext, Events>
 ```
 
 | Parameter | Type | Description |
@@ -352,9 +352,9 @@ function pageStylesheets(page: FoliwakePageData): {
 Block events under `target` to typed handlers by type. `handlers` may be a function returning the current handlers: it is read at event time (latest wins, no re-subscribe). Returns the unsubscribe function.
 
 ```ts
-function subscribeBlockEvents<Events extends object = BlockEvents>(target: Element, handlers: FoliwakeEventHandlers<Events> | (() => FoliwakeEventHandlers<Events>), opts: {
+function subscribeBlockEvents<Events extends CoreEventDetails = BlockEvents, T extends BlockEventType<Events> = BlockEventType<Events>>(target: Element, handlers: FoliwakeEventHandlers<Events> | (() => FoliwakeEventHandlers<Events>), opts: {
     prefix: string;
-    types?: readonly string[];
+    types?: readonly T[];
     signal?: AbortSignal;
 }): () => void
 ```
@@ -363,7 +363,7 @@ function subscribeBlockEvents<Events extends object = BlockEvents>(target: Eleme
 | --- | --- | --- |
 | `target` | `Element` |  |
 | `handlers` | `FoliwakeEventHandlers<Events> \| (() => FoliwakeEventHandlers<Events>)` |  |
-| `opts` | `{ prefix: string; types?: readonly string[]; signal?: AbortSignal; }` | `prefix`: the event prefix, without the colon; `types`: event types besides the core ones; `signal`: aborting it unsubscribes. |
+| `opts` | `{ prefix: string; types?: readonly T[]; signal?: AbortSignal; }` | `prefix`: the event prefix, without the colon; `types`: event types besides the core ones; `signal`: aborting it unsubscribes. |
 
 **Returns** `() => void`
 
@@ -374,7 +374,7 @@ function subscribeBlockEvents<Events extends object = BlockEvents>(target: Eleme
 The core block event types, in a fixed order; an event is `<prefix>:<type>` (for example `demo:ready`).
 
 ```ts
-const BLOCK_EVENT_TYPES: readonly BlockEventType[]
+const BLOCK_EVENT_TYPES: readonly (keyof CoreEventDetails)[]
 ```
 
 #### `HOOK_PHASES`
@@ -428,7 +428,7 @@ interface FoliwakeHooks
 A running mount, returned by `mountFoliwakePage`.
 
 ```ts
-interface FoliwakeMount<Ext extends object = Record<never, never>, Events extends object = BlockEvents>
+interface FoliwakeMount<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents>
 ```
 
 | Member | Type | Description |
@@ -444,14 +444,14 @@ interface FoliwakeMount<Ext extends object = Record<never, never>, Events extend
 What may change during a mount (`update()`); read at call time.
 
 ```ts
-interface FoliwakeMountCallbacks<Ext extends object = Record<never, never>, Events extends object = BlockEvents>
+interface FoliwakeMountCallbacks<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents>
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
 | `host?` | `HostInit<Ext> \| (() => HostInit<Ext>)` | The app's part of the block host (core members and its extension's); a function is called at every member read. |
 | `onEvent?` | `(event: FoliwakeEvent<Events>) => void` | Every block event under the element (`<prefix>:<type>`) of the core types and `events`, as a typed `FoliwakeEvent`. |
-| `events?` | `readonly string[]` | Event types delivered to `onEvent` besides the core `ready` and `error` (an extension's, the site's own). |
+| `events?` | `readonly BlockEventType<Events>[]` | Event types of `Events` delivered to `onEvent` besides the core `ready` and `error` (an extension's, the site's own). A change through `update()` (or a React prop) changes the subscription. |
 | `requireBlocks?` | `boolean` | Without blocks the page is `error` instead of `static`. |
 | `onStatus?` | `(status: FoliwakePageStatus, reports?: MountReport[]) => void` | Each status change; `reports` (one per block root) once the blocks settled. |
 | `onError?` | `(error: FoliwakePageError) => void` | Why blocks are missing or failed (the page still shows its body). |
@@ -463,7 +463,7 @@ interface FoliwakeMountCallbacks<Ext extends object = Record<never, never>, Even
 Options of `mountFoliwakePage`: the page, how to treat the element's body, and the callbacks.
 
 ```ts
-interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events>
+interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events extends CoreEventDetails = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events>
 ```
 
 | Member | Type | Description |
@@ -490,12 +490,20 @@ interface FoliwakePageError
 
 **Types**
 
-#### `FoliwakeEventHandlers`
+#### `CreatedHost`
 
-One optional handler per event type of `Events`, each receiving the typed event.
+The host `createHost` returns: the core, and the extension's members as optional ones (the app may give any of them or none, and may stop giving one; a block checks `has(name)` first).
 
 ```ts
-type FoliwakeEventHandlers<Events extends object = BlockEvents> = {
+type CreatedHost<Ext extends object = Record<never, never>> = BlockHost<Partial<Ext>>
+```
+
+#### `FoliwakeEventHandlers`
+
+One optional handler per event type of `Events` (an event map with the core types), each receiving the typed event.
+
+```ts
+type FoliwakeEventHandlers<Events extends CoreEventDetails = BlockEvents> = {
     [T in BlockEventType<Events>]?: (event: FoliwakeEvent<Events, T>) => void;
 }
 ```
