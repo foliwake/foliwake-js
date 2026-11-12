@@ -11,6 +11,6 @@ export { createHost, HOST_CONTRACT_MINOR, type HostInit } from './host.js';
 export { importBlocksModule } from './load.js';
 export { acquireCss, cssMounts } from './css-registry.js';
 export type {
-  Answer, BlockEventDetail, BlockEventType, BlockHost, BlockReport, BlocksModule, ContractVersion, FoliwakeEvent, MountHandle, SavedAnswer, Verdict,
+  BlockEventDetail, BlockEvents, BlockEventType, BlockHost, BlocksModule, ContractVersion, FoliwakeEvent, HostCore, MountHandle, MountReport, MountStatus,
 } from '@foliwake/blocks-contract';
 export type { ClientSettings, FoliwakePageData } from '@foliwake/blocks-contract/page';

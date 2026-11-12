@@ -6,12 +6,12 @@
 //  3. The body is a memoised element React never re-renders; a second mount on it (StrictMode, Fast Refresh,
 //     a hidden <Activity>) starts from the pristine body (the client's mount/dispose/mount contract).
 import { memo, useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
-import type { BlocksModule } from '@foliwake/blocks-contract';
+import type { BlockEvents, BlocksModule } from '@foliwake/blocks-contract';
 import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 import { mountFoliwakePage, pageStylesheets, type FoliwakeMount, type FoliwakeMountCallbacks } from '@foliwake/client';
 
 /** Props of `<FoliwakePage>`: the page, the mount callbacks of `@foliwake/client`, and how to render the body. */
-export interface FoliwakePageProps extends FoliwakeMountCallbacks {
+export interface FoliwakePageProps<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events> {
   /** The prepared page from the server; its `identity` is the component's key. */
   page: FoliwakePageData;
   /** Build-time mode (later): the blocks module from the app's bundle instead of the code release. */
@@ -24,7 +24,7 @@ export interface FoliwakePageProps extends FoliwakeMountCallbacks {
   className?: string;
 }
 
-type Tag = NonNullable<FoliwakePageProps['as']>;
+type Tag = 'div' | 'article' | 'main' | 'section';
 const useIsoLayoutEffect = typeof document === 'undefined' ? useEffect : useLayoutEffect;
 
 const Body = memo(
@@ -44,9 +44,10 @@ const Body = memo(
   (a, b) => a.html === b.html && a.className === b.className && a.tag === b.tag,
 );
 
-const callbacks = (props: FoliwakePageProps): FoliwakeMountCallbacks => ({
+const callbacks = <Ext extends object, Events extends object>(props: FoliwakePageProps<Ext, Events>): FoliwakeMountCallbacks<Ext, Events> => ({
   host: props.host,
   onEvent: props.onEvent,
+  events: props.events,
   requireBlocks: props.requireBlocks,
   onStatus: props.onStatus,
   onError: props.onError,
@@ -54,11 +55,11 @@ const callbacks = (props: FoliwakePageProps): FoliwakeMountCallbacks => ({
   hooks: props.hooks,
 });
 
-function Mounted(props: FoliwakePageProps): ReactNode {
+function Mounted<Ext extends object, Events extends object>(props: FoliwakePageProps<Ext, Events>): ReactNode {
   const { page, as = 'div', className, preloadCss = true } = props;
   const bodyRef = useRef<HTMLElement | null>(null);
   const latest = useRef(props);
-  const mount = useRef<FoliwakeMount | null>(null);
+  const mount = useRef<FoliwakeMount<Ext, Events> | null>(null);
   useIsoLayoutEffect(() => {
     latest.current = props;
     mount.current?.update(callbacks(props));
@@ -91,6 +92,6 @@ function Mounted(props: FoliwakePageProps): ReactNode {
 }
 
 /** Shows a prepared Foliwake page and mounts its blocks. Remounts only when `page.identity` changes. */
-export function FoliwakePage(props: FoliwakePageProps): ReactNode {
+export function FoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(props: FoliwakePageProps<Ext, Events>): ReactNode {
   return <Mounted key={props.page.identity} {...props} />;
 }

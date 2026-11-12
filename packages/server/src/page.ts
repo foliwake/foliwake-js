@@ -2,7 +2,6 @@
 // (design §6.5, §9.4): check → rewrite media and links → the app's transform → check again.
 import { createHash } from 'node:crypto';
 import type { ChannelName, CodeReleaseId, FoliwakePageData, PageEnvelope } from '@foliwake/blocks-contract/page';
-import type { BlockMode } from '@foliwake/blocks-contract';
 import { appOf, isLoopbackName, pageAllowed, type FoliwakeAppConfig } from './config.js';
 import { CODE_ID_PATTERN, LIMITS, PAGE_PATH_PATTERN } from './constants.js';
 import { FoliwakePageError } from './errors.js';
@@ -18,6 +17,7 @@ const HTML_CONTRACT = /^\d{1,4}$/;
 const LANG = /^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/;
 const PAGE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 const GENERATION = /^[A-Za-z0-9_.:-]{1,128}$/;
+const MODE = /^[a-z][a-z0-9-]{0,31}$/;
 
 /** The origin URL path of a page's body (`/` → `/index.plain.html`). */
 export function plainPath(pagePath: string): string {
@@ -110,8 +110,12 @@ export async function readEnvelope(config: FoliwakeAppConfig, client: OriginClie
 
 /** Options of `preparePage`. */
 export interface PrepareOptions {
-  /** The blocks' mode (default `practice`); `exam` comes later. */
-  mode?: 'practice' | 'review';
+  /**
+   * The site's mode of the page (a token, `[a-z][a-z0-9-]`, at most 32 characters), given to the blocks as
+   * `host.mode`; absent → none. `exam` is refused: the assessment extension's exam needs answers stripped by the
+   * origin, which does not exist yet, so an exam body would carry its answers.
+   */
+  mode?: string;
   /** Root-relative links (`/x`) of `<a href>`; returns the app's URL. */
   rewriteLink?: (href: string) => string;
   /** The app's own change of the body (allow-list, artwork, …); its output is checked again. */
@@ -150,8 +154,9 @@ export function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, cod
  */
 export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, opts: PrepareOptions = {}): FoliwakePageData {
   const app = appOf(config);
-  const mode: BlockMode = opts.mode ?? 'practice';
-  if (mode !== 'practice' && mode !== 'review') throw new FoliwakePageError('not_allowed', `mode ${String(mode)} is not available`);
+  const mode = opts.mode ?? null;
+  if (mode !== null && (typeof mode !== 'string' || !MODE.test(mode))) throw new FoliwakePageError('invalid', `mode must be a token [a-z][a-z0-9-], at most 32 characters`);
+  if (mode === 'exam') throw new FoliwakePageError('not_allowed', 'mode exam is not available (the origin does not strip answers yet)');
   const nodes = checkBody(envelope.html, envelope.path);
   rewrite(nodes, config, envelope.channel, opts.rewriteLink);
   let html = serialize(nodes);
@@ -167,7 +172,7 @@ export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, o
     .digest('base64url')
     .slice(0, 22);
   return {
-    identity: [envelope.site, envelope.channel, envelope.path, envelope.etag ?? '', envelope.codeRelease ?? '', mode, digest].join('|'),
+    identity: [envelope.site, envelope.channel, envelope.path, envelope.etag ?? '', envelope.codeRelease ?? '', mode ?? '', digest].join('|'),
     site: envelope.site,
     channel: envelope.channel,
     path: envelope.path,

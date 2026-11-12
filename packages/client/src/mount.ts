@@ -12,7 +12,7 @@
 //  5. mount → dispose → mount on the same element starts from the pristine body (StrictMode, Fast Refresh,
 //     a framework that keeps the element): the second mount restores page.html.
 //  6. Block CSS is counted per code release (css-registry.ts).
-import type { BlockReport, BlocksModule, FoliwakeEvent, MountHandle } from '@foliwake/blocks-contract';
+import type { BlockEvents, BlocksModule, FoliwakeEvent, MountHandle, MountReport } from '@foliwake/blocks-contract';
 import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 import { acquireCss } from './css-registry.js';
 import { isDevelopment } from './dev.js';
@@ -68,15 +68,17 @@ export interface FoliwakeHooks {
 }
 
 /** What may change during a mount (`update()`); read at call time. */
-export interface FoliwakeMountCallbacks {
-  /** The app's part of the block host; a function is called at every member read. */
-  host?: HostInit | (() => HostInit);
-  /** Every block event under the element (`<prefix>:<type>`), as a typed `FoliwakeEvent`. */
-  onEvent?: (event: FoliwakeEvent) => void;
+export interface FoliwakeMountCallbacks<Ext extends object = Record<never, never>, Events extends object = BlockEvents> {
+  /** The app's part of the block host (core members and its extension's); a function is called at every member read. */
+  host?: HostInit<Ext> | (() => HostInit<Ext>);
+  /** Every block event under the element (`<prefix>:<type>`) of the core types and `events`, as a typed `FoliwakeEvent`. */
+  onEvent?: (event: FoliwakeEvent<Events>) => void;
+  /** Event types delivered to `onEvent` besides the core `ready` and `error` (an extension's, the site's own). */
+  events?: readonly string[];
   /** Without blocks the page is `error` instead of `static`. */
   requireBlocks?: boolean;
   /** Each status change; `reports` (one per block root) once the blocks settled. */
-  onStatus?: (status: FoliwakePageStatus, reports?: BlockReport[]) => void;
+  onStatus?: (status: FoliwakePageStatus, reports?: MountReport[]) => void;
   /** Why blocks are missing or failed (the page still shows its body). */
   onError?: (error: FoliwakePageError) => void;
   /** Imperative app logic on the mounted container (slides, focus). */
@@ -86,7 +88,7 @@ export interface FoliwakeMountCallbacks {
 }
 
 /** Options of `mountFoliwakePage`: the page, how to treat the element's body, and the callbacks. */
-export interface FoliwakeMountOptions extends FoliwakeMountCallbacks {
+export interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events> {
   /** The prepared page (from `preparePage` / `readPage` on the server). */
   page: FoliwakePageData;
   /**
@@ -106,7 +108,7 @@ export interface FoliwakeMountOptions extends FoliwakeMountCallbacks {
 }
 
 /** A running mount, returned by `mountFoliwakePage`. */
-export interface FoliwakeMount {
+export interface FoliwakeMount<Ext extends object = Record<never, never>, Events extends object = BlockEvents> {
   /** The element the page is mounted in. */
   readonly element: HTMLElement;
   /** The current page (the latest one passed to `update`). */
@@ -114,7 +116,7 @@ export interface FoliwakeMount {
   /** The last status reported; 'disposed' after dispose. */
   readonly status: FoliwakePageStatus | 'idle' | 'disposed';
   /** New callbacks or host (latest wins, no remount); a `page` with another identity remounts. */
-  update(next: FoliwakeMountCallbacks & { page?: FoliwakePageData }): void;
+  update(next: FoliwakeMountCallbacks<Ext, Events> & { page?: FoliwakePageData }): void;
   /** Idempotent. Leaves the DOM as it is; no callback runs after it. */
   dispose(): void;
 }
@@ -146,8 +148,11 @@ interface Session {
  * @param element - The element that holds (or will hold) the page body, already in the document.
  * @returns The mount: `update()` for new callbacks or another page, `dispose()` on unmount.
  */
-export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOptions): FoliwakeMount {
-  let opts: FoliwakeMountOptions = { ...options };
+export function mountFoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(
+  element: HTMLElement,
+  options: FoliwakeMountOptions<Ext, Events>,
+): FoliwakeMount<Ext, Events> {
+  let opts: FoliwakeMountOptions<Ext, Events> = { ...options };
   const external = options.signal;
   // An already aborted signal: nothing starts (no body change, no import, no callback).
   let disposed = external?.aborted === true;
@@ -161,7 +166,7 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
   // session is started twice or orphaned.
   let generation = 0;
 
-  const mount: FoliwakeMount = {
+  const mount: FoliwakeMount<Ext, Events> = {
     element,
     get page() {
       return opts.page;
@@ -210,7 +215,7 @@ export function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOp
 // the points above the code checks `live()` before going on. This is cooperative, best-effort hygiene against
 // app and page code that re-enters the mount; it is not a sandbox against hostile synchronous page code (which
 // runs with the page's full authority anyway).
-function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page: FoliwakePageData, register: (session: Session) => void): Session {
+function start<Ext extends object, Events extends object>(container: HTMLElement, latest: () => FoliwakeMountOptions<Ext, Events>, page: FoliwakePageData, register: (session: Session) => void): Session {
   const controller = new AbortController();
   const { signal } = controller;
   const live = () => !signal.aborted;
@@ -244,7 +249,7 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
   register(session);
   const aborted = new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve(), { once: true }));
 
-  const status = (s: FoliwakePageStatus, reports?: BlockReport[]) => {
+  const status = (s: FoliwakePageStatus, reports?: MountReport[]) => {
     if (!live()) return;
     session.status = s;
     latest().onStatus?.(s, reports);
@@ -329,12 +334,17 @@ function start(container: HTMLElement, latest: () => FoliwakeMountOptions, page:
       await runHooks('beforeBlocks');
       if (!holdCss(false)) return;
       const listening = own(() =>
-        listenBlockEvents(container, prefix, (event) => {
-          if (live()) latest().onEvent?.(event);
-        }),
+        listenBlockEvents<Events>(
+          container,
+          prefix,
+          (event) => {
+            if (live()) latest().onEvent?.(event);
+          },
+          latest().events,
+        ),
       );
       if (!listening) return;
-      const host = createHost(
+      const host = createHost<Ext>(
         () => {
           const init = latest().host;
           return (typeof init === 'function' ? init() : init) ?? {};

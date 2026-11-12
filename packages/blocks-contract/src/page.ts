@@ -1,6 +1,6 @@
 // Page types shared by @foliwake/server (which produces them) and @foliwake/client / @foliwake/react (which show
 // them), so the browser packages' declarations never import the server package.
-import type { BlockMode, ChannelName } from './index.js';
+import type { ChannelName } from './index.js';
 
 export type { ChannelName } from './index.js';
 
@@ -38,7 +38,8 @@ export interface FoliwakePageData {
   site: string;
   channel: ChannelName;
   path: string;
-  mode: BlockMode;
+  /** The site's mode of the page (`PrepareOptions.mode`), or null. */
+  mode: string | null;
   /** Prepared: checked, rewritten, transformed, checked again. */
   html: string;
   codeRelease: CodeReleaseId | null;

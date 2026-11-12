@@ -364,7 +364,7 @@ interface ReadPageOptions extends PrepareOptions
 
 **Also exported** (documented where they are defined)
 
-- from `@foliwake/blocks-contract`: `Answer`, `BlockEventDetail`, `BlockEventType`, `BlockHost`, `BlockReport`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `MountHandle`, `SavedAnswer`, `Verdict`
+- from `@foliwake/blocks-contract`: `BlockEventDetail`, `BlockEvents`, `BlockEventType`, `BlockHost`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `HostCore`, `MountHandle`, `MountReport`, `MountStatus`
 - from `@foliwake/blocks-contract/page`: `ClientSettings`, `FoliwakePageData`
 - from `@foliwake/client`: `BLOCK_EVENT_TYPES`, `cssMounts`, `FoliwakeEventHandlers`, `FoliwakeHooks`, `FoliwakePageError`, `FoliwakePageStatus`, `HOST_CONTRACT_MINOR`, `HostInit`, `listenBlockEvents`
 - from `@foliwake/react`: `createHost`, `FoliwakePage`, `FoliwakePageProps`, `FoliwakeProvider`, `useFoliwakeEvents`, `useFoliwakeSettings`

@@ -55,25 +55,31 @@ the body stays readable, the status is `static` and `onError` says why.
 
 ### Give blocks a host and save their answers
 
-The host is your app's side of the blocks contract: labels for block chrome, saved answers, analytics. A
-function as `host` is read again at every access, so newer data takes effect without a remount.
+The host is your app's side of the blocks contract: labels for block chrome, analytics, and the members of an
+extension your blocks speak. The core events are `ready` and `error`; name the other types you want in
+`events`. A site with exercises types its host and events with `@foliwake/blocks-contract/assessment` (saved
+answers, `answer` events). A function as `host` is read again at every access, so newer data takes effect
+without a remount.
 
 ```ts
-import { mountFoliwakePage, type FoliwakeEvent, type FoliwakePageData, type SavedAnswer } from '@foliwake/client';
+import { mountFoliwakePage, type FoliwakePageData } from '@foliwake/client';
+import type { AssessmentEvents, AssessmentHostMembers, SavedAnswer } from '@foliwake/blocks-contract/assessment';
 
 declare const page: FoliwakePageData;
 const answers = new Map<string, SavedAnswer>();
 
-const mount = mountFoliwakePage(document.querySelector<HTMLElement>('#lesson')!, {
+const mount = mountFoliwakePage<AssessmentHostMembers, AssessmentEvents>(document.querySelector<HTMLElement>('#lesson')!, {
   page,
   host: () => ({
+    mode: 'practice',
     labels: { check: 'Check', retry: 'Try again' },
     saved: (key) => answers.get(key) ?? null,
     track: (name, data) => console.debug('track', name, data),
   }),
-  onEvent: (event: FoliwakeEvent) => {
+  events: ['select', 'check', 'answer', 'reset', 'complete'],
+  onEvent: (event) => {
     if (event.type !== 'answer') return;
-    const { key, selected, correct } = (event as FoliwakeEvent<'answer'>).detail;
+    const { key, selected, correct } = event.detail;
     answers.set(key, { selected, correct });
     void fetch('/api/answers', { method: 'POST', body: JSON.stringify({ key, selected, correct }) });
   },
@@ -105,18 +111,20 @@ view.abort();                                            // same as mount.dispos
 
 `subscribeBlockEvents` routes `<prefix>:<type>` events under any element to typed handlers, for example a
 progress bar next to the page. The prefix is the config's `app.blocks.eventPrefix` (`clientSettings(config)`
-on the server gives it to the browser).
+on the server gives it to the browser); `types` names the event types besides the core `ready` and `error`.
 
 ```ts
 import { subscribeBlockEvents } from '@foliwake/client';
+import type { AssessmentEvents } from '@foliwake/blocks-contract/assessment';
 
-const stop = subscribeBlockEvents(
+const stop = subscribeBlockEvents<AssessmentEvents>(
   document.querySelector('#lesson')!,
   {
     answer: (event) => console.log(event.detail.key, event.detail.correct),
     complete: (event) => console.log('done:', event.detail.block),
+    error: (event) => console.warn(event.detail.code),
   },
-  { prefix: 'demo' },
+  { prefix: 'demo', types: ['answer', 'complete'] },
 );
 // later: stop()
 ```
@@ -153,7 +161,7 @@ customElements.define('foliwake-page', FoliwakePageElement);
 | | |
 | --- | --- |
 | Browsers | ES2022 with dynamic `import()` (tested in Chrome) |
-| Blocks contract | `foliwake-blocks/1` (host minor 1) |
+| Blocks contract | `foliwake-blocks/2` (host minor 0) |
 | Page data | from `@foliwake/server` or `@foliwake/next` of the same version |
 | Frameworks | none required; React 19.2+ through `@foliwake/react` |
 
@@ -209,19 +217,19 @@ function acquireCss(doc: Document, codeRelease: string): () => void
 The host a page's blocks receive. `init` (or what it returns) is read at every call. `base.shell` is the shell named when the app names none (default `'web'`; the React package passes `'react'`).
 
 ```ts
-function createHost(init: HostInit | (() => HostInit), base: {
+function createHost<Ext extends object = Record<never, never>>(init: HostInit<Ext> | (() => HostInit<Ext>), base: {
     signal: AbortSignal;
     page: FoliwakePageData;
     shell?: string;
-}): BlockHost
+}): BlockHost<Ext>
 ```
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `init` | `HostInit \| (() => HostInit)` | The app's part of the host, or a function returning it (called at every member read). |
+| `init` | `HostInit<Ext> \| (() => HostInit<Ext>)` | The app's part of the host, or a function returning it (called at every member read). |
 | `base` | `{ signal: AbortSignal; page: FoliwakePageData; shell?: string; }` | The mount's signal, the page and the default shell. |
 
-**Returns** `BlockHost`: A `BlockHost` for `mountBlocks`: contract, signal, HTML contract and channel come from the page; `has(name)` is true for the optional members the app gave.
+**Returns** `BlockHost<Ext>`: A `BlockHost<Ext>` for `mountBlocks`: contract, signal, HTML contract and channel come from the page; `has(name)` is true for the optional members the app gave (core and extension alike).
 
 #### `cssMounts()`
 
@@ -245,17 +253,18 @@ function importBlocksModule(url: string): Promise<BlocksModule>
 
 #### `listenBlockEvents()`
 
-Listens on `target` for every block event type; returns the function that removes the listeners (idempotent).
+Listens on `target` for the core event types and `types`; returns the function that removes the listeners (idempotent).
 
 ```ts
-function listenBlockEvents(target: Element, prefix: string, deliver: (event: FoliwakeEvent) => void): () => void
+function listenBlockEvents<Events extends object = BlockEvents>(target: Element, prefix: string, deliver: (event: FoliwakeEvent<Events>) => void, types?: readonly string[]): () => void
 ```
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `target` | `Element` |  |
 | `prefix` | `string` | The event prefix (`app.blocks.eventPrefix`), without the colon. |
-| `deliver` | `(event: FoliwakeEvent) => void` | Called with each event; native events that are not `CustomEvent`s are ignored. |
+| `deliver` | `(event: FoliwakeEvent<Events>) => void` | Called with each event; native events that are not `CustomEvent`s are ignored. |
+| `types?` | `readonly string[]` | Event types besides the core ones (an extension's, the site's own). |
 
 **Returns** `() => void`
 
@@ -264,15 +273,15 @@ function listenBlockEvents(target: Element, prefix: string, deliver: (event: Fol
 Shows `options.page` in `element` and mounts its blocks from the page's own code release. Problems of the blocks (no code release, another contract, a failing module) go to `onError` / `onStatus`; the body stays.
 
 ```ts
-function mountFoliwakePage(element: HTMLElement, options: FoliwakeMountOptions): FoliwakeMount
+function mountFoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(element: HTMLElement, options: FoliwakeMountOptions<Ext, Events>): FoliwakeMount<Ext, Events>
 ```
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `element` | `HTMLElement` | The element that holds (or will hold) the page body, already in the document. |
-| `options` | `FoliwakeMountOptions` |  |
+| `options` | `FoliwakeMountOptions<Ext, Events>` |  |
 
-**Returns** `FoliwakeMount`: The mount: `update()` for new callbacks or another page, `dispose()` on unmount.
+**Returns** `FoliwakeMount<Ext, Events>`: The mount: `update()` for new callbacks or another page, `dispose()` on unmount.
 
 #### `pageIdentity()`
 
@@ -303,8 +312,9 @@ function pageStylesheets(page: FoliwakePageData): {
 Block events under `target` to typed handlers by type. `handlers` may be a function returning the current handlers: it is read at event time (latest wins, no re-subscribe). Returns the unsubscribe function.
 
 ```ts
-function subscribeBlockEvents(target: Element, handlers: FoliwakeEventHandlers | (() => FoliwakeEventHandlers), opts: {
+function subscribeBlockEvents<Events extends object = BlockEvents>(target: Element, handlers: FoliwakeEventHandlers<Events> | (() => FoliwakeEventHandlers<Events>), opts: {
     prefix: string;
+    types?: readonly string[];
     signal?: AbortSignal;
 }): () => void
 ```
@@ -312,8 +322,8 @@ function subscribeBlockEvents(target: Element, handlers: FoliwakeEventHandlers |
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `target` | `Element` |  |
-| `handlers` | `FoliwakeEventHandlers \| (() => FoliwakeEventHandlers)` |  |
-| `opts` | `{ prefix: string; signal?: AbortSignal; }` | `prefix`: the event prefix, without the colon; `signal`: aborting it unsubscribes. |
+| `handlers` | `FoliwakeEventHandlers<Events> \| (() => FoliwakeEventHandlers<Events>)` |  |
+| `opts` | `{ prefix: string; types?: readonly string[]; signal?: AbortSignal; }` | `prefix`: the event prefix, without the colon; `types`: event types besides the core ones; `signal`: aborting it unsubscribes. |
 
 **Returns** `() => void`
 
@@ -321,7 +331,7 @@ function subscribeBlockEvents(target: Element, handlers: FoliwakeEventHandlers |
 
 #### `BLOCK_EVENT_TYPES`
 
-Every block event type, in a fixed order; an event is `<prefix>:<type>` (for example `demo:answer`).
+The core block event types, in a fixed order; an event is `<prefix>:<type>` (for example `demo:ready`).
 
 ```ts
 const BLOCK_EVENT_TYPES: readonly BlockEventType[]
@@ -337,10 +347,10 @@ const HOOK_PHASES: readonly ["beforeBlocks", "afterFirstSection", "lazy", "delay
 
 #### `HOST_CONTRACT_MINOR`
 
-The contract minor this package speaks (foliwake-blocks/1.1: `BLOCKS_CONTRACT.eventPrefix`).
+The contract minor this package speaks.
 
 ```ts
-const HOST_CONTRACT_MINOR = 1
+const HOST_CONTRACT_MINOR = 0
 ```
 
 **Interfaces**
@@ -378,7 +388,7 @@ interface FoliwakeHooks
 A running mount, returned by `mountFoliwakePage`.
 
 ```ts
-interface FoliwakeMount
+interface FoliwakeMount<Ext extends object = Record<never, never>, Events extends object = BlockEvents>
 ```
 
 | Member | Type | Description |
@@ -386,7 +396,7 @@ interface FoliwakeMount
 | `readonly element` | `HTMLElement` | The element the page is mounted in. |
 | `readonly page` | `FoliwakePageData` | The current page (the latest one passed to `update`). |
 | `readonly status` | `FoliwakePageStatus \| 'idle' \| 'disposed'` | The last status reported; 'disposed' after dispose. |
-| `update()` | `(next: FoliwakeMountCallbacks & { page?: FoliwakePageData; }) => void` | New callbacks or host (latest wins, no remount); a `page` with another identity remounts. |
+| `update()` | `(next: FoliwakeMountCallbacks<Ext, Events> & { page?: FoliwakePageData; }) => void` | New callbacks or host (latest wins, no remount); a `page` with another identity remounts. |
 | `dispose()` | `() => void` | Idempotent. Leaves the DOM as it is; no callback runs after it. |
 
 #### `FoliwakeMountCallbacks`
@@ -394,15 +404,16 @@ interface FoliwakeMount
 What may change during a mount (`update()`); read at call time.
 
 ```ts
-interface FoliwakeMountCallbacks
+interface FoliwakeMountCallbacks<Ext extends object = Record<never, never>, Events extends object = BlockEvents>
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `host?` | `HostInit \| (() => HostInit)` | The app's part of the block host; a function is called at every member read. |
-| `onEvent?` | `(event: FoliwakeEvent) => void` | Every block event under the element (`<prefix>:<type>`), as a typed `FoliwakeEvent`. |
+| `host?` | `HostInit<Ext> \| (() => HostInit<Ext>)` | The app's part of the block host (core members and its extension's); a function is called at every member read. |
+| `onEvent?` | `(event: FoliwakeEvent<Events>) => void` | Every block event under the element (`<prefix>:<type>`) of the core types and `events`, as a typed `FoliwakeEvent`. |
+| `events?` | `readonly string[]` | Event types delivered to `onEvent` besides the core `ready` and `error` (an extension's, the site's own). |
 | `requireBlocks?` | `boolean` | Without blocks the page is `error` instead of `static`. |
-| `onStatus?` | `(status: FoliwakePageStatus, reports?: BlockReport[]) => void` | Each status change; `reports` (one per block root) once the blocks settled. |
+| `onStatus?` | `(status: FoliwakePageStatus, reports?: MountReport[]) => void` | Each status change; `reports` (one per block root) once the blocks settled. |
 | `onError?` | `(error: FoliwakePageError) => void` | Why blocks are missing or failed (the page still shows its body). |
 | `onMount?` | `(container: HTMLElement, handle: MountHandle) => void` | Imperative app logic on the mounted container (slides, focus). |
 | `hooks?` | `FoliwakeHooks` | Lifecycle hooks by phase, site-level then template-level (FoliwakeHooks). |
@@ -412,7 +423,7 @@ interface FoliwakeMountCallbacks
 Options of `mountFoliwakePage`: the page, how to treat the element's body, and the callbacks.
 
 ```ts
-interface FoliwakeMountOptions extends FoliwakeMountCallbacks
+interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events>
 ```
 
 | Member | Type | Description |
@@ -441,11 +452,11 @@ interface FoliwakePageError
 
 #### `FoliwakeEventHandlers`
 
-One optional handler per block event type, each receiving the typed event.
+One optional handler per event type of `Events`, each receiving the typed event.
 
 ```ts
-type FoliwakeEventHandlers = {
-    [T in BlockEventType]?: (event: FoliwakeEvent<T>) => void;
+type FoliwakeEventHandlers<Events extends object = BlockEvents> = {
+    [T in BlockEventType<Events>]?: (event: FoliwakeEvent<Events, T>) => void;
 }
 ```
 
@@ -485,15 +496,15 @@ type FoliwakePhaseHooks = {
 
 #### `HostInit`
 
-The app's part of the host; mountFoliwakePage fills contract, signal, htmlContract, channel and has.
+The app's part of the host: the core members it may set, and the members of its extension (`Ext`).
 
 ```ts
-type HostInit = Partial<Omit<BlockHost, 'signal' | 'contract' | 'htmlContract' | 'channel' | 'has'>>
+type HostInit<Ext extends object = Record<never, never>> = Partial<Omit<HostCore, 'signal' | 'contract' | 'htmlContract' | 'channel' | 'has'>> & Partial<Ext>
 ```
 
 **Also exported** (documented where they are defined)
 
-- from `@foliwake/blocks-contract`: `Answer`, `BlockEventDetail`, `BlockEventType`, `BlockHost`, `BlockReport`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `MountHandle`, `SavedAnswer`, `Verdict`
+- from `@foliwake/blocks-contract`: `BlockEventDetail`, `BlockEvents`, `BlockEventType`, `BlockHost`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `HostCore`, `MountHandle`, `MountReport`, `MountStatus`
 - from `@foliwake/blocks-contract/page`: `ClientSettings`, `FoliwakePageData`
 
 <!-- apistop -->

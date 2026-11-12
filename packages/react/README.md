@@ -47,26 +47,30 @@ handled.
 
 ### Pass a host with saved answers, and save new ones
 
-The host is your app's side of the blocks contract. `saved(key)` restores an answer, `labels` translate block
-chrome, `track` takes analytics, and `react` lets blocks that render with React use your app's React instead
-of loading their own.
+The host is your app's side of the blocks contract. `labels` translate block chrome, `track` takes analytics,
+and `react` lets blocks that render with React use your app's React instead of loading their own. A site with
+exercises adds the assessment extension (`@foliwake/blocks-contract/assessment`): `saved(key)` restores an
+answer, and its event types (named in `events`) report new ones.
 
 ```tsx
 'use client';
 import { createElement, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { FoliwakePage, type FoliwakeEvent, type FoliwakePageData, type SavedAnswer } from '@foliwake/react';
+import { FoliwakePage, type FoliwakeEvent, type FoliwakePageData } from '@foliwake/react';
+import type { AssessmentEvents, AssessmentHostMembers, SavedAnswer } from '@foliwake/blocks-contract/assessment';
+
+const ASSESSMENT_EVENTS = ['select', 'check', 'answer', 'reset', 'complete'];
 
 export function Lesson({ page, initial }: { page: FoliwakePageData; initial: Record<string, SavedAnswer> }) {
   const [answers, setAnswers] = useState(initial);
-  const onEvent = (event: FoliwakeEvent) => {
+  const onEvent = (event: FoliwakeEvent<AssessmentEvents>) => {
     if (event.type !== 'answer') return;
-    const { key, selected, correct } = (event as FoliwakeEvent<'answer'>).detail;
+    const { key, selected, correct } = event.detail;
     setAnswers((all) => ({ ...all, [key]: { selected, correct } }));
     void fetch('/api/answers', { method: 'POST', body: JSON.stringify({ key, selected, correct }) });
   };
   return (
-    <FoliwakePage
+    <FoliwakePage<AssessmentHostMembers, AssessmentEvents>
       page={page}
       host={{
         mode: 'practice',
@@ -74,6 +78,7 @@ export function Lesson({ page, initial }: { page: FoliwakePageData; initial: Rec
         saved: (key) => answers[key] ?? null,
         react: { createElement, createRoot },
       }}
+      events={ASSESSMENT_EVENTS}
       onEvent={onEvent}
     />
   );
@@ -91,15 +96,16 @@ handlers are read at event time, so they can use the latest state without re-sub
 'use client';
 import { useRef, useState } from 'react';
 import { FoliwakePage, useFoliwakeEvents, useFoliwakeSettings, type FoliwakePageData } from '@foliwake/react';
+import type { AssessmentEvents } from '@foliwake/blocks-contract/assessment';
 
 export function LessonWithProgress({ page }: { page: FoliwakePageData }) {
   const ref = useRef<HTMLDivElement>(null);
   const [done, setDone] = useState<string[]>([]);
   const prefix = useFoliwakeSettings()?.blocks.eventPrefix ?? page.contract.eventPrefix;
-  useFoliwakeEvents(ref, {
+  useFoliwakeEvents<AssessmentEvents>(ref, {
     answer: (event) => console.log(event.detail.key, event.detail.correct ? 'correct' : 'wrong'),
     complete: (event) => setDone((keys) => [...keys, event.detail.key]),
-  }, { prefix });
+  }, { prefix, types: ['answer', 'complete'] });
   return (
     <div ref={ref}>
       <p>{done.length} blocks completed</p>
@@ -148,7 +154,7 @@ Statuses: `mounting`, then `ready`, `partial` (some blocks failed) or `static` (
 | --- | --- |
 | React | 19.2 or newer (peer `^19.2.0`; tested with 19.3.0) |
 | Browsers | ES2022 with dynamic `import()` (tested in Chrome) |
-| Blocks contract | `foliwake-blocks/1` |
+| Blocks contract | `foliwake-blocks/2` |
 | Page data | from `@foliwake/server` or `@foliwake/next` of the same version |
 
 The package is marked `'use client'`. Rendering on the server is safe: the body is rendered as HTML and
@@ -187,20 +193,20 @@ License: Apache-2.0.
 `createHost` of `@foliwake/client` with the shell `'react'` when the app names none.
 
 ```ts
-function createHost(init: HostInit | (() => HostInit), base: {
+function createHost<Ext extends object = Record<never, never>>(init: HostInit<Ext> | (() => HostInit<Ext>), base: {
     signal: AbortSignal;
     page: FoliwakePageData;
-}): BlockHost
+}): BlockHost<Ext>
 ```
 
-**Returns** `BlockHost`
+**Returns** `BlockHost<Ext>`
 
 #### `FoliwakePage()`
 
 Shows a prepared Foliwake page and mounts its blocks. Remounts only when `page.identity` changes.
 
 ```ts
-function FoliwakePage(props: FoliwakePageProps): ReactNode
+function FoliwakePage<Ext extends object = Record<never, never>, Events extends object = BlockEvents>(props: FoliwakePageProps<Ext, Events>): ReactNode
 ```
 
 **Returns** `ReactNode`
@@ -220,11 +226,12 @@ function FoliwakeProvider(props: {
 
 #### `useFoliwakeEvents()`
 
-Block events under `target` to typed handlers; handlers are read at event time (latest wins, no re-subscribe).
+Block events under `target` to typed handlers; handlers are read at event time (latest wins, no re-subscribe). `opts.types`: event types besides the core `ready` and `error`.
 
 ```ts
-function useFoliwakeEvents(target: RefObject<Element | null>, handlers: FoliwakeEventHandlers, opts: {
+function useFoliwakeEvents<Events extends object = BlockEvents>(target: RefObject<Element | null>, handlers: FoliwakeEventHandlers<Events>, opts: {
     prefix: string;
+    types?: readonly string[];
 }): void
 ```
 
@@ -247,7 +254,7 @@ function useFoliwakeSettings(): ClientSettings | null
 Props of `<FoliwakePage>`: the page, the mount callbacks of `@foliwake/client`, and how to render the body.
 
 ```ts
-interface FoliwakePageProps extends FoliwakeMountCallbacks
+interface FoliwakePageProps<Ext extends object = Record<never, never>, Events extends object = BlockEvents> extends FoliwakeMountCallbacks<Ext, Events>
 ```
 
 | Member | Type | Description |
@@ -260,7 +267,7 @@ interface FoliwakePageProps extends FoliwakeMountCallbacks
 
 **Also exported** (documented where they are defined)
 
-- from `@foliwake/blocks-contract`: `Answer`, `BlockEventDetail`, `BlockEventType`, `BlockHost`, `BlockReport`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `MountHandle`, `SavedAnswer`, `Verdict`
+- from `@foliwake/blocks-contract`: `BlockEventDetail`, `BlockEvents`, `BlockEventType`, `BlockHost`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `HostCore`, `MountHandle`, `MountReport`, `MountStatus`
 - from `@foliwake/blocks-contract/page`: `ClientSettings`, `FoliwakePageData`
 - from `@foliwake/client`: `BLOCK_EVENT_TYPES`, `cssMounts`, `FoliwakeEventHandlers`, `FoliwakeHooks`, `FoliwakePageError`, `FoliwakePageStatus`, `HOST_CONTRACT_MINOR`, `HostInit`, `listenBlockEvents`
 

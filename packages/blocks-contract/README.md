@@ -2,16 +2,20 @@
 
 <!-- usage -->
 
-`@foliwake/blocks-contract` holds the TypeScript types of the Foliwake blocks contract `foliwake-blocks/1`:
-what a site's blocks module exports (`BLOCKS_CONTRACT`, `mountBlocks`), the host an app gives every block,
-the block events, and the page types that `@foliwake/server` produces and `@foliwake/client` /
-`@foliwake/react` consume. It has no runtime code. Use it when you write a blocks module or a block host by
-hand, or when your own code passes pages between server and browser; the other packages re-export the types
-you usually need.
+`@foliwake/blocks-contract` holds the TypeScript types of the Foliwake blocks contract `foliwake-blocks/2`:
+what a site's blocks module exports (`BLOCKS_CONTRACT`, `mountBlocks`) and what each block's module exports
+(`init(root, host, meta)`), the host an app gives every block, the block events, and the page types that
+`@foliwake/server` produces and `@foliwake/client` / `@foliwake/react` consume. It has no runtime code.
+
+The core knows no kind of site: its host has the language, labels, theme, motion preference, channel, media
+and a signal; its events are `ready` and `error`, each carrying `key` and `block`. A kind of site extends it
+with `BlockHost<Ext>` and `BlockEvents<Ext>`. The package ships one such extension, `/assessment`, for blocks
+that ask and grade (answers, verdicts, saved answers, `answer` and `complete` events).
 
 | Entry | Types |
 | --- | --- |
-| `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `BlockReport`, `BlockHost`, `HostReact`, answers and verdicts, `BlockEventType`, `BlockEventDetails`, `FoliwakeEvent` |
+| `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `MountReport`, `MountStatus`, `BlockInit`, `BlockMeta`, `BlockHandle`, `BlockHost`, `HostCore`, `HostReact`, `BlockEvents`, `BlockEventDetail`, `FoliwakeEvent` |
+| `@foliwake/blocks-contract/assessment` | `AssessmentHost`, `AssessmentHostMembers`, `AssessmentEvents`, `AssessmentMode`, `Answer`, `SavedAnswer`, `Verdict` |
 | `@foliwake/blocks-contract/page` | `PageEnvelope` (the origin's answer, the only thing an app caches), `FoliwakePageData` (the prepared page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex` |
 
 A change here is a contract change: minor versions of the contract only add.
@@ -46,31 +50,56 @@ export function describe(page: FoliwakePageData, blocks: BlocksModule): string {
 
 ## Examples
 
+### Write a block's init by hand
+
+A block's module exports `init(root, host, meta)` as its default; the loader calls it once per root with the
+page's host and what `components/components.json` says about the block (its name and its `ui` labels). The
+block-kit's `defineBlock` writes it for you; by hand it looks like this.
+
+```ts
+// components/note/note.ts (compiled to note.js)
+import type { BlockEventDetail, BlockEvents, BlockInit } from '@foliwake/blocks-contract';
+
+const init: BlockInit = (root, host, meta) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = host.labels?.more ?? meta?.ui?.[host.uiLang]?.more ?? 'More';
+  button.addEventListener('click', () => root.classList.toggle('open'), { signal: host.signal });
+  root.append(button);
+  const detail: BlockEventDetail<BlockEvents, 'ready'> = { key: host.keyOf(root), block: meta?.name ?? 'note', contract: 2 };
+  root.dispatchEvent(new CustomEvent('block:ready', { detail, bubbles: true }));
+  return { dispose: () => button.remove() };
+};
+export default init;
+```
+
 ### Write a blocks module
 
 A code release's blocks module (`app.blocks.entry`, for example `scripts/blocks.js`) exports
 `BLOCKS_CONTRACT` and `mountBlocks`. `mountBlocks` mounts every `[data-component]` root in the container and
-returns a handle; blocks emit `<prefix>:<type>` events that bubble from their root.
+returns a handle; blocks emit `<prefix>:<type>` events that bubble from their root. This one speaks the
+assessment extension: it restores saved answers and reports new ones.
 
 ```ts
 // scripts/blocks.ts (compiled to scripts/blocks.js in the site's code)
-import type { BlockEventDetail, BlockHost, BlockReport, BlocksModule, MountHandle } from '@foliwake/blocks-contract';
+import type { BlockEventDetail, BlocksModule, MountHandle, MountReport } from '@foliwake/blocks-contract';
+import type { AssessmentEvents, AssessmentHost } from '@foliwake/blocks-contract/assessment';
 
 const PREFIX = 'demo';
 
-export const BLOCKS_CONTRACT: BlocksModule['BLOCKS_CONTRACT'] = { major: 1, minor: 1, eventPrefix: PREFIX };
+export const BLOCKS_CONTRACT: BlocksModule['BLOCKS_CONTRACT'] = { major: 2, minor: 0, eventPrefix: PREFIX };
 
-export function mountBlocks(container: Element, host?: BlockHost): MountHandle {
+export function mountBlocks(container: Element, host?: AssessmentHost): MountHandle {
   const cleanups: (() => void)[] = [];
-  const reports: BlockReport[] = [];
+  const reports: MountReport[] = [];
   for (const root of container.querySelectorAll<HTMLElement>('[data-component="choice"]')) {
     const key = host?.keyOf(root) ?? root.dataset.blockKey ?? '';
-    const restored = host?.saved?.(key) ?? null;
+    const restored = host?.has('saved') ? host.saved?.(key) ?? null : null;
     if (restored) root.dataset.selected = restored.selected.join(' ');
     const onClick = (event: Event) => {
       const option = (event.target as Element).closest<HTMLElement>('[data-option]');
       if (!option || host?.signal.aborted) return;
-      const detail: BlockEventDetail<'answer'> = { key, block: 'choice', selected: [option.dataset.option!], correct: null, graded: 'local' };
+      const detail: BlockEventDetail<AssessmentEvents, 'answer'> = { key, block: 'choice', selected: [option.dataset.option!], correct: null, graded: 'local' };
       root.dispatchEvent(new CustomEvent(`${PREFIX}:answer`, { detail, bubbles: true }));
     };
     root.addEventListener('click', onClick);
@@ -90,29 +119,33 @@ export default { BLOCKS_CONTRACT, mountBlocks } satisfies BlocksModule;
 ### Write a host by hand
 
 `@foliwake/client` builds the host for you (`createHost`). Without it, an app gives every block an object of
-this shape; the optional members it has are announced by `has(name)`.
+this shape; the optional members it has are announced by `has(name)`. Its own extension is a type argument.
 
 ```ts
-import type { BlockHost, SavedAnswer } from '@foliwake/blocks-contract';
+import type { BlockHost } from '@foliwake/blocks-contract';
 import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 
-export function makeHost(page: FoliwakePageData, signal: AbortSignal, answers: Map<string, SavedAnswer>): BlockHost {
+/** This app's extension: where to send feedback. */
+interface FeedbackMembers {
+  feedback?(key: string, text: string): void;
+}
+
+export function makeHost(page: FoliwakePageData, signal: AbortSignal): BlockHost<FeedbackMembers> {
+  const optional = new Set(['labels', 'signal', 'channel', 'feedback']);
   return {
-    contract: { major: 1, minor: 1 },
+    contract: { major: 2, minor: 0 },
     shell: 'my-app',
     htmlContract: page.htmlContract,
     channel: page.channel,
-    mode: page.mode,
     lang: page.lang ?? (document.documentElement.lang || 'en'),
     uiLang: 'en',
-    labels: { check: 'Check' },
+    labels: { more: 'More' },
     theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     signal,
-    policy: {},
     keyOf: (root) => root.getAttribute('data-block-key') ?? '',
-    saved: (key) => answers.get(key) ?? null,
-    has: (feature) => feature === 'saved' || feature === 'labels' || feature === 'signal' || feature === 'channel',
+    feedback: (key, text) => void fetch('/api/feedback', { method: 'POST', body: JSON.stringify({ key, text }) }),
+    has: (feature) => optional.has(feature),
   };
 }
 ```
@@ -120,15 +153,21 @@ export function makeHost(page: FoliwakePageData, signal: AbortSignal, answers: M
 ### Type events and pages in your own code
 
 ```ts
-import type { BlockEventType, FoliwakeEvent } from '@foliwake/blocks-contract';
+import type { BlockEvents, BlockEventType, FoliwakeEvent } from '@foliwake/blocks-contract';
+import type { AssessmentEvents } from '@foliwake/blocks-contract/assessment';
 import type { FoliwakePageData, PageEnvelope } from '@foliwake/blocks-contract/page';
 
 /** A handler for one event type gets that type's detail. */
-export function onAnswer(event: FoliwakeEvent<'answer'>): void {
+export function onAnswer(event: FoliwakeEvent<AssessmentEvents, 'answer'>): void {
   console.log(event.detail.key, event.detail.selected, event.detail.graded);
 }
 
-export const interesting: BlockEventType[] = ['answer', 'complete'];
+/** The union narrows by `type`. */
+export function describeEvent(event: FoliwakeEvent<BlockEvents>): string {
+  return event.type === 'error' ? `${event.detail.block}: ${event.detail.code}` : `${event.detail.block} ready`;
+}
+
+export const interesting: BlockEventType<AssessmentEvents>[] = ['answer', 'complete'];
 
 /** What to store in your own cache: the envelope, never the prepared page (prepare per request). */
 export function cacheKey(envelope: PageEnvelope): string {
@@ -142,7 +181,7 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
 
 | | |
 | --- | --- |
-| Contract | `foliwake-blocks/1` (minor 1: `BLOCKS_CONTRACT.eventPrefix`, optional `host.react`) |
+| Contract | `foliwake-blocks/2` (minor 0): the core, and the `/assessment` extension |
 | TypeScript | types only; written for TypeScript 5.9 |
 | Node.js | 22.22 or newer (`engines`) |
 
@@ -165,70 +204,30 @@ License: Apache-2.0.
 
 **Interfaces**
 
-#### `BlockEventDetails`
+#### `BlockHandle`
 
-The `detail` of each block event type (besides `key` and `block`).
+What a block's `init` returns.
 
 ```ts
-interface BlockEventDetails
+interface BlockHandle
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `{ contract: number; required: boolean; restored: boolean; }` |  |
-| `select` | `{ selected: string[]; }` |  |
-| `check` | `Answer` |  |
-| `answer` | `Answer & { correct: boolean \| null; graded: 'local' \| 'host'; }` |  |
-| `reset` | `{ reason: 'retry' \| 'host'; }` |  |
-| `complete` | `Record<string, never>` |  |
-| `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
+| `dispose()` | `() => void` | Idempotent. Ends the block's listeners, timers and islands; leaves its authored HTML. |
 
-#### `BlockHost`
+#### `BlockMeta`
 
-The object an app gives every block. Optional members are announced by `has(name)`.
+What a loader knows about a block from the code release's `components/components.json`.
 
 ```ts
-interface BlockHost
+interface BlockMeta
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `contract` | `ContractVersion` |  |
-| `shell` | `string` | Which app mounts ('next', 'react', 'foliwake', 'webview', …). |
-| `htmlContract` | `string` | HTML contract of the body being mounted (`X-Html-Contract`). |
-| `channel` | `ChannelName` |  |
-| `env?` | `string` | 'local' \| 'preview' show loader notices before failed roots; anything else: console only. |
-| `mode` | `BlockMode` |  |
-| `lang` | `string` | Content language (BCP 47). |
-| `uiLang` | `string` | The app's UI language for block chrome. |
-| `labels?` | `Record<string, string>` | Translated block chrome ('check' → 'Проверить'), from the app's i18n. |
-| `theme` | `'light' \| 'dark'` |  |
-| `reducedMotion` | `boolean` |  |
-| `signal` | `AbortSignal` | Aborted on dispose; a block treats it as dispose. |
-| `policy` | `{ retry?: boolean; }` | `retry` undefined: the block's own default. |
-| `keyOf()` | `(root: Element) => string` |  |
-| `saved?()` | `(key: string) => SavedAnswer \| null` |  |
-| `check?()` | `(key: string, answer: Answer, opts: { signal: AbortSignal; }) => Promise<Verdict>` | Server-side grading (block exams; later). |
-| `media?()` | `(url: string, hint?: { width?: number; }) => string` |  |
-| `track?()` | `(name: string, data: Record<string, unknown>) => void` |  |
-| `react?` | `HostReact` | The app's React (optional, `has('react')`; added 2026-11-11 within minor 1, as an optional member). |
-| `has()` | `(feature: string) => boolean` |  |
-
-#### `BlockReport`
-
-The outcome of one block root.
-
-```ts
-interface BlockReport
-```
-
-| Member | Type | Description |
-| --- | --- | --- |
-| `root?` | `Element` |  |
-| `name` | `string` | The `data-component` name. |
-| `key` | `string \| null` |  |
-| `status` | `'ready' \| 'error' \| 'disposed'` |  |
-| `code?` | `string` | A failure code (`LOADER_JS_FAILED`, …) when status is 'error'. |
+| `name` | `string` | The block's name (its folder, `data-component`). |
+| `ui?` | `BlockLabels` | The block's own labels by UI language (its JSON `ui`), the fallback after `host.labels`. |
 
 #### `BlocksModule`
 
@@ -240,7 +239,7 @@ interface BlocksModule
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `BLOCKS_CONTRACT` | `ContractVersion & { eventPrefix?: string; }` | `eventPrefix` (foliwake-blocks/1.1): the prefix its blocks emit events with; absent → the app's configured one. |
+| `BLOCKS_CONTRACT` | `ContractVersion & { eventPrefix?: string; }` | `eventPrefix`: the prefix its blocks emit events with; absent → the app's configured one. |
 | `mountBlocks()` | `(container: Element, host?: BlockHost) => MountHandle` | Mounts every `[data-component]` root inside `container`; `host` optional (the module's browser host when omitted). |
 
 #### `ContractVersion`
@@ -253,27 +252,53 @@ interface ContractVersion
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `major` | `1` |  |
+| `major` | `2` |  |
 | `minor` | `number` |  |
 
-#### `FoliwakeEvent`
+#### `CoreEventDetails`
 
-A block event as an app receives it (`<prefix>:<type>` CustomEvent, bubbling from the block root).
+The `detail` of the core event types (besides `key` and `block`).
 
 ```ts
-interface FoliwakeEvent<T extends BlockEventType = BlockEventType>
+interface CoreEventDetails
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `type` | `T` |  |
-| `detail` | `BlockEventDetail<T>` |  |
-| `target` | `Element` |  |
-| `native` | `CustomEvent` |  |
+| `ready` | `{ contract: number; }` | The block finished its setup (the block-kit sends it when the block did not). |
+| `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
+
+#### `HostCore`
+
+The members every host has (the core of `BlockHost`). Optional members are announced by `has(name)`.
+
+```ts
+interface HostCore
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `contract` | `ContractVersion` |  |
+| `shell` | `string` | Which app mounts ('next', 'react', 'foliwake', 'webview', …). |
+| `htmlContract` | `string` | HTML contract of the body being mounted (`X-Html-Contract`). |
+| `channel` | `ChannelName` |  |
+| `env?` | `string` | 'local' \| 'preview' show loader notices before failed roots; anything else: console only. |
+| `mode?` | `string` | The site's own mode of the page (a token such as `print`); its values belong to the site or a subpath. |
+| `lang` | `string` | Content language (BCP 47). |
+| `uiLang` | `string` | The app's UI language for block chrome. |
+| `labels?` | `Record<string, string>` | Translated block chrome ('more' → 'Ещё'), from the app's i18n; wins over the block's own `ui`. |
+| `theme` | `'light' \| 'dark'` |  |
+| `reducedMotion` | `boolean` |  |
+| `signal` | `AbortSignal` | Aborted on dispose; a block treats it as dispose. |
+| `keyOf()` | `(root: Element) => string` |  |
+| `media?()` | `(url: string, hint?: { width?: number; }) => string` |  |
+| `track?()` | `(name: string, data: Record<string, unknown>) => void` |  |
+| `react?` | `HostReact` | The app's React (`has('react')`). |
+| `has()` | `(feature: string) => boolean` |  |
 
 #### `HostReact`
 
-React for blocks that render with it (block-kit `mountReact`): the app's own `createElement` (from `react`) and `createRoot` (from `react-dom/client`), so an embedded page uses the app's React instead of loading its own. Announced by `has('react')`; blocks fall back to their own React without it.
+React for blocks that render with it: the app's own `createElement` (from `react`) and `createRoot` (from `react-dom/client`), so an embedded page uses the app's React instead of loading its own. Announced by `has('react')`; blocks fall back to their own React without it.
 
 ```ts
 interface HostReact
@@ -294,55 +319,76 @@ interface MountHandle
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `Promise<BlockReport[]>` | One report per root once every root settled. |
+| `ready` | `Promise<MountReport[]>` | One report per root once every root settled. |
 | `dispose()` | `() => void` | Idempotent. Leaves the DOM as it is (the app restores the body before a second mount). |
 
-**Types**
+#### `MountReport`
 
-#### `Answer`
-
-A block answer: the `selected` option ids, optionally `refused` ones.
+The outcome of one block root.
 
 ```ts
-type Answer = {
-    selected: string[];
-    refused?: string[];
-}
+interface MountReport
 ```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `root?` | `Element` |  |
+| `name` | `string` | The `data-component` name. |
+| `key` | `string \| null` |  |
+| `status` | `Exclude<MountStatus, 'loading'>` |  |
+| `code?` | `string` | A failure code (`LOADER_JS_FAILED`, …) when status is 'error'. |
+
+**Types**
 
 #### `BlockEventDetail`
 
 Every event carries the block's key and name besides its own fields.
 
 ```ts
-type BlockEventDetail<T extends BlockEventType> = BlockEventDetails[T] & {
+type BlockEventDetail<Events extends object, T extends BlockEventType<Events>> = Events[T] & {
     key: string;
     block: string;
 }
 ```
 
+#### `BlockEvents`
+
+Event details by type: the core's and an extension's (`Ext`). A type both name gets both details (`ready` of the assessment extension adds `required` and `restored`).
+
+```ts
+type BlockEvents<Ext extends object = Record<never, never>> = CoreEventDetails & Ext
+```
+
 #### `BlockEventType`
 
-The block event types (`<prefix>:<type>`).
+The event types of an event map (`<prefix>:<type>`); the core's by default.
 
 ```ts
-type BlockEventType = 'ready' | 'select' | 'check' | 'answer' | 'reset' | 'complete' | 'error'
+type BlockEventType<Events extends object = BlockEvents> = keyof Events & string
 ```
 
-#### `BlockEventTypes`
+#### `BlockHost`
 
-Every event type, in a fixed order.
+The object an app gives every block: the core members and the members of an extension (`Ext`), for example `BlockHost<AssessmentHostMembers>` from `@foliwake/blocks-contract/assessment`. An extension's members are optional and announced by `has(name)` like the core's.
 
 ```ts
-type BlockEventTypes = readonly BlockEventType[]
+type BlockHost<Ext extends object = Record<never, never>> = HostCore & Ext
 ```
 
-#### `BlockMode`
+#### `BlockInit`
 
-The mode blocks run in.
+A block module's default export: initialises one root. Called once per root by the loader; a second call on the same root returns the first result. Async setup returns a promise of the handle.
 
 ```ts
-type BlockMode = 'practice' | 'exam' | 'review'
+type BlockInit<Host extends BlockHost = BlockHost> = (root: Element, host: Host, meta?: BlockMeta) => BlockHandle | Promise<BlockHandle>
+```
+
+#### `BlockLabels`
+
+Translated block chrome by UI language, then by key (`{ en: { more: 'More' } }`): a block's `ui`.
+
+```ts
+type BlockLabels = Record<string, Record<string, string>>
 ```
 
 #### `BlocksContractName`
@@ -359,6 +405,102 @@ The site channel a page comes from.
 
 ```ts
 type ChannelName = 'live' | 'preview'
+```
+
+#### `FoliwakeEvent`
+
+A block event as an app receives it (`<prefix>:<type>` CustomEvent, bubbling from the block root); a union by type.
+
+```ts
+type FoliwakeEvent<Events extends object = BlockEvents, T extends BlockEventType<Events> = BlockEventType<Events>> = {
+    [K in T]: {
+        type: K;
+        detail: BlockEventDetail<Events, K>;
+        target: Element;
+        native: CustomEvent;
+    };
+}[T]
+```
+
+#### `MountStatus`
+
+The `data-component-status` of a block root while and after it mounts, plus `disposed` in a report.
+
+```ts
+type MountStatus = 'loading' | 'ready' | 'error' | 'disposed'
+```
+
+### `@foliwake/blocks-contract/assessment`
+
+**Interfaces**
+
+#### `AssessmentEventDetails`
+
+The event details the extension adds (besides `key` and `block`).
+
+```ts
+interface AssessmentEventDetails
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `ready` | `{ required: boolean; restored: boolean; }` | Added to the core `ready`: whether the block needs an answer, and whether a saved one was restored. |
+| `select` | `{ selected: string[]; }` |  |
+| `check` | `Answer` |  |
+| `answer` | `Answer & { correct: boolean \| null; graded: 'local' \| 'host'; }` |  |
+| `reset` | `{ reason: 'retry' \| 'host'; }` |  |
+| `complete` | `Record<string, never>` |  |
+
+#### `AssessmentHostMembers`
+
+The host members of the extension; each is announced by `has(name)`.
+
+```ts
+interface AssessmentHostMembers
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `mode?` | `AssessmentMode` |  |
+| `policy?` | `{ retry?: boolean; }` | `retry` undefined: the block's own default. |
+| `saved?()` | `(key: string) => SavedAnswer \| null` |  |
+| `check?()` | `(key: string, answer: Answer, opts: { signal: AbortSignal; }) => Promise<Verdict>` | Server-side grading (exams). |
+
+**Types**
+
+#### `Answer`
+
+A block answer: the `selected` option ids, optionally `refused` ones.
+
+```ts
+type Answer = {
+    selected: string[];
+    refused?: string[];
+}
+```
+
+#### `AssessmentEvents`
+
+The events of an assessment block: the core's and the extension's.
+
+```ts
+type AssessmentEvents = BlockEvents<AssessmentEventDetails>
+```
+
+#### `AssessmentHost`
+
+The host of an assessment block.
+
+```ts
+type AssessmentHost = BlockHost<AssessmentHostMembers>
+```
+
+#### `AssessmentMode`
+
+The modes an assessment runs in: `practice` (answer and see), `exam` (graded by the host), `review` (read back).
+
+```ts
+type AssessmentMode = 'practice' | 'exam' | 'review'
 ```
 
 #### `SavedAnswer`
@@ -417,7 +559,7 @@ interface FoliwakePageData
 | `site` | `string` |  |
 | `channel` | `ChannelName` |  |
 | `path` | `string` |  |
-| `mode` | `BlockMode` |  |
+| `mode` | `string \| null` | The site's mode of the page (`PrepareOptions.mode`), or null. |
 | `html` | `string` | Prepared: checked, rewritten, transformed, checked again. |
 | `codeRelease` | `CodeReleaseId \| null` |  |
 | `htmlContract` | `string` |  |

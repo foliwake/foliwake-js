@@ -79,7 +79,7 @@ const ENTRY_SEGMENT = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/;
 const ENTRY_ROOTS = ['scripts', 'components', '_foliwake'];
 const CONTRACT = /^foliwake-blocks\/([1-9][0-9]{0,2})$/;
 const EVENT_PREFIX = /^[a-z][a-z0-9-]{0,31}$/;
-const DEFAULTS = { code: '/foliwake-code', media: '/foliwake-media', contract: 'foliwake-blocks/1', eventPrefix: 'block', revalidate: 300 };
+const DEFAULTS = { code: '/foliwake-code', media: '/foliwake-media', contract: 'foliwake-blocks/2', eventPrefix: 'block', revalidate: 300 };
 
 type Obj = Record<string, unknown>;
 const isObject = (value: unknown): value is Obj => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -204,7 +204,7 @@ function parseBlocks(value: unknown, where: string): FoliwakeAppSettings['blocks
   onlyKeys(blocks, ['entry', 'contract', 'eventPrefix'], where);
   const contract = blocks.contract === undefined ? DEFAULTS.contract : blocks.contract;
   const match = typeof contract === 'string' ? CONTRACT.exec(contract) : null;
-  if (!match) throw new FoliwakeConfigError(`${where}.contract: "foliwake-blocks/<major>", such as "foliwake-blocks/1".`);
+  if (!match) throw new FoliwakeConfigError(`${where}.contract: "foliwake-blocks/<major>", such as "foliwake-blocks/2".`);
   const eventPrefix = blocks.eventPrefix === undefined ? DEFAULTS.eventPrefix : blocks.eventPrefix;
   if (typeof eventPrefix !== 'string' || !EVENT_PREFIX.test(eventPrefix)) throw new FoliwakeConfigError(`${where}.eventPrefix: [a-z][a-z0-9-], at most 32 characters.`);
   return { entry: parseEntry(blocks.entry, `${where}.entry`), contract: contract as string, major: Number(match[1]), eventPrefix };

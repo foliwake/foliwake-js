@@ -8,7 +8,7 @@
   "engines": { "node": ">=22.22" },
   "repository": { "type": "git", "url": "git+https://github.com/adjioev/foliwake.git", "directory": "packages/server" },
   "publishConfig": { "registry": "https://npm.pkg.github.com" },
-  "foliwake": { "plain": 2, "blocksContract": 1, "remoteConfig": 2 },
+  "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 2 },
   "exports": {
     "./config": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },
     "./origin": { "types": "./dist/origin.d.ts", "default": "./dist/origin.js" },

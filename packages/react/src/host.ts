@@ -4,6 +4,6 @@ import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
 import { createHost as createClientHost, type HostInit } from '@foliwake/client';
 
 /** `createHost` of `@foliwake/client` with the shell `'react'` when the app names none. */
-export function createHost(init: HostInit | (() => HostInit), base: { signal: AbortSignal; page: FoliwakePageData }): BlockHost {
-  return createClientHost(init, { shell: 'react', ...base });
+export function createHost<Ext extends object = Record<never, never>>(init: HostInit<Ext> | (() => HostInit<Ext>), base: { signal: AbortSignal; page: FoliwakePageData }): BlockHost<Ext> {
+  return createClientHost<Ext>(init, { shell: 'react', ...base });
 }

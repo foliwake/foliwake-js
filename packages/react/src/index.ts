@@ -10,6 +10,6 @@ export {
   type FoliwakeEventHandlers, type FoliwakePageStatus, type FoliwakePageError, type HostInit, type FoliwakeHooks,
 } from '@foliwake/client';
 export type {
-  Answer, BlockEventDetail, BlockEventType, BlockHost, BlockReport, BlocksModule, ContractVersion, FoliwakeEvent, MountHandle, SavedAnswer, Verdict,
+  BlockEventDetail, BlockEvents, BlockEventType, BlockHost, BlocksModule, ContractVersion, FoliwakeEvent, HostCore, MountHandle, MountReport, MountStatus,
 } from '@foliwake/blocks-contract';
 export type { ClientSettings, FoliwakePageData } from '@foliwake/blocks-contract/page';

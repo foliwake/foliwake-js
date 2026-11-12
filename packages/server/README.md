@@ -48,7 +48,7 @@ The config file sits in the app's root and holds no secrets, only the names of t
   "app": {
     "pages": ["/**"],
     "proxies": { "code": "/foliwake-code", "media": "/foliwake-media", "pages": null },
-    "blocks": { "entry": "scripts/blocks.js", "contract": "foliwake-blocks/1", "eventPrefix": "demo" },
+    "blocks": { "entry": "scripts/blocks.js", "contract": "foliwake-blocks/2", "eventPrefix": "demo" },
     "revalidate": 300
   }
 }
@@ -164,7 +164,7 @@ export const settingsForBrowser = clientSettings(config);
 | Node.js | 22.22 or newer (Web `fetch`, `Request`, `Response`, streams) |
 | Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); a plain/1 origin gives bodies without blocks |
 | Config | `foliwake.remote.json` version 2 (version 1 files are refused) |
-| Blocks contract | `foliwake-blocks/1` |
+| Blocks contract | `foliwake-blocks/2` |
 
 ## Good to know
 
@@ -593,7 +593,7 @@ interface PrepareOptions
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `mode?` | `'practice' \| 'review'` | The blocks' mode (default `practice`); `exam` comes later. |
+| `mode?` | `string` | The site's mode of the page (a token, `[a-z][a-z0-9-]`, at most 32 characters), given to the blocks as `host.mode`; absent → none. `exam` is refused: the assessment extension's exam needs answers stripped by the origin, which does not exist yet, so an exam body would carry its answers. |
 | `rewriteLink?` | `(href: string) => string` | Root-relative links (`/x`) of `<a href>`; returns the app's URL. |
 | `transform?` | `(html: string, envelope: PageEnvelope) => string` | The app's own change of the body (allow-list, artwork, …); its output is checked again. |
 

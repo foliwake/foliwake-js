@@ -7,7 +7,7 @@
   "sideEffects": false,
   "repository": { "type": "git", "url": "git+https://github.com/adjioev/foliwake.git", "directory": "packages/react" },
   "publishConfig": { "registry": "https://npm.pkg.github.com" },
-  "foliwake": { "plain": 2, "blocksContract": 1, "remoteConfig": 2 },
+  "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 2 },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./package.json": "./package.json"
