@@ -3,9 +3,9 @@
 // component.
 import 'server-only';
 import type { ReactNode } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound } from 'next/navigation.js';
 import { preload, preloadModule } from 'react-dom';
-import { connection } from 'next/server';
+import { connection } from 'next/server.js';
 import type { ChannelName, FoliwakePageData, PageEnvelope } from '@foliwake/blocks-contract/page';
 import { preparePage, readEnvelope, type PrepareOptions } from '@foliwake/server/page';
 import { preloadHints } from '@foliwake/server/preload';

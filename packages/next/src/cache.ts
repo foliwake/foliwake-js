@@ -3,7 +3,7 @@
 // and is not stored. Needs @foliwake/next in transpilePackages (withFoliwake adds it): Next compiles
 // 'use cache' only in code it transpiles.
 import 'server-only';
-import { cacheLife, cacheTag } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache.js';
 import type { PageEnvelope } from '@foliwake/blocks-contract/page';
 import { FoliwakePageError, readEnvelope } from '@foliwake/server/page';
 import { foliwakeConfig, foliwakeTags, originClient } from './server.js';
