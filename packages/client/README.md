@@ -156,6 +156,26 @@ class FoliwakePageElement extends HTMLElement {
 customElements.define('foliwake-page', FoliwakePageElement);
 ```
 
+### The import map of `foliwake`
+
+Blocks import the engine's block-kit by the bare specifier `foliwake`. Before it imports a page's blocks module,
+`mountFoliwakePage` makes sure the document has the import map of the page's code release (scoped to its code
+path, so pages of two releases resolve their own kits): a map the server rendered (`@foliwake/next`) is used,
+else one is added to `<head>`. `pageImportMap(page)` gives the map's text for your own server rendering
+(`<script type="importmap" data-foliwake-code="${page.codeBase}">`).
+
+```ts
+import { ensureImportMap, pageImportMap, type FoliwakePageData } from '@foliwake/client';
+
+declare const page: FoliwakePageData;
+ensureImportMap(document, page); // what mountFoliwakePage does before the import
+export const text: string | null = pageImportMap(page);
+```
+
+A map added after the document's first module load is honoured only by browsers with multiple import maps
+(Chrome 133+). Render it with the page on the server when you can, and do not `modulepreload` the release's
+modules before it.
+
 ## Compatibility
 
 | | |
