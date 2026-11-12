@@ -517,16 +517,6 @@ function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeReleas
 
 **Returns** `{ base: string; url: string; } \| null`
 
-#### `pageImportMap()`
-
-The text of a `<script type="importmap" data-foliwake-code="<codeBase>">` for the page, or null for a page without a code release. `<` is escaped, so the text cannot end the script.
-
-```ts
-function pageImportMap(page: Pick<FoliwakePageData, 'codeBase'>): string | null
-```
-
-**Returns** `string \| null`
-
 #### `plainPath()`
 
 The origin URL path of a page's body (`/` → `/index.plain.html`).
@@ -619,6 +609,7 @@ type PageErrorKind = 'not_found' | 'not_allowed' | 'origin' | 'invalid' | 'unaut
 
 **Also exported** (documented where they are defined)
 
+- from `@foliwake/blocks-contract/import-map`: `pageImportMap`
 - from `@foliwake/blocks-contract/page`: `FoliwakePageData`, `PageEnvelope`
 
 ### `@foliwake/server/handlers`

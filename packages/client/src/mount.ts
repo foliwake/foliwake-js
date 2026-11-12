@@ -109,6 +109,8 @@ export interface FoliwakeMountOptions<Ext extends object = Record<never, never>,
   blocks?: () => Promise<BlocksModule>;
   /** Aborting it disposes the mount. */
   signal?: AbortSignal;
+  /** The document's CSP nonce (CSP strategy `nonce`): set on the import map this mount adds (ensureImportMap). */
+  nonce?: string;
 }
 
 /** A running mount, returned by `mountFoliwakePage`. */
@@ -316,7 +318,7 @@ function start<Ext extends object, Events extends CoreEventDetails>(container: H
   const custom = latest().blocks;
   const load = custom ?? (page.blocksUrl ? () => importBlocksModule(page.blocksUrl!) : null);
   // Blocks import the block-kit as `foliwake`: the page's import map (rendered by the server, else added here).
-  if (load && !custom) ensureImportMap(container.ownerDocument, page);
+  if (load && !custom) ensureImportMap(container.ownerDocument, page, latest().nonce);
   if (!load) {
     if (page.codeRelease === null) fail('NO_CODE_RELEASE', 'The origin named no code release for this body (plain/1); it is shown without blocks.');
     else fail('NO_BLOCKS_ENTRY', 'No blocks module is configured (app.blocks.entry); the body is shown without blocks.');

@@ -66,6 +66,11 @@ export interface FoliwakeServerPageProps {
   read?: (path: string) => Promise<PageEnvelope>;
   /** Preload hints for the blocks (default true): modulepreload/preload links in <head>, same-origin. */
   hints?: boolean;
+  /**
+   * The request's CSP nonce (`foliwakeCsp({ strategy: 'nonce', nonce })`): set on the page's import map. Pass it to
+   * your `<FoliwakePage nonce>` too, so a map the browser adds on a client navigation carries it.
+   */
+  nonce?: string;
   /** Runs on the server; returns the app's client component with the page. */
   render: (page: FoliwakePageData) => ReactNode;
 }
@@ -76,10 +81,10 @@ export interface FoliwakeServerPageProps {
  * map that arrives after the document's first module load (client navigation, a second release) only with
  * multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
  */
-export function FoliwakeImportMap({ page }: { page: FoliwakePageData }): ReactNode {
+export function FoliwakeImportMap({ page, nonce }: { page: FoliwakePageData; nonce?: string }): ReactNode {
   const text = pageImportMap(page);
   if (text === null) return null;
-  return <script type="importmap" data-foliwake-code={page.codeBase ?? undefined} dangerouslySetInnerHTML={{ __html: text }} />;
+  return <script type="importmap" nonce={nonce} data-foliwake-code={page.codeBase ?? undefined} dangerouslySetInnerHTML={{ __html: text }} />;
 }
 
 /** A Foliwake page in a server component. Missing or not allowed → notFound(); other errors throw (error.tsx). */
@@ -94,7 +99,7 @@ export async function FoliwakeServerPage(props: FoliwakeServerPageProps): Promis
   emitPreloadHints(page);
   return (
     <>
-      <FoliwakeImportMap page={page} />
+      <FoliwakeImportMap page={page} nonce={props.nonce} />
       {props.render(page)}
     </>
   );

@@ -168,7 +168,7 @@ else one is added to `<head>`. `pageImportMap(page)` gives the map's text for yo
 import { ensureImportMap, pageImportMap, type FoliwakePageData } from '@foliwake/client';
 
 declare const page: FoliwakePageData;
-ensureImportMap(document, page); // what mountFoliwakePage does before the import
+ensureImportMap(document, page); // what mountFoliwakePage does before the import (`nonce` option: its third argument)
 export const text: string | null = pageImportMap(page);
 ```
 
@@ -263,10 +263,10 @@ function cssMounts(doc: Document): Record<string, number>
 
 #### `ensureImportMap()`
 
-Adds the page's import map to the document's head unless a map for its code base that the browser read is there.
+Adds the page's import map to the document's head unless a map for its code base that the browser read is there. `nonce`: the CSP nonce of the document (strategy `nonce`), set on the added map.
 
 ```ts
-function ensureImportMap(doc: Document, page: Pick<FoliwakePageData, 'codeBase'>): void
+function ensureImportMap(doc: Document, page: Pick<FoliwakePageData, 'codeBase'>, nonce?: string): void
 ```
 
 **Returns** `void`
@@ -322,16 +322,6 @@ function pageIdentity(page: FoliwakePageData): string
 ```
 
 **Returns** `string`
-
-#### `pageImportMap()`
-
-The import map text of a page's code release (scoped to its code base), or null for a page without one.
-
-```ts
-function pageImportMap(page: Pick<FoliwakePageData, 'codeBase'>): string | null
-```
-
-**Returns** `string \| null`
 
 #### `pageStylesheets()`
 
@@ -474,6 +464,7 @@ interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events
 | `shell?` | `string` | `host.shell` when the app's host names none (default 'web'). |
 | `blocks?` | `() => Promise<BlocksModule>` | Build-time mode (later): the blocks module from the app's bundle instead of the code release. |
 | `signal?` | `AbortSignal` | Aborting it disposes the mount. |
+| `nonce?` | `string` | The document's CSP nonce (CSP strategy `nonce`): set on the import map this mount adds (ensureImportMap). |
 
 #### `FoliwakePageError`
 
@@ -553,6 +544,7 @@ type HostInit<Ext extends object = Record<never, never>> = Partial<Omit<HostCore
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/blocks-contract`: `BlockEventDetail`, `BlockEvents`, `BlockEventType`, `BlockHost`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `HostCore`, `MountHandle`, `MountReport`, `MountStatus`
+- from `@foliwake/blocks-contract/import-map`: `pageImportMap`
 - from `@foliwake/blocks-contract/page`: `ClientSettings`, `FoliwakePageData`
 
 <!-- apistop -->

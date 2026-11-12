@@ -11,7 +11,7 @@ import type { OriginClient } from './origin.js';
 import { readLimited, TooLargeError } from './stream.js';
 
 export { FoliwakePageError, type PageErrorKind } from './errors.js';
-export { pageImportMap } from './import-map.js';
+export { pageImportMap } from '@foliwake/blocks-contract/import-map';
 export type { PageEnvelope, FoliwakePageData } from '@foliwake/blocks-contract/page';
 
 const HTML_CONTRACT = /^\d{1,4}$/;
