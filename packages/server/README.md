@@ -517,6 +517,16 @@ function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeReleas
 
 **Returns** `{ base: string; url: string; } \| null`
 
+#### `pageImportMap()`
+
+The text of a `<script type="importmap" data-foliwake-code="<codeBase>">` for the page, or null for a page without a code release. `<` is escaped, so the text cannot end the script.
+
+```ts
+function pageImportMap(page: Pick<FoliwakePageData, 'codeBase'>): string | null
+```
+
+**Returns** `string \| null`
+
 #### `plainPath()`
 
 The origin URL path of a page's body (`/` → `/index.plain.html`).
@@ -929,7 +939,7 @@ function resolveInRelease(from: string, specifier: string): string | null
 
 #### `staticImports()`
 
-The relative static import specifiers of an ES module's text.
+The relative static import specifiers of an ES module's text, and `foliwake`.
 
 ```ts
 function staticImports(source: string): string[]

@@ -18,6 +18,7 @@ import { acquireCss } from './css-registry.js';
 import { isDevelopment } from './dev.js';
 import { listenBlockEvents } from './events.js';
 import { createHost, type HostInit } from './host.js';
+import { ensureImportMap } from './import-map.js';
 import { importBlocksModule } from './load.js';
 
 /**
@@ -301,6 +302,8 @@ function start<Ext extends object, Events extends object>(container: HTMLElement
 
   const custom = latest().blocks;
   const load = custom ?? (page.blocksUrl ? () => importBlocksModule(page.blocksUrl!) : null);
+  // Blocks import the block-kit as `foliwake`: the page's import map (rendered by the server, else added here).
+  if (load && !custom) ensureImportMap(container.ownerDocument, page);
   if (!load) {
     if (page.codeRelease === null) fail('NO_CODE_RELEASE', 'The origin named no code release for this body (plain/1); it is shown without blocks.');
     else fail('NO_BLOCKS_ENTRY', 'No blocks module is configured (app.blocks.entry); the body is shown without blocks.');

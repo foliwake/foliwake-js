@@ -251,7 +251,7 @@ License: Apache-2.0.
 
 #### `emitPreloadHints()`
 
-Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React).
+Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React). Modules are hinted as `preload as="script"` (the bytes, fetched in parallel), not `modulepreload`: a module preloaded before the page's import map is in the document fails to resolve `foliwake` for good, and in a Next app the hints reach &lt;head&gt; before the map (which renders with the page, and on a client navigation arrives later).
 
 ```ts
 function emitPreloadHints(page: FoliwakePageData): void
@@ -268,6 +268,18 @@ function foliwakeConfig(): FoliwakeAppConfig
 ```
 
 **Returns** `FoliwakeAppConfig`
+
+#### `FoliwakeImportMap()`
+
+The import map of the page's code release (`foliwake` → its block-kit, scoped to the release's code path), as an element to render before the page's blocks load; null for a page without a code release. Browsers honour a map that arrives after the document's first module load (client navigation, a second release) only with multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
+
+```ts
+function FoliwakeImportMap({ page }: {
+    page: FoliwakePageData;
+}): ReactNode
+```
+
+**Returns** `ReactNode`
 
 #### `FoliwakeServerPage()`
 
@@ -357,7 +369,7 @@ interface ReadPageOptions extends PrepareOptions
 - from `@foliwake/blocks-contract`: `ChannelName`
 - from `@foliwake/blocks-contract/page`: `FoliwakePageData`, `PageEnvelope`, `PreloadHint`
 - from `@foliwake/server/config`: `FoliwakeAppConfig`
-- from `@foliwake/server/page`: `FoliwakePageError`, `PageErrorKind`, `PrepareOptions`, `preparePage`, `readEnvelope`
+- from `@foliwake/server/page`: `FoliwakePageError`, `PageErrorKind`, `pageImportMap`, `PrepareOptions`, `preparePage`, `readEnvelope`
 - from `@foliwake/server/preload`: `preloadHints`
 
 ### `@foliwake/next/client`

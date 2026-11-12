@@ -241,6 +241,16 @@ function cssMounts(doc: Document): Record<string, number>
 
 **Returns** `Record<string, number>`
 
+#### `ensureImportMap()`
+
+Adds the page's import map to the document's head unless a map for its code base that the browser read is there.
+
+```ts
+function ensureImportMap(doc: Document, page: Pick<FoliwakePageData, 'codeBase'>): void
+```
+
+**Returns** `void`
+
 #### `importBlocksModule()`
 
 Imports a code release's blocks module from a same-origin URL at run time (bundlers leave the import alone). `mountFoliwakePage` calls it with `page.blocksUrl`.
@@ -292,6 +302,16 @@ function pageIdentity(page: FoliwakePageData): string
 ```
 
 **Returns** `string`
+
+#### `pageImportMap()`
+
+The import map text of a page's code release (scoped to its code base), or null for a page without one.
+
+```ts
+function pageImportMap(page: Pick<FoliwakePageData, 'codeBase'>): string | null
+```
+
+**Returns** `string \| null`
 
 #### `pageStylesheets()`
 
