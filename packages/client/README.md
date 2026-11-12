@@ -156,6 +156,26 @@ class FoliwakePageElement extends HTMLElement {
 customElements.define('foliwake-page', FoliwakePageElement);
 ```
 
+### The import map of `foliwake`
+
+Blocks import the engine's block-kit by the bare specifier `foliwake`. Before it imports a page's blocks module,
+`mountFoliwakePage` makes sure the document has the import map of the page's code release (scoped to its code
+path, so pages of two releases resolve their own kits): a map the server rendered (`@foliwake/next`) is used,
+else one is added to `<head>`. `pageImportMap(page)` gives the map's text for your own server rendering
+(`<script type="importmap" data-foliwake-code="${page.codeBase}">`).
+
+```ts
+import { ensureImportMap, pageImportMap, type FoliwakePageData } from '@foliwake/client';
+
+declare const page: FoliwakePageData;
+ensureImportMap(document, page); // what mountFoliwakePage does before the import (`nonce` option: its third argument)
+export const text: string | null = pageImportMap(page);
+```
+
+A map added after the document's first module load is honoured only by browsers with multiple import maps
+(Chrome 133+). Render it with the page on the server when you can, and do not `modulepreload` the release's
+modules before it.
+
 ## Compatibility
 
 | | |
@@ -240,6 +260,16 @@ function cssMounts(doc: Document): Record<string, number>
 ```
 
 **Returns** `Record<string, number>`
+
+#### `ensureImportMap()`
+
+Adds the page's import map to the document's head unless a map for its code base that the browser read is there. `nonce`: the CSP nonce of the document (strategy `nonce`), set on the added map.
+
+```ts
+function ensureImportMap(doc: Document, page: Pick<FoliwakePageData, 'codeBase'>, nonce?: string): void
+```
+
+**Returns** `void`
 
 #### `importBlocksModule()`
 
@@ -434,6 +464,7 @@ interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events
 | `shell?` | `string` | `host.shell` when the app's host names none (default 'web'). |
 | `blocks?` | `() => Promise<BlocksModule>` | Build-time mode (later): the blocks module from the app's bundle instead of the code release. |
 | `signal?` | `AbortSignal` | Aborting it disposes the mount. |
+| `nonce?` | `string` | The document's CSP nonce (CSP strategy `nonce`): set on the import map this mount adds (ensureImportMap). |
 
 #### `FoliwakePageError`
 
@@ -513,6 +544,7 @@ type HostInit<Ext extends object = Record<never, never>> = Partial<Omit<HostCore
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/blocks-contract`: `BlockEventDetail`, `BlockEvents`, `BlockEventType`, `BlockHost`, `BlocksModule`, `ContractVersion`, `FoliwakeEvent`, `HostCore`, `MountHandle`, `MountReport`, `MountStatus`
+- from `@foliwake/blocks-contract/import-map`: `pageImportMap`
 - from `@foliwake/blocks-contract/page`: `ClientSettings`, `FoliwakePageData`
 
 <!-- apistop -->

@@ -5,7 +5,7 @@
 `@foliwake/blocks-contract` holds the TypeScript types of the Foliwake blocks contract `foliwake-blocks/2`:
 what a site's blocks module exports (`BLOCKS_CONTRACT`, `mountBlocks`) and what each block's module exports
 (`init(root, host, meta)`), the host an app gives every block, the block events, and the page types that
-`@foliwake/server` produces and `@foliwake/client` / `@foliwake/react` consume. It has no runtime code.
+`@foliwake/server` produces and `@foliwake/client` / `@foliwake/react` consume. It has no runtime code besides `/import-map`.
 
 The core knows no kind of site: its host has the language, labels, theme, motion preference, channel, media
 and a signal; its events are `ready` and `error`, each carrying `key` and `block`. A kind of site extends it
@@ -16,6 +16,7 @@ that ask and grade (answers, verdicts, saved answers, `answer` and `complete` ev
 | --- | --- |
 | `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `MountReport`, `MountStatus`, `BlockInit`, `BlockMeta`, `BlockHandle`, `BlockHost`, `HostCore`, `HostReact`, `BlockEvents`, `BlockEventDetail`, `FoliwakeEvent` |
 | `@foliwake/blocks-contract/assessment` | `AssessmentHost`, `AssessmentHostMembers`, `AssessmentEvents`, `AssessmentMode`, `Answer`, `SavedAnswer`, `Verdict` |
+| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`foliwake` → its block-kit, scoped to its code path), the one runtime helper, shared by `@foliwake/server` and `@foliwake/client` |
 | `@foliwake/blocks-contract/page` | `PageEnvelope` (the origin's answer, the only thing an app caches), `FoliwakePageData` (the prepared page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex` |
 
 A change here is a contract change: minor versions of the contract only add.
@@ -54,8 +55,9 @@ export function describe(page: FoliwakePageData, blocks: BlocksModule): string {
 
 A block's module exports `init(root, host, meta)` as its default; a loader calls it once per root with the
 page's host and, when it has it, `meta`: what the code release says about the block (its name and its `ui`
-labels). `meta` is optional; the loader of a `foliwake create` project passes only `root` and `host` in this
-version, so a block falls back without it. By hand it looks like this.
+labels; the loader of `foliwake create` projects passes it from `components/components.json`). `meta` is
+optional, so a block falls back without it. The block-kit's `defineBlock` writes `init` for you; by hand it
+looks like this.
 
 ```ts
 // components/note/note.ts (compiled to note.js)
@@ -266,7 +268,7 @@ interface CoreEventDetails
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `{ contract: number; }` | The block finished its setup; a block sends it itself (block-kit 1 does not send it for the block). |
+| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit (`foliwake`) after setup when it did not (block-kit 1 does not). |
 | `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
 
 #### `HostCore`
@@ -526,6 +528,40 @@ type Verdict = {
     correctIds?: string[];
     reveal?: Record<string, string>;
 }
+```
+
+### `@foliwake/blocks-contract/import-map`
+
+**Functions and components**
+
+#### `pageImportMap()`
+
+The text of the import map of a code release at `codeBase` (a same-origin path ending with "/"), or null without one. `<` is escaped, so the text cannot end its `<script type="importmap">`.
+
+```ts
+function pageImportMap(page: {
+    codeBase: string | null;
+}): string | null
+```
+
+**Returns** `string \| null`
+
+**Constants**
+
+#### `KIT_PATH`
+
+Where a code release holds the block-kit, relative to its root.
+
+```ts
+const KIT_PATH = "_foliwake/block-kit.js"
+```
+
+#### `KIT_SPECIFIER`
+
+The bare specifier blocks import the block-kit with.
+
+```ts
+const KIT_SPECIFIER = "foliwake"
 ```
 
 ### `@foliwake/blocks-contract/page`

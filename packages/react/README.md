@@ -264,6 +264,7 @@ interface FoliwakePageProps<Ext extends object = Record<never, never>, Events ex
 | `preloadCss?` | `boolean` | Render &lt;link rel="stylesheet"&gt; for the body's blocks with the body (default true). |
 | `as?` | `'div' \| 'article' \| 'main' \| 'section'` | The body element's tag (default `div`). |
 | `className?` | `string` | The body element's class. |
+| `nonce?` | `string` | The document's CSP nonce (CSP strategy `nonce`): set on the import map the mount adds for the page's code release. |
 
 **Also exported** (documented where they are defined)
 

@@ -609,6 +609,7 @@ type PageErrorKind = 'not_found' | 'not_allowed' | 'origin' | 'invalid' | 'unaut
 
 **Also exported** (documented where they are defined)
 
+- from `@foliwake/blocks-contract/import-map`: `pageImportMap`
 - from `@foliwake/blocks-contract/page`: `FoliwakePageData`, `PageEnvelope`
 
 ### `@foliwake/server/handlers`
@@ -929,7 +930,7 @@ function resolveInRelease(from: string, specifier: string): string | null
 
 #### `staticImports()`
 
-The relative static import specifiers of an ES module's text.
+The relative static import specifiers of an ES module's text, and `foliwake`.
 
 ```ts
 function staticImports(source: string): string[]

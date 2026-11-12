@@ -22,6 +22,8 @@ export interface FoliwakePageProps<Ext extends object = Record<never, never>, Ev
   as?: 'div' | 'article' | 'main' | 'section';
   /** The body element's class. */
   className?: string;
+  /** The document's CSP nonce (CSP strategy `nonce`): set on the import map the mount adds for the page's code release. */
+  nonce?: string;
 }
 
 type Tag = 'div' | 'article' | 'main' | 'section';
@@ -68,7 +70,7 @@ function Mounted<Ext extends object, Events extends CoreEventDetails>(props: Fol
   useEffect(() => {
     const element = bodyRef.current;
     if (!element) return undefined;
-    const current = mountFoliwakePage(element, { ...callbacks(latest.current), page, shell: 'react', blocks: latest.current.blocks });
+    const current = mountFoliwakePage(element, { ...callbacks(latest.current), page, shell: 'react', blocks: latest.current.blocks, nonce: latest.current.nonce });
     mount.current = current;
     return () => {
       current.dispose();

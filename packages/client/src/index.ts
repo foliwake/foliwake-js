@@ -9,6 +9,7 @@ export {
 export { listenBlockEvents, subscribeBlockEvents, BLOCK_EVENT_TYPES, type FoliwakeEventHandlers } from './events.js';
 export { createHost, HOST_CONTRACT_MINOR, type CreatedHost, type HostInit } from './host.js';
 export { importBlocksModule } from './load.js';
+export { ensureImportMap, pageImportMap } from './import-map.js';
 export { acquireCss, cssMounts } from './css-registry.js';
 export type {
   BlockEventDetail, BlockEvents, BlockEventType, BlockHost, BlocksModule, ContractVersion, FoliwakeEvent, HostCore, MountHandle, MountReport, MountStatus,

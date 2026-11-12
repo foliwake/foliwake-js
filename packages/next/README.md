@@ -183,7 +183,7 @@ together with other data, or to build metadata.
 ```tsx
 // app/lessons/[slug]/page.tsx
 import { Suspense } from 'react';
-import { readPage, emitPreloadHints } from '@foliwake/next';
+import { FoliwakeImportMap, readPage, emitPreloadHints } from '@foliwake/next';
 import { FoliwakePage } from '@foliwake/next/client';
 
 type Params = Promise<{ slug: string }>;
@@ -195,10 +195,24 @@ export default function Lesson({ params }: { params: Params }) {
 async function LessonBody({ params }: { params: Params }) {
   const { slug } = await params;
   const page = await readPage(`/lessons/${slug}`, { mode: 'practice' });
-  emitPreloadHints(page); // <link rel="modulepreload"> for the blocks, in <head>
-  return <FoliwakePage page={page} />;
+  emitPreloadHints(page); // <link rel="preload" as="script"> for the blocks, in <head>
+  return (
+    <>
+      <FoliwakeImportMap page={page} />
+      <FoliwakePage page={page} />
+    </>
+  );
 }
 ```
+
+`<FoliwakeImportMap>` renders the page's import map: blocks import the engine's block-kit as `foliwake`, and
+the map points that name at the kit of the page's own code release, scoped to the release's code path
+(`<FoliwakeServerPage>` renders it for you). `@foliwake/client` adds the same map when it is missing. A map
+that arrives after the document's first module load (a client navigation to a page of another code release)
+is honoured only by browsers with multiple import maps (Chrome 133+); module hints are therefore `preload
+as="script"`, never `modulepreload`, which would resolve `foliwake` before the map is there. With the CSP
+strategy `nonce`, pass the request's nonce to `<FoliwakeServerPage nonce>` / `<FoliwakeImportMap nonce>` and to
+`<FoliwakePage nonce>` (the map the client adds on a navigation).
 
 Unlike `<FoliwakeServerPage>`, `readPage` does not call `notFound()`: it throws `FoliwakePageError` (with
 `kind` `not_found`, `not_allowed`, `invalid`, …) for you to handle.
@@ -251,7 +265,7 @@ License: Apache-2.0.
 
 #### `emitPreloadHints()`
 
-Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React).
+Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React). Modules are hinted as `preload as="script"` (the bytes, fetched in parallel), not `modulepreload`: a module preloaded before the page's import map is in the document fails to resolve `foliwake` for good, and in a Next app the hints reach &lt;head&gt; before the map (which renders with the page, and on a client navigation arrives later).
 
 ```ts
 function emitPreloadHints(page: FoliwakePageData): void
@@ -268,6 +282,19 @@ function foliwakeConfig(): FoliwakeAppConfig
 ```
 
 **Returns** `FoliwakeAppConfig`
+
+#### `FoliwakeImportMap()`
+
+The import map of the page's code release (`foliwake` → its block-kit, scoped to the release's code path), as an element to render before the page's blocks load; null for a page without a code release. Browsers honour a map that arrives after the document's first module load (client navigation, a second release) only with multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
+
+```ts
+function FoliwakeImportMap({ page, nonce }: {
+    page: FoliwakePageData;
+    nonce?: string;
+}): ReactNode
+```
+
+**Returns** `ReactNode`
 
 #### `FoliwakeServerPage()`
 
@@ -336,6 +363,7 @@ interface FoliwakeServerPageProps
 | `prepare?` | `PrepareOptions` | `preparePage` options: `rewriteLink`, `transform`, `mode`. |
 | `read?` | `(path: string) => Promise<PageEnvelope>` | The live envelope reader; default readEnvelopeCached. |
 | `hints?` | `boolean` | Preload hints for the blocks (default true): modulepreload/preload links in &lt;head&gt;, same-origin. |
+| `nonce?` | `string` | The request's CSP nonce (`foliwakeCsp({ strategy: 'nonce', nonce })`): set on the page's import map. Pass it to your `<FoliwakePage nonce>` too, so a map the browser adds on a client navigation carries it. |
 | `render` | `(page: FoliwakePageData) => ReactNode` | Runs on the server; returns the app's client component with the page. |
 
 #### `ReadPageOptions`
@@ -355,6 +383,7 @@ interface ReadPageOptions extends PrepareOptions
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/blocks-contract`: `ChannelName`
+- from `@foliwake/blocks-contract/import-map`: `pageImportMap`
 - from `@foliwake/blocks-contract/page`: `FoliwakePageData`, `PageEnvelope`, `PreloadHint`
 - from `@foliwake/server/config`: `FoliwakeAppConfig`
 - from `@foliwake/server/page`: `FoliwakePageError`, `PageErrorKind`, `PrepareOptions`, `preparePage`, `readEnvelope`
