@@ -115,7 +115,7 @@ export type BlockHost<Ext extends object = Record<never, never>> = HostCore & Ex
 
 /** The `detail` of the core event types (besides `key` and `block`). */
 export interface CoreEventDetails {
-  /** The block finished its setup; a block sends it itself (block-kit 1 does not send it for the block). */
+  /** The block finished its setup: the block sends it, or the block-kit (`foliwake`) after setup when it did not (block-kit 1 does not). */
   ready: { contract: number };
   error: { code: string; message: string; recoverable: boolean };
 }
