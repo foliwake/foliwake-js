@@ -1,32 +1,243 @@
 # @foliwake/next
 
-Next.js (App Router, 16.2+, `cacheComponents`) adapter for Foliwake pages.
+<!-- usage -->
 
-| Entry | Exports |
-|---|---|
-| `@foliwake/next/config` | `withFoliwake(nextConfig, { configFile?, csp? })`, `foliwakeCspHeader()` |
-| `@foliwake/next` (server-only) | `FoliwakeServerPage`, `readPage`, `readEnvelopeCached`, `foliwakeConfig`, `originClient`, `foliwakeTags`, `preloadHints`, `emitPreloadHints`, `readEnvelope`, `preparePage` |
-| `@foliwake/next/cache` | `readEnvelopeCached(path)` (`'use cache'`, live only, tags `foliwake:<site>:live:page:<path>`) |
-| `@foliwake/next/routes` | `codeRoute({ authorizePreview })`, `mediaRoute({ authorizePreview })` → `{ GET, HEAD }` |
-| `@foliwake/next/client` | everything of `@foliwake/react` (`'use client'`) |
+`@foliwake/next` embeds Foliwake pages in a Next.js App Router app. On the server it reads a page's body from
+your Foliwake site with the credential, caches the origin's answer (`'use cache'`, tagged for revalidation),
+checks and prepares the body per request, and adds preload hints. Route handlers serve the page's code
+release and pictures from your app's own origin, and `withFoliwake` validates the config and sets a
+Content-Security-Policy that fits. In the browser, `@foliwake/next/client` (everything of `@foliwake/react`)
+mounts the page's blocks. Use it when your app is a Next 16.2+ App Router app with `cacheComponents`; for
+another React app use `@foliwake/react` with `@foliwake/server`.
+
+| Entry | What |
+| --- | --- |
+| `@foliwake/next/config` | `withFoliwake`, `foliwakeCspHeader` for `next.config.ts` |
+| `@foliwake/next` | server-only: `<FoliwakeServerPage>`, `readPage`, `readEnvelopeCached`, `foliwakeTags`, config and origin client |
+| `@foliwake/next/routes` | `codeRoute`, `mediaRoute`: the code and media proxies |
+| `@foliwake/next/cache` | `readEnvelopeCached`: the cached live read alone |
+| `@foliwake/next/client` | `'use client'`: everything of `@foliwake/react` |
+
+## Install
+
+The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
+
+```ini
+@foliwake:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
+not work with this registry (on Vercel, set it as a build environment variable). Install exact versions, the
+same for every `@foliwake/*` package:
+
+```bash
+pnpm add @foliwake/next@0.1.0 @foliwake/react@0.1.0 @foliwake/server@0.1.0
+```
+
+The app also needs `foliwake.remote.json` in its root (or `FOLIWAKE_REMOTE` naming another file): the site,
+its live and preview origins, the names of the variables that hold passwords, and the app settings. The guide
+below describes every key; the schema ships in `@foliwake/server/schemas/remote-2.schema.json`.
+
+## Minimal example
 
 ```ts
 // next.config.ts
 import { withFoliwake } from '@foliwake/next/config';
+
 export default withFoliwake({ cacheComponents: true }, { csp: { reportUri: '/csp-report' } });
 ```
 
 ```tsx
 // app/pages/[[...path]]/page.tsx
-<Suspense fallback={null}>
-  <FoliwakeServerPage path="/lessons/a" channel="live" render={(page) => <PageView page={page} />} />
-</Suspense>
+import { Suspense } from 'react';
+import { FoliwakeServerPage } from '@foliwake/next';
+import { FoliwakePage } from '@foliwake/next/client';
+
+type Params = Promise<{ path?: string[] }>;
+
+export default function Page({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={null}>
+      <LivePage params={params} />
+    </Suspense>
+  );
+}
+
+async function LivePage({ params }: { params: Params }) {
+  const { path } = await params;
+  return (
+    <FoliwakeServerPage
+      path={`/${(path ?? []).join('/')}`}
+      prepare={{ rewriteLink: (href) => `/pages${href === '/' ? '' : href}` }}
+      render={(page) => <FoliwakePage page={page} as="article" />}
+    />
+  );
+}
 ```
 
-CSP: strategy A (`script-src 'self' 'unsafe-inline'`), measured with zero violations under partial
-prerendering. A nonce policy is not supported (it breaks on Next 16.4). Step by step:
-[Embed Foliwake pages in a React or Next app](https://github.com/adjioev/foliwake/blob/main/website/guide/embed-in-react.md);
-working example: `examples/next-app`. Apache-2.0.
+```ts
+// app/foliwake-code/[...path]/route.ts (the path is app.proxies.code of the config)
+import { codeRoute } from '@foliwake/next/routes';
+
+export const { GET, HEAD } = codeRoute({ authorizePreview: false });
+```
+
+A missing page, or one outside `app.pages`, calls `notFound()`; a body the check refuses throws to your
+`error.tsx`. The `Suspense` boundary is required with `cacheComponents`.
+
+## Examples
+
+### Code and media proxies with preview for authors
+
+The proxies serve only files of a code release and hashed pictures, add the credential on the server and
+forward nothing from the browser. `authorizePreview` is required: your own author check, or `false` when the
+app never shows preview.
+
+```ts
+// app/foliwake-media/[...path]/route.ts
+import { mediaRoute } from '@foliwake/next/routes';
+
+// Your app's sign-in decides; this cookie check is only a placeholder.
+const isAuthor = (request: Request) => (request.headers.get('cookie') ?? '').includes('role=author');
+
+export const { GET, HEAD } = mediaRoute({ authorizePreview: isAuthor });
+```
+
+### A preview page
+
+Preview is read on every request (never cached) and loads the preview's code and pictures through the
+proxies, which ask `authorizePreview`. Protect the page itself too.
+
+```tsx
+// app/preview/[[...path]]/page.tsx
+import { Suspense } from 'react';
+import { cookies } from 'next/headers';
+import { notFound } from 'next/navigation';
+import { FoliwakeServerPage } from '@foliwake/next';
+import { FoliwakePage } from '@foliwake/next/client';
+
+type Params = Promise<{ path?: string[] }>;
+
+export default function Preview({ params }: { params: Params }) {
+  return <Suspense fallback={null}><PreviewPage params={params} /></Suspense>;
+}
+
+async function PreviewPage({ params }: { params: Params }) {
+  if ((await cookies()).get('role')?.value !== 'author') notFound();
+  const { path } = await params;
+  return <FoliwakeServerPage path={`/${(path ?? []).join('/')}`} channel="preview" render={(page) => <FoliwakePage page={page} />} />;
+}
+```
+
+### CSP when the app sets its own headers
+
+`withFoliwake(…, { csp })` adds `script-src 'self' 'unsafe-inline'` and the rest of the policy to every route.
+If your app builds its own headers, leave `csp` out and use the value:
+
+```ts
+// next.config.ts
+import { foliwakeCspHeader, withFoliwake } from '@foliwake/next/config';
+
+export default withFoliwake({
+  cacheComponents: true,
+  async headers() {
+    const csp = foliwakeCspHeader({ reportUri: '/csp-report', extra: { 'connect-src': ['https://api.example.org'] } });
+    return [{ source: '/pages/:path*', headers: [{ key: 'Content-Security-Policy', value: csp }] }];
+  },
+});
+```
+
+A nonce-based policy does not work with partial prerendering and is not supported.
+
+### Cache tags and revalidation
+
+Only the live origin answer is cached, for `app.revalidate` seconds (default 300) with stale-while-revalidate
+and at most 24 hours. Its tags are `foliwake`, `foliwake:<site>`, `foliwake:<site>:live` and
+`foliwake:<site>:live:page:<path>` (`foliwakeTags`). Foliwake does not notify apps of publications yet, so
+expire them from your own webhook or admin action:
+
+```ts
+// app/api/foliwake-revalidate/route.ts
+import { revalidateTag } from 'next/cache';
+import { foliwakeTags } from '@foliwake/next';
+
+export async function POST(request: Request) {
+  if (request.headers.get('authorization') !== `Bearer ${process.env.REVALIDATE_TOKEN}`) return new Response(null, { status: 401 });
+  const { path } = (await request.json()) as { path?: string };
+  // One page, or every live page of the site.
+  const tag = path ? foliwakeTags('live', path).at(-1)! : foliwakeTags('live')[2]!;
+  revalidateTag(tag, { expire: 0 });
+  return Response.json({ revalidated: tag });
+}
+```
+
+`revalidateTag(tag, 'max')` refreshes in the background instead (the next request still gets the cached
+page).
+
+### Read the page yourself
+
+`readPage` gives the prepared page without rendering, for example to pass it to your own client component
+together with other data, or to build metadata.
+
+```tsx
+// app/lessons/[slug]/page.tsx
+import { Suspense } from 'react';
+import { readPage, emitPreloadHints } from '@foliwake/next';
+import { FoliwakePage } from '@foliwake/next/client';
+
+type Params = Promise<{ slug: string }>;
+
+export default function Lesson({ params }: { params: Params }) {
+  return <Suspense fallback={null}><LessonBody params={params} /></Suspense>;
+}
+
+async function LessonBody({ params }: { params: Params }) {
+  const { slug } = await params;
+  const page = await readPage(`/lessons/${slug}`, { mode: 'practice' });
+  emitPreloadHints(page); // <link rel="modulepreload"> for the blocks, in <head>
+  return <FoliwakePage page={page} />;
+}
+```
+
+Unlike `<FoliwakeServerPage>`, `readPage` does not call `notFound()`: it throws `FoliwakePageError` (with
+`kind` `not_found`, `not_allowed`, `invalid`, …) for you to handle.
+
+## Compatibility
+
+| | |
+| --- | --- |
+| Next.js | 16.2 or newer, below 17 (peer `>=16.2.0 <17`; tested with 16.2.12), App Router with `cacheComponents: true` |
+| React | 19.2 or newer (tested with 19.3.0) |
+| Node.js | 22.22 or newer |
+| Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); an older origin gives pages without blocks |
+| Config | `foliwake.remote.json` version 2 |
+
+## Good to know
+
+- `withFoliwake` adds `@foliwake/next` to `transpilePackages`: Next compiles `'use cache'` only in code it
+  transpiles. If you do not use `withFoliwake`, add it yourself, or write the cached read in your app and pass
+  it as `read` (the guide shows how).
+- Under partial prerendering the status line is sent with the static shell, so a not-found page answers HTTP
+  200 with the not-found content.
+- The server modules import `server-only`, which throws when imported outside React Server Components. In unit
+  tests outside Next (for example vitest), alias `server-only` to an empty module or run with the
+  `react-server` condition. The package imports `next/cache.js`, `next/navigation.js` and `next/server.js`
+  fully specified, so Node's ESM resolution finds them; builds of 0.1.0 made before this change import the bare
+  `next/cache` and need an alias (`next/cache` → `next/cache.js`) in such tests.
+- Block stylesheets: `<FoliwakePage>` links `components/<name>/<name>.css` for every block on the page
+  without reading `components.json`, so blocks without a stylesheet produce 404 links. See the
+  `@foliwake/react` notes for the workaround with `page.preload`.
+
+## Guides
+
+- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react): the whole
+  setup step by step, the config keys, caching and troubleshooting.
+- [Roll out frontend code](https://docs.foliwake.dev/guide/code-rollout)
+
+License: Apache-2.0.
+
+<!-- usagestop -->
 
 ## API
 

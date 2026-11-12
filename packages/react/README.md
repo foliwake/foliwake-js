@@ -1,35 +1,176 @@
 # @foliwake/react
 
-Show a prepared Foliwake page in any React 19 app and mount its blocks from the page's own code release.
-A thin wrapper of [`@foliwake/client`](../client/README.md), which holds the lifecycle; this package adds the
-component, the hook and the settings context.
+<!-- usage -->
+
+`@foliwake/react` shows a prepared Foliwake page in a React 19 app: `<FoliwakePage>` renders the page body
+(also on the server, so it is readable before any JavaScript) and mounts the page's blocks from the page's
+own code release. Use it in any React app; in a Next.js App Router app use `@foliwake/next`, which adds the
+server side (reading, caching, proxies, CSP) and re-exports this package from `@foliwake/next/client`. It is a
+thin wrapper of `@foliwake/client`, which holds the lifecycle.
+
+The page comes from your server as a `FoliwakePageData` object (`preparePage` of `@foliwake/server`, or
+`readPage` / `<FoliwakeServerPage>` of `@foliwake/next`). This package never talks to a Foliwake origin.
+
+## Install
+
+The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
+
+```ini
+@foliwake:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
+not work with this registry. Install an exact version, and use the same version for every `@foliwake/*`
+package:
+
+```bash
+pnpm add @foliwake/react@0.1.0 @foliwake/server@0.1.0
+```
+
+## Minimal example
 
 ```tsx
 'use client';
-import { FoliwakePage } from '@foliwake/react';
+import { FoliwakePage, type FoliwakePageData } from '@foliwake/react';
 
-<FoliwakePage
-  page={page}                                   // FoliwakePageData from the server (@foliwake/server preparePage)
-  host={{ shell: 'react', labels: { check: 'Check' }, saved: (key) => answers[key] ?? null }}
-  onEvent={(e) => e.type === 'answer' && save(e.detail.key, e.detail.selected)}
-  onStatus={(status, reports) => …}            // mounting | ready | partial | static | error
-  onError={({ code, message }) => …}           // NO_CODE_RELEASE, BLOCKS_CONTRACT_UNSUPPORTED, BLOCKS_MODULE_FAILED, EVENT_PREFIX_MISMATCH, …
-  onMount={(container, handle) => …}           // imperative app logic (slides, focus)
-/>
+export function Lesson({ page }: { page: FoliwakePageData }) {
+  return <FoliwakePage page={page} as="article" className="lesson" />;
+}
 ```
 
-Also exported: `useFoliwakeEvents(ref, handlers, { prefix })`, `FoliwakeProvider` / `useFoliwakeSettings`, and,
-re-exported from `@foliwake/client`, `createHost(init, { signal, page })` (default shell `'react'`),
-`listenBlockEvents`, `BLOCK_EVENT_TYPES`, `cssMounts` and the contract types.
+`<FoliwakePage>` remounts only when `page.identity` changes (a new body, code release, channel or mode). New
+callbacks and host data on later renders take effect without a remount. StrictMode double mounts are
+handled.
 
-Invariants (held by `@foliwake/client`'s `mountFoliwakePage`; the component passes it the body element and
-the latest props on every render): the page's identity (site, channel, path, ETag, code release, mode and a
-digest of the final prepared body and its mount settings) is the React key and the only thing that remounts.
-Callbacks and host data are read at call time. Every async step is abort-guarded, and dispose is
-idempotent with no event after it. A second mount on the same element starts from the pristine body
-(StrictMode). Block stylesheets are counted per code release. The module is imported at run time from a
-same-origin URL (`import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url)`). The package never
-fetches from a Foliwake origin. Apache-2.0.
+## Examples
+
+### Pass a host with saved answers, and save new ones
+
+The host is your app's side of the blocks contract. `saved(key)` restores an answer, `labels` translate block
+chrome, `track` takes analytics, and `react` lets blocks that render with React use your app's React instead
+of loading their own.
+
+```tsx
+'use client';
+import { createElement, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { FoliwakePage, type FoliwakeEvent, type FoliwakePageData, type SavedAnswer } from '@foliwake/react';
+
+export function Lesson({ page, initial }: { page: FoliwakePageData; initial: Record<string, SavedAnswer> }) {
+  const [answers, setAnswers] = useState(initial);
+  const onEvent = (event: FoliwakeEvent) => {
+    if (event.type !== 'answer') return;
+    const { key, selected, correct } = (event as FoliwakeEvent<'answer'>).detail;
+    setAnswers((all) => ({ ...all, [key]: { selected, correct } }));
+    void fetch('/api/answers', { method: 'POST', body: JSON.stringify({ key, selected, correct }) });
+  };
+  return (
+    <FoliwakePage
+      page={page}
+      host={{
+        mode: 'practice',
+        labels: { check: 'Check' },
+        saved: (key) => answers[key] ?? null,
+        react: { createElement, createRoot },
+      }}
+      onEvent={onEvent}
+    />
+  );
+}
+```
+
+### Listen to block events with typed handlers
+
+`useFoliwakeEvents` subscribes to the block events under an element, one typed handler per event type. The
+handlers are read at event time, so they can use the latest state without re-subscribing. The prefix is
+`app.blocks.eventPrefix` of the config; pass the settings from the server with `FoliwakeProvider`
+(`clientSettings(config)` of `@foliwake/server/config` is the safe browser projection).
+
+```tsx
+'use client';
+import { useRef, useState } from 'react';
+import { FoliwakePage, useFoliwakeEvents, useFoliwakeSettings, type FoliwakePageData } from '@foliwake/react';
+
+export function LessonWithProgress({ page }: { page: FoliwakePageData }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [done, setDone] = useState<string[]>([]);
+  const prefix = useFoliwakeSettings()?.blocks.eventPrefix ?? page.contract.eventPrefix;
+  useFoliwakeEvents(ref, {
+    answer: (event) => console.log(event.detail.key, event.detail.correct ? 'correct' : 'wrong'),
+    complete: (event) => setDone((keys) => [...keys, event.detail.key]),
+  }, { prefix });
+  return (
+    <div ref={ref}>
+      <p>{done.length} blocks completed</p>
+      <FoliwakePage page={page} />
+    </div>
+  );
+}
+```
+
+`FoliwakeProvider` goes around the part of the tree that needs the settings:
+`<FoliwakeProvider settings={settings}>…</FoliwakeProvider>`, with `settings` computed on the server.
+
+### Show status and errors
+
+```tsx
+'use client';
+import { useState } from 'react';
+import { FoliwakePage, type FoliwakePageData, type FoliwakePageStatus } from '@foliwake/react';
+
+export function LessonWithStatus({ page }: { page: FoliwakePageData }) {
+  const [status, setStatus] = useState<FoliwakePageStatus | 'idle'>('idle');
+  const [problem, setProblem] = useState<string | null>(null);
+  return (
+    <>
+      <FoliwakePage
+        page={page}
+        requireBlocks
+        onStatus={setStatus}
+        onError={({ code, message }) => setProblem(`${code}: ${message}`)}
+        onMount={(container) => container.querySelector<HTMLElement>('[data-component]')?.focus()}
+      />
+      <p role="status">Blocks: {status}</p>
+      {problem && <p role="alert">{problem}</p>}
+    </>
+  );
+}
+```
+
+Statuses: `mounting`, then `ready`, `partial` (some blocks failed) or `static` (shown without blocks; with
+`requireBlocks` that is `error`). Error codes include `NO_CODE_RELEASE`, `BLOCKS_CONTRACT_UNSUPPORTED`,
+`BLOCKS_MODULE_FAILED` and `EVENT_PREFIX_MISMATCH`.
+
+## Compatibility
+
+| | |
+| --- | --- |
+| React | 19.2 or newer (peer `^19.2.0`; tested with 19.3.0) |
+| Browsers | ES2022 with dynamic `import()` (tested in Chrome) |
+| Blocks contract | `foliwake-blocks/1` |
+| Page data | from `@foliwake/server` or `@foliwake/next` of the same version |
+
+The package is marked `'use client'`. Rendering on the server is safe: the body is rendered as HTML and
+blocks mount only in the browser.
+
+## Good to know
+
+- `preloadCss` (default true) renders `<link rel="stylesheet">` for `components/<name>/<name>.css` of every
+  block on the page. It does not read the release's `components/components.json`, so a block without a
+  stylesheet gets a link that answers 404 (harmless, but visible in the network panel). To avoid that, pass
+  `preloadCss={false}` and render the stylesheet hints of `page.preload` (entries with `as: 'style'`, filled
+  by `readPage` of `@foliwake/next` or `preloadHints` of `@foliwake/server`), which list only existing files.
+- React does not re-render the body element's children after the first render: the blocks own them.
+
+## Guides
+
+- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react)
+- [Tutorial 1: blocks in HTML and React](https://docs.foliwake.dev/guide/tutorial-blocks)
+
+License: Apache-2.0.
+
+<!-- usagestop -->
 
 ## API
 

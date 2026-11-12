@@ -1,61 +1,188 @@
 # @foliwake/client
 
-Show a prepared Foliwake page in any browser app and mount its blocks from the page's own code release.
-DOM only, no framework. `@foliwake/react` is a thin wrapper around it, and so is any other adapter (Vue,
-Svelte, Astro, a web component).
+<!-- usage -->
 
-```js
-import { mountFoliwakePage } from '@foliwake/client';
+`@foliwake/client` shows a prepared Foliwake page inside any browser app and mounts the page's blocks (its
+interactive parts) from the page's own code release. It has no framework dependency: it works with plain
+DOM code, and it is the base of `@foliwake/react` and of any adapter you write for another framework (Vue,
+Svelte, a web component). Use it directly when your app is not a React app; in a React or Next app use
+`@foliwake/react` or `@foliwake/next` instead, which wrap it.
 
-const mount = mountFoliwakePage(document.querySelector('#lesson'), {
-  page,                                         // FoliwakePageData from the server (@foliwake/server preparePage)
-  host: { shell: 'web', labels: { check: 'Check' }, saved: (key) => answers[key] ?? null },
-  onEvent: (e) => e.type === 'answer' && save(e.detail.key, e.detail.selected),
-  onStatus: (status, reports) => …,             // mounting | ready | partial | static | error
-  onError: ({ code, message }) => …,            // NO_CODE_RELEASE, BLOCKS_CONTRACT_UNSUPPORTED, BLOCKS_MODULE_FAILED, …
-  onMount: (container, handle) => …,            // imperative app logic (slides, focus)
-  stylesheets: true,                            // add the blocks' <link rel="stylesheet"> to <head> (default false)
-  signal,                                       // optional: aborting it disposes
-});
-mount.update({ host: { …newer data } });        // latest wins, no remount
-mount.update({ page: nextPage });               // another page.identity: dispose, then mount on the pristine body
-mount.dispose();                                // idempotent; no callback after it
+The page itself is prepared on your server (`preparePage` of `@foliwake/server`, or `readPage` of
+`@foliwake/next`) and handed to the browser as a `FoliwakePageData` object. This package never talks to a
+Foliwake origin: it imports the blocks module from your app's own code proxy (a same-origin URL).
+
+## Install
+
+The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
+
+```ini
+@foliwake:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-Options: `body` decides what happens to the element's content before the blocks mount. With `'auto'` (the
-default), `page.html` is inserted when the element is empty or was mounted before, and server-rendered HTML
-is kept on the first mount. `'insert'` always inserts it. `'keep'` never touches it. `shell` is the host's
-shell when `host` names none (default `'web'`). `requireBlocks` makes a static body `error`. `blocks` replaces
-the runtime import (build-time mode, later).
+`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
+not work with this registry. Install an exact version, and use the same version for every `@foliwake/*`
+package:
 
-Lifecycle hooks (an extension point; the full hooks contract comes later): `hooks: { site?, template? }`, each
-`{ beforeBlocks?, afterFirstSection?, lazy?, delayed? }` of `({ phase, container, page, signal }) => void | Promise`.
-Phases run in that order; in each phase the site's hook runs before the template's, and a returned promise is
-awaited (raced against the mount's `signal`, so a slow hook never holds up dispose or the next mount). In 0.1: `beforeBlocks` after the module loaded and passed the contract check, before `mountBlocks`;
-`afterFirstSection` right after `mountBlocks` (a body is one section); `lazy` once the blocks are ready;
-`delayed` after that, on a later task. A failing hook is reported (`onError` `HOOK_FAILED`) and the mount goes
-on. After dispose no further hook starts, but a hook that is already running is not stopped: cancellation is
-cooperative. A hook must check `signal.aborted` after every `await` and stop there, and remove what it added
-itself (listeners, timers, nodes): after dispose the same element may already hold the next page's mount. `<FoliwakePage hooks={…}>` passes them through.
+```bash
+pnpm add @foliwake/client@0.1.0
+```
 
-Also exported: `createHost(init, { signal, page, shell })`, `subscribeBlockEvents(element, handlers, { prefix })`,
-`listenBlockEvents`, `BLOCK_EVENT_TYPES`, `pageIdentity(page)` (the key an adapter remounts on),
-`pageStylesheets(page)` (the links an adapter renders with the body), `importBlocksModule(url)`,
-`acquireCss` / `cssMounts`, and the contract types.
+## Minimal example
 
-Invariants: the page's identity (`page.identity`, prepared by `@foliwake/server`) is the only thing that
-remounts: the same identity never remounts, another one (a new body, code release, channel or mode) disposes
-and mounts again. Callbacks and host data are read at call time. Every async step is abort-guarded, and dispose is
-idempotent with no event after it. Mount, dispose and mount again on the same element starts from the
-pristine body. App or page code that runs synchronously during a mount (callbacks, custom elements in the body
-or as the container, a custom loader, block code) may dispose or update the mount; the mount then takes no
-further resources and releases what it took. This is cooperative, best-effort hygiene, not a sandbox against
-hostile page code. Block stylesheets are counted per code release. The module is imported at run time from a
-same-origin URL (`import(/* webpackIgnore: true */ /* turbopackIgnore: true */ /* @vite-ignore */ url)`).
-The package never fetches from a Foliwake origin. Apache-2.0.
+```ts
+import { mountFoliwakePage, type FoliwakePageData } from '@foliwake/client';
 
-Writing an adapter for another framework: see the guide, "Other frameworks"
-(`website/guide/embed-in-react.md`).
+// Your server prepares the page (see @foliwake/server) and serves it as JSON.
+const page = (await (await fetch('/api/page?path=/lessons/a')).json()) as FoliwakePageData;
+
+const mount = mountFoliwakePage(document.querySelector<HTMLElement>('#lesson')!, {
+  page,
+  onStatus: (status) => console.log('blocks:', status), // mounting → ready | partial | static | error
+  stylesheets: true, // add the blocks' stylesheets to <head>; removed with the last mount of the release
+});
+
+// When the view goes away (idempotent; no callback runs after it):
+mount.dispose();
+```
+
+The element may be empty (the body is inserted) or already hold the body your server rendered (it is kept on
+the first mount). If the page cannot get blocks (no code release, another contract major, a failing module),
+the body stays readable, the status is `static` and `onError` says why.
+
+## Examples
+
+### Give blocks a host and save their answers
+
+The host is your app's side of the blocks contract: labels for block chrome, saved answers, analytics. A
+function as `host` is read again at every access, so newer data takes effect without a remount.
+
+```ts
+import { mountFoliwakePage, type FoliwakeEvent, type FoliwakePageData, type SavedAnswer } from '@foliwake/client';
+
+declare const page: FoliwakePageData;
+const answers = new Map<string, SavedAnswer>();
+
+const mount = mountFoliwakePage(document.querySelector<HTMLElement>('#lesson')!, {
+  page,
+  host: () => ({
+    labels: { check: 'Check', retry: 'Try again' },
+    saved: (key) => answers.get(key) ?? null,
+    track: (name, data) => console.debug('track', name, data),
+  }),
+  onEvent: (event: FoliwakeEvent) => {
+    if (event.type !== 'answer') return;
+    const { key, selected, correct } = (event as FoliwakeEvent<'answer'>).detail;
+    answers.set(key, { selected, correct });
+    void fetch('/api/answers', { method: 'POST', body: JSON.stringify({ key, selected, correct }) });
+  },
+  onError: ({ code, message }) => console.warn(code, message),
+});
+```
+
+### Change the page or the callbacks without leaking
+
+`update()` passes new callbacks or host data (no remount). A `page` with another `identity` (a new body, code
+release, channel or mode) disposes the old mount and mounts the new page on the pristine element. An
+`AbortSignal` disposes the mount when your view's lifetime ends.
+
+```ts
+import { mountFoliwakePage, type FoliwakePageData } from '@foliwake/client';
+
+declare const first: FoliwakePageData;
+declare const next: FoliwakePageData;
+
+const view = new AbortController();
+const mount = mountFoliwakePage(document.querySelector<HTMLElement>('#lesson')!, { page: first, signal: view.signal });
+
+mount.update({ host: { labels: { check: 'Prüfen' } } }); // latest wins, no remount
+mount.update({ page: next });                            // another identity: dispose, then mount `next`
+view.abort();                                            // same as mount.dispose()
+```
+
+### Listen to block events outside the mount
+
+`subscribeBlockEvents` routes `<prefix>:<type>` events under any element to typed handlers, for example a
+progress bar next to the page. The prefix is the config's `app.blocks.eventPrefix` (`clientSettings(config)`
+on the server gives it to the browser).
+
+```ts
+import { subscribeBlockEvents } from '@foliwake/client';
+
+const stop = subscribeBlockEvents(
+  document.querySelector('#lesson')!,
+  {
+    answer: (event) => console.log(event.detail.key, event.detail.correct),
+    complete: (event) => console.log('done:', event.detail.block),
+  },
+  { prefix: 'demo' },
+);
+// later: stop()
+```
+
+### Wrap it as a custom element
+
+An adapter for any framework has the same shape: mount on connect, `update` on changes, `dispose` on
+disconnect, and use `pageIdentity(page)` as the framework's key.
+
+```ts
+import { mountFoliwakePage, type FoliwakeMount, type FoliwakePageData } from '@foliwake/client';
+
+class FoliwakePageElement extends HTMLElement {
+  #mount: FoliwakeMount | null = null;
+  #page: FoliwakePageData | null = null;
+  set page(page: FoliwakePageData) {
+    this.#page = page;
+    if (this.#mount) this.#mount.update({ page });
+    else if (this.isConnected) this.connectedCallback();
+  }
+  connectedCallback() {
+    if (this.#page && !this.#mount) this.#mount = mountFoliwakePage(this, { page: this.#page, shell: 'web-component', stylesheets: true });
+  }
+  disconnectedCallback() {
+    this.#mount?.dispose();
+    this.#mount = null;
+  }
+}
+customElements.define('foliwake-page', FoliwakePageElement);
+```
+
+## Compatibility
+
+| | |
+| --- | --- |
+| Browsers | ES2022 with dynamic `import()` (tested in Chrome) |
+| Blocks contract | `foliwake-blocks/1` (host minor 1) |
+| Page data | from `@foliwake/server` or `@foliwake/next` of the same version |
+| Frameworks | none required; React 19.2+ through `@foliwake/react` |
+
+Importing the package on a server is safe: nothing touches the DOM before a call.
+
+## Good to know
+
+- Only `page.identity` remounts. Callbacks and host data are read at call time; every async step is
+  abort-guarded; `dispose()` is idempotent and no callback runs after it. A second mount on the same element
+  starts from the pristine body.
+- Block stylesheets are counted per code release: with `stylesheets: true` they are added once and removed
+  when the last mount of that release goes. `pageStylesheets(page)` (and `stylesheets: true`) link
+  `components/<name>/<name>.css` for every block name on the page; it does not read the release's
+  `components/components.json`, so a block without a stylesheet gets a link that answers 404 (harmless, but
+  visible in the network panel). The server's preload hints (`page.preload` from `readPage`, entries with
+  `as: 'style'`) list only the stylesheets that exist; render those yourself if the 404s matter.
+- Lifecycle hooks (`hooks: { site, template }`, phases `beforeBlocks`, `afterFirstSection`, `lazy`, `delayed`)
+  are an extension point. A hook gets a `signal` and must check it after each `await`; a running hook is not
+  stopped by dispose.
+
+## Guides
+
+- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react) (section
+  "Without a framework, or with another one" covers adapters)
+- [Write a block](https://docs.foliwake.dev/guide/write-a-block)
+
+License: Apache-2.0.
+
+<!-- usagestop -->
 
 ## API
 

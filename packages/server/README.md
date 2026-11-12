@@ -1,36 +1,193 @@
 # @foliwake/server
 
-Server toolkit for apps that show Foliwake pages. Web `Request`/`Response`, no framework, Node ≥ 22.
+<!-- usage -->
 
-| Entry | Exports |
-|---|---|
-| `./config` | `parseFoliwakeConfig`, `loadFoliwakeConfig`, `clientSettings`, `pageAllowed`, `FoliwakeConfigError` (config v2, schema `./schemas/remote-2.schema.json`) |
-| `./origin` | `createOriginClient(config, env)`: the only place a password is read (per request, by the variable name in the config) |
-| `./page` | `readEnvelope(config, client, site, channel, path)` (primitive inputs: safe in a cache function), `preparePage(config, envelope, { rewriteLink, transform, mode })`, `FoliwakePageError` |
-| `./html` | `checkPlainBody`, `checkBody`, `serialize`, `srcsetCandidates` (the strict body check) |
-| `./handlers` | `codeHandler`, `mediaHandler` (`{ authorizePreview }` required) |
-| `./csp` | `foliwakeCsp({ strategy: 'self-inline', mediaBase, reportUri, extra, dev })`; `mediaBase` (https; origin only) is the media host, or the site's image CDN when it uses `media.resize: "cdn"` |
-| `./preload` | `preloadHints(config, client, page)`: modulepreload / preload hints of a page's blocks |
+`@foliwake/server` is the server toolkit for any app that shows Foliwake pages, with no framework
+dependency: Web `Request`/`Response` and plain functions. It parses the app's `foliwake.remote.json`, reads a
+page's body from the site's live or preview origin with the credential, checks and prepares it per request,
+serves the page's code release and pictures through your app's origin (proxies), builds a
+Content-Security-Policy, and computes preload hints. `@foliwake/next` is built on it; use this package
+directly with another server framework (a Vite or Remix server, Hono, Express with Web adapters, a worker).
+
+| Entry | What |
+| --- | --- |
+| `@foliwake/server/config` | `loadFoliwakeConfig`, `parseFoliwakeConfig`, `clientSettings`, `pageAllowed`, `FoliwakeConfigError` |
+| `@foliwake/server/origin` | `createOriginClient`: the only place a password is read (per request, from the variable the config names) |
+| `@foliwake/server/page` | `readEnvelope` (primitive inputs: safe inside a cache function), `preparePage`, `FoliwakePageError` |
+| `@foliwake/server/handlers` | `codeHandler`, `mediaHandler`: the code and media proxies |
+| `@foliwake/server/html` | the strict body check: `checkPlainBody`, `checkBody`, `serialize`, `srcsetCandidates` |
+| `@foliwake/server/csp` | `foliwakeCsp` |
+| `@foliwake/server/preload` | `preloadHints`: modulepreload and stylesheet hints for a page's blocks |
+| `@foliwake/server/schemas/remote-2.schema.json` | the JSON Schema of the config file |
+
+## Install
+
+The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
+
+```ini
+@foliwake:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
+not work with this registry. Install an exact version, the same for every `@foliwake/*` package:
+
+```bash
+pnpm add @foliwake/server@0.1.0
+```
+
+The config file sits in the app's root and holds no secrets, only the names of the variables with passwords:
+
+```json
+{
+  "$schema": "./node_modules/@foliwake/server/schemas/remote-2.schema.json",
+  "version": 2,
+  "site": "mysite",
+  "live": { "url": "https://mysite.example.org" },
+  "preview": { "url": "https://preview.mysite.example.org", "auth": { "type": "basic", "username": "app", "passwordEnv": "MYSITE_PREVIEW_PASSWORD" } },
+  "app": {
+    "pages": ["/**"],
+    "proxies": { "code": "/foliwake-code", "media": "/foliwake-media", "pages": null },
+    "blocks": { "entry": "scripts/blocks.js", "contract": "foliwake-blocks/1", "eventPrefix": "demo" },
+    "revalidate": 300
+  }
+}
+```
+
+## Minimal example
 
 ```ts
 import { loadFoliwakeConfig } from '@foliwake/server/config';
 import { createOriginClient } from '@foliwake/server/origin';
-import { readEnvelope, preparePage } from '@foliwake/server/page';
-import { codeHandler } from '@foliwake/server/handlers';
+import { preparePage, readEnvelope } from '@foliwake/server/page';
 
-const config = await loadFoliwakeConfig();            // FOLIWAKE_REMOTE or ./foliwake.remote.json
+const config = await loadFoliwakeConfig(); // FOLIWAKE_REMOTE, else ./foliwake.remote.json
 const client = createOriginClient(config, process.env);
-const page = preparePage(config, await readEnvelope(config, client, config.site, 'live', '/lessons/a'));
-const code = codeHandler(config, client, { authorizePreview: false }); // (request, { path }) => Response
+
+const envelope = await readEnvelope(config, client, config.site, 'live', '/lessons/a'); // cacheable
+const page = preparePage(config, envelope); // per request: checked, rewritten, serialisable
+console.log(page.identity, page.blocks);
 ```
 
-Guarantees: bodies are checked before and after the app's transform (no scripts, styles, frames, inline SVG
-or MathML, `on*`, `javascript:`; srcset and entities parsed like a browser), and what is returned is
-serialised from the checked tree. Origin responses are size-limited while streaming (body 2 MB, code 5 MB,
-media 25 MB). Preview is never served without `authorizePreview`, and preview answers are `private, no-store`.
-Preview pictures are never addressed through the public media host. Credentials never appear in messages.
+## Examples
 
-Guide: [Embed Foliwake pages in a React or Next app](https://github.com/adjioev/foliwake/blob/main/website/guide/embed-in-react.md). Apache-2.0.
+### A page endpoint for the browser, with a cache of envelopes
+
+Cache only the envelope (what the origin answered) and prepare per request, so your callbacks (`rewriteLink`,
+`transform`) always run on the current code. The prepared page is what `@foliwake/client` or
+`@foliwake/react` mount.
+
+```ts
+import { loadFoliwakeConfig } from '@foliwake/server/config';
+import { createOriginClient } from '@foliwake/server/origin';
+import { FoliwakePageError, preparePage, readEnvelope, type PageEnvelope } from '@foliwake/server/page';
+import { preloadHints } from '@foliwake/server/preload';
+
+const config = await loadFoliwakeConfig();
+const client = createOriginClient(config, process.env);
+const cache = new Map<string, { at: number; envelope: PageEnvelope }>();
+
+async function liveEnvelope(path: string): Promise<PageEnvelope> {
+  const hit = cache.get(path);
+  if (hit && Date.now() - hit.at < config.app!.revalidate * 1000) return hit.envelope;
+  const envelope = await readEnvelope(config, client, config.site, 'live', path);
+  cache.set(path, { at: Date.now(), envelope });
+  return envelope;
+}
+
+/** GET /api/page?path=/lessons/a */
+export async function pageEndpoint(request: Request): Promise<Response> {
+  const path = new URL(request.url).searchParams.get('path') ?? '/';
+  try {
+    const page = preparePage(config, await liveEnvelope(path), { rewriteLink: (href) => `/learn${href}` });
+    page.preload = await preloadHints(config, client, page);
+    return Response.json(page, { headers: { 'Cache-Control': 'private, no-store' } });
+  } catch (error) {
+    if (error instanceof FoliwakePageError && (error.kind === 'not_found' || error.kind === 'not_allowed')) return new Response(null, { status: 404 });
+    throw error;
+  }
+}
+```
+
+### Code and media proxies
+
+Mount the handlers under the prefixes of `app.proxies` and pass them the path segments after the prefix. They
+serve only files of a `cd_…` code release and hashed pictures, add the credential on the server and forward
+nothing from the browser. Live files are cached for a year (immutable); preview answers are
+`private, no-store` and need `authorizePreview`.
+
+```ts
+import { loadFoliwakeConfig } from '@foliwake/server/config';
+import { codeHandler, mediaHandler } from '@foliwake/server/handlers';
+import { createOriginClient } from '@foliwake/server/origin';
+
+const config = await loadFoliwakeConfig();
+const client = createOriginClient(config, process.env);
+const isAuthor = async (request: Request) => (request.headers.get('cookie') ?? '').includes('role=author'); // your sign-in
+const code = codeHandler(config, client, { authorizePreview: isAuthor });
+const media = mediaHandler(config, client, { authorizePreview: isAuthor });
+
+/** Route requests under /foliwake-code/ and /foliwake-media/ (app.proxies) to the handlers. */
+export async function proxies(request: Request): Promise<Response | null> {
+  const { pathname } = new URL(request.url);
+  const segments = (prefix: string) => pathname.slice(prefix.length + 1).split('/').filter(Boolean);
+  if (pathname.startsWith(`${config.app!.proxies.code}/`)) return code(request, { path: segments(config.app!.proxies.code) });
+  if (pathname.startsWith(`${config.app!.proxies.media}/`)) return media(request, { path: segments(config.app!.proxies.media) });
+  return null;
+}
+```
+
+### CSP and browser settings
+
+```ts
+import { clientSettings, loadFoliwakeConfig } from '@foliwake/server/config';
+import { foliwakeCsp } from '@foliwake/server/csp';
+
+const config = await loadFoliwakeConfig();
+
+// One header value for every route: blocks load from your own origin, so no Foliwake host is named.
+export const csp = foliwakeCsp({
+  strategy: 'self-inline',
+  mediaBase: config.app?.media?.base ?? null,
+  reportUri: '/csp-report',
+  dev: process.env.NODE_ENV === 'development',
+});
+
+// The only part of the config a browser may see: site, proxy prefixes, blocks contract and event prefix.
+export const settingsForBrowser = clientSettings(config);
+```
+
+## Compatibility
+
+| | |
+| --- | --- |
+| Node.js | 22.22 or newer (Web `fetch`, `Request`, `Response`, streams) |
+| Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); a plain/1 origin gives bodies without blocks |
+| Config | `foliwake.remote.json` version 2 (version 1 files are refused) |
+| Blocks contract | `foliwake-blocks/1` |
+
+## Good to know
+
+- Bodies are checked before and after your `transform`: no scripts, styles, frames, inline SVG or MathML, no
+  `on…` attributes or `javascript:` URLs; `srcset` and entities are parsed like a browser does. What is
+  returned is serialised from the checked tree. A refused body throws `FoliwakePageError` with kind `invalid`.
+- Origin responses are size-limited while streaming (body 2 MB, code 5 MB, media 25 MB); requests time out
+  after 10 s.
+- Credentials never appear in messages; a missing password variable is a `FoliwakeConfigError` that names
+  the variable, not its value. The password is read at each request, so a rotated secret works without a
+  restart.
+- `preparePage` leaves `page.preload` empty; `preloadHints` fills it from the release's
+  `components/components.json` (only blocks that declare a `.js` or `.css` get hints).
+
+## Guides
+
+- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react): config keys,
+  proxies, caching and troubleshooting.
+- [Configuration and storage](https://docs.foliwake.dev/guide/configuration-storage)
+
+License: Apache-2.0.
+
+<!-- usagestop -->
 
 ## API
 

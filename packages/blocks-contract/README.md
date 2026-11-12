@@ -1,20 +1,159 @@
 # @foliwake/blocks-contract
 
-Types only (no runtime code) of the Foliwake blocks contract `foliwake-blocks/1`
-([docs/contracts/blocks-contract.md](https://github.com/adjioev/foliwake/blob/main/docs/contracts/blocks-contract.md)),
-and the page types shared by `@foliwake/server` and `@foliwake/client` / `@foliwake/react`.
+<!-- usage -->
 
-```ts
-import type { BlocksModule, BlockHost, FoliwakeEvent, BlockReport } from '@foliwake/blocks-contract';
-import type { PageEnvelope, FoliwakePageData, ClientSettings, PreloadHint } from '@foliwake/blocks-contract/page';
+`@foliwake/blocks-contract` holds the TypeScript types of the Foliwake blocks contract `foliwake-blocks/1`:
+what a site's blocks module exports (`BLOCKS_CONTRACT`, `mountBlocks`), the host an app gives every block,
+the block events, and the page types that `@foliwake/server` produces and `@foliwake/client` /
+`@foliwake/react` consume. It has no runtime code. Use it when you write a blocks module or a block host by
+hand, or when your own code passes pages between server and browser; the other packages re-export the types
+you usually need.
+
+| Entry | Types |
+| --- | --- |
+| `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `BlockReport`, `BlockHost`, `HostReact`, answers and verdicts, `BlockEventType`, `BlockEventDetails`, `FoliwakeEvent` |
+| `@foliwake/blocks-contract/page` | `PageEnvelope` (the origin's answer, the only thing an app caches), `FoliwakePageData` (the prepared page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex` |
+
+A change here is a contract change: minor versions of the contract only add.
+
+## Install
+
+The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your project:
+
+```ini
+@foliwake:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
 
-- `.`: `BlocksModule` (`BLOCKS_CONTRACT`, `mountBlocks`), `MountHandle`, `BlockReport`, `BlockHost`, answers
-  and verdicts, `BlockEventType` / `BlockEventDetails` / `FoliwakeEvent`.
-- `./page`: `PageEnvelope` (what the origin answered, the only thing an app caches), `FoliwakePageData`
-  (the prepared, serialisable page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex`.
+`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
+not work with this registry. Install an exact version, the same as your other `@foliwake/*` packages; as it
+holds only types, a dev dependency is enough:
 
-A change here is a contract change. Apache-2.0.
+```bash
+pnpm add -D @foliwake/blocks-contract@0.1.0
+```
+
+## Minimal example
+
+```ts
+import type { BlocksModule } from '@foliwake/blocks-contract';
+import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
+
+export function describe(page: FoliwakePageData, blocks: BlocksModule): string {
+  return `${page.path}: ${page.blocks.length} blocks, module speaks foliwake-blocks/${blocks.BLOCKS_CONTRACT.major}`;
+}
+```
+
+## Examples
+
+### Write a blocks module
+
+A code release's blocks module (`app.blocks.entry`, for example `scripts/blocks.js`) exports
+`BLOCKS_CONTRACT` and `mountBlocks`. `mountBlocks` mounts every `[data-component]` root in the container and
+returns a handle; blocks emit `<prefix>:<type>` events that bubble from their root.
+
+```ts
+// scripts/blocks.ts (compiled to scripts/blocks.js in the site's code)
+import type { BlockEventDetail, BlockHost, BlockReport, BlocksModule, MountHandle } from '@foliwake/blocks-contract';
+
+const PREFIX = 'demo';
+
+export const BLOCKS_CONTRACT: BlocksModule['BLOCKS_CONTRACT'] = { major: 1, minor: 1, eventPrefix: PREFIX };
+
+export function mountBlocks(container: Element, host?: BlockHost): MountHandle {
+  const cleanups: (() => void)[] = [];
+  const reports: BlockReport[] = [];
+  for (const root of container.querySelectorAll<HTMLElement>('[data-component="choice"]')) {
+    const key = host?.keyOf(root) ?? root.dataset.blockKey ?? '';
+    const restored = host?.saved?.(key) ?? null;
+    if (restored) root.dataset.selected = restored.selected.join(' ');
+    const onClick = (event: Event) => {
+      const option = (event.target as Element).closest<HTMLElement>('[data-option]');
+      if (!option || host?.signal.aborted) return;
+      const detail: BlockEventDetail<'answer'> = { key, block: 'choice', selected: [option.dataset.option!], correct: null, graded: 'local' };
+      root.dispatchEvent(new CustomEvent(`${PREFIX}:answer`, { detail, bubbles: true }));
+    };
+    root.addEventListener('click', onClick);
+    cleanups.push(() => root.removeEventListener('click', onClick));
+    reports.push({ root, name: 'choice', key, status: 'ready' });
+  }
+  return {
+    ready: Promise.resolve(reports),
+    dispose: () => cleanups.splice(0).forEach((cleanup) => cleanup()),
+  };
+}
+
+// The module as a whole satisfies the contract.
+export default { BLOCKS_CONTRACT, mountBlocks } satisfies BlocksModule;
+```
+
+### Write a host by hand
+
+`@foliwake/client` builds the host for you (`createHost`). Without it, an app gives every block an object of
+this shape; the optional members it has are announced by `has(name)`.
+
+```ts
+import type { BlockHost, SavedAnswer } from '@foliwake/blocks-contract';
+import type { FoliwakePageData } from '@foliwake/blocks-contract/page';
+
+export function makeHost(page: FoliwakePageData, signal: AbortSignal, answers: Map<string, SavedAnswer>): BlockHost {
+  return {
+    contract: { major: 1, minor: 1 },
+    shell: 'my-app',
+    htmlContract: page.htmlContract,
+    channel: page.channel,
+    mode: page.mode,
+    lang: page.lang ?? (document.documentElement.lang || 'en'),
+    uiLang: 'en',
+    labels: { check: 'Check' },
+    theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+    reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+    signal,
+    policy: {},
+    keyOf: (root) => root.getAttribute('data-block-key') ?? '',
+    saved: (key) => answers.get(key) ?? null,
+    has: (feature) => feature === 'saved' || feature === 'labels' || feature === 'signal' || feature === 'channel',
+  };
+}
+```
+
+### Type events and pages in your own code
+
+```ts
+import type { BlockEventType, FoliwakeEvent } from '@foliwake/blocks-contract';
+import type { FoliwakePageData, PageEnvelope } from '@foliwake/blocks-contract/page';
+
+/** A handler for one event type gets that type's detail. */
+export function onAnswer(event: FoliwakeEvent<'answer'>): void {
+  console.log(event.detail.key, event.detail.selected, event.detail.graded);
+}
+
+export const interesting: BlockEventType[] = ['answer', 'complete'];
+
+/** What to store in your own cache: the envelope, never the prepared page (prepare per request). */
+export function cacheKey(envelope: PageEnvelope): string {
+  return `${envelope.site}|${envelope.channel}|${envelope.path}|${envelope.etag ?? ''}`;
+}
+
+export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === null;
+```
+
+## Compatibility
+
+| | |
+| --- | --- |
+| Contract | `foliwake-blocks/1` (minor 1: `BLOCKS_CONTRACT.eventPrefix`, optional `host.react`) |
+| TypeScript | types only; written for TypeScript 5.9 |
+| Node.js | 22.22 or newer (`engines`) |
+
+## Guides
+
+- [Write a block](https://docs.foliwake.dev/guide/write-a-block)
+- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react)
+
+License: Apache-2.0.
+
+<!-- usagestop -->
 
 ## API
 
