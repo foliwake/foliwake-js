@@ -20,9 +20,9 @@
       "required": ["pages"],
       "properties": {
         "pages": {
-          "description": "Page globs the app may read (query-index grammar: [a-z0-9-] literals, * within a segment, ** as a whole segment; /x/** also matches /x).",
+          "description": "Page globs the app may read (query-index grammar: [a-z0-9_-] literals, * within a segment, ** as a whole segment; /x/** also matches /x).",
           "type": "array", "minItems": 1, "maxItems": 20,
-          "items": { "type": "string", "maxLength": 200, "pattern": "^/(?:(?:\\*\\*|[a-z0-9*-]+)(?:/(?:\\*\\*|[a-z0-9*-]+))*)?$" }
+          "items": { "type": "string", "maxLength": 200, "pattern": "^/(?:(?:\\*\\*|[a-z0-9_*-]+)(?:/(?:\\*\\*|[a-z0-9_*-]+))*)?$" }
         },
         "proxies": {
           "description": "App-origin URL prefixes of the proxies. Not /, /_next, /api, /code, /media or below them; code and media differ and neither is inside the other.",

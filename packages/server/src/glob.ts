@@ -1,8 +1,8 @@
 // Page globs of `app.pages`: the query-index glob grammar (release-formats query.ts, copied; an equality test
-// keeps them in step). `/`-separated segments of [a-z0-9-] literals, `*` within a segment, `**` as a whole
+// keeps them in step). `/`-separated segments of [a-z0-9_-] literals, `*` within a segment, `**` as a whole
 // segment (zero or more segments; `/x/**` also matches `/x`).
 
-const GLOB_SEGMENT = /^[a-z0-9*-]+$/;
+const GLOB_SEGMENT = /^[a-z0-9_*-]+$/;
 export const GLOB_LIMITS = Object.freeze({ globsPerList: 20, globLength: 200 });
 
 /** Why `glob` is not a valid bounded glob (null: it is). */
@@ -13,7 +13,7 @@ export function globProblem(glob: string): string | null {
   for (const segment of glob.slice(1).split('/')) {
     if (segment === '') return 'has an empty segment (// or a trailing /)';
     if (segment === '**') continue;
-    if (!GLOB_SEGMENT.test(segment)) return 'may only use a-z, 0-9, -, * (within a segment) and ** (a whole segment)';
+    if (!GLOB_SEGMENT.test(segment)) return 'may only use a-z, 0-9, -, _, * (within a segment) and ** (a whole segment)';
     if (segment.includes('**')) return 'uses ** inside a segment; ** must be a whole segment';
   }
   return null;

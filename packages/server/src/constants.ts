@@ -37,8 +37,8 @@ export const MEDIA_TYPES: Readonly<Record<string, string>> = Object.freeze({
 /** One segment of a path inside a code release, after a single decode. */
 export const CODE_SEGMENT = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/;
 
-/** A Foliwake page path: `/` or `/`-separated lower-case segments. */
-export const PAGE_PATH_PATTERN = /^\/(?:[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*)*)?$/;
+/** A Foliwake page path: `/` or segments of lower-case letters and digits joined by single `-` or `_` (engine PATH_PATTERN). */
+export const PAGE_PATH_PATTERN = /^\/(?:[a-z0-9]+(?:[-_][a-z0-9]+)*(?:\/[a-z0-9]+(?:[-_][a-z0-9]+)*)*)?$/;
 
 /** Limits (bytes, ms). */
 export const LIMITS = Object.freeze({
