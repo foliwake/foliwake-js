@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Framework-free browser client for Foliwake pages: mountFoliwakePage mounts a page's blocks from its own code release into a DOM element (body, host, events, abort guards, block CSS). No framework dependency; the base of @foliwake/react and other adapters.",
   "license": "Apache-2.0",
   "type": "module",
