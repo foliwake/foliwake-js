@@ -12,7 +12,9 @@ const SYSTEM_PREFIXES = ['SSH_', 'LC_', 'XDG_', 'DYLD_', 'LD_', 'GIT_', 'NODE_',
 
 /** Why `name` cannot name a credential, or null. Browser-exposed prefixes (NEXT_PUBLIC_, VITE_) are refused too. */
 export function basicEnvNameProblem(name: unknown, what: string): string | null {
-  if (typeof name !== 'string' || !NAME.test(name)) return `${what}: give the NAME of an environment variable (capital letters, digits and _), not the secret itself.`;
+  if (typeof name !== 'string' || !NAME.test(name)) {
+    return `${what}: give the NAME of an environment variable (capital letters, digits and _), not the secret itself.`;
+  }
   if (SYSTEM_NAMES.has(name) || SYSTEM_PREFIXES.some((prefix) => name.startsWith(prefix))) {
     return `${what}: ${name} is a system or browser-exposed variable, not a credential; use a variable of its own.`;
   }

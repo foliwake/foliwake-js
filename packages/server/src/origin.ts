@@ -39,15 +39,54 @@ export interface OriginClientOptions {
   now?: () => number;
 }
 
-function basicAuthorization(auth: BasicAuth, channel: ChannelName, config: FoliwakeAppConfig, env: NodeJS.ProcessEnv): string {
+function basicAuthorization(
+  auth: BasicAuth,
+  channel: ChannelName,
+  config: FoliwakeAppConfig,
+  env: NodeJS.ProcessEnv,
+): string {
   const password = env[auth.passwordEnv];
   if (password === undefined || password === '') {
-    throw new FoliwakeConfigError(`The ${channel} site needs the password in the environment variable ${auth.passwordEnv} (named in ${config.from}); it is not set on this server.`);
+    throw new FoliwakeConfigError(
+      `The ${channel} site needs the password in the environment variable ${auth.passwordEnv} ` +
+        `(named in ${config.from}); it is not set on this server.`,
+    );
   }
   return `Basic ${Buffer.from(`${auth.username}:${password}`, 'utf8').toString('base64')}`;
 }
 
 const PRIVATE_KEY_SHAPE = 'an ES256 private key as JWK JSON text ({"kty": "EC", "crv": "P-256", "x", "y", "d"})';
+
+function isEs256PrivateKey(key: unknown): key is Record<string, unknown> {
+  if (key === null || typeof key !== 'object' || Array.isArray(key)) return false;
+  const jwk = key as Record<string, unknown>;
+  return jwk.kty === 'EC' && jwk.crv === 'P-256' && typeof jwk.d === 'string';
+}
+
+/**
+ * The private key JWK in `text`, checked against the config's `kid`. `where` names the variable in
+ * messages, which never contain the value or a parse error of it.
+ */
+function parsePrivateKey(text: string, auth: ServiceTokenAuth, where: string): JWK {
+  let key: unknown;
+  try {
+    key = JSON.parse(text);
+  } catch {
+    throw new FoliwakeConfigError(`${where} is not valid JSON: it must be ${PRIVATE_KEY_SHAPE}.`);
+  }
+  if (!isEs256PrivateKey(key)) throw new FoliwakeConfigError(`${where} must be ${PRIVATE_KEY_SHAPE}.`);
+  if (key.alg !== undefined && key.alg !== 'ES256') {
+    throw new FoliwakeConfigError(`${where}: "alg" must be "ES256" when given.`);
+  }
+  if (key.kid !== undefined && key.kid !== auth.kid) {
+    const found = String(key.kid).slice(0, 128);
+    throw new FoliwakeConfigError(
+      `${where} has kid "${found}", but the config names kid "${auth.kid}": ` +
+        'the delivery would look up the wrong public key.',
+    );
+  }
+  return key as JWK;
+}
 
 // The private key of a variable's current text. The parsed key is kept for the same text only, so a
 // rotated value takes effect at the next request. Messages never contain the value or a parse error of it.
@@ -57,24 +96,14 @@ function createPrivateKeyReader() {
     const text = env[auth.privateKeyEnv];
     const where = `The ${channel} site's signing key in ${auth.privateKeyEnv} (named in ${config.from})`;
     if (text === undefined || text === '') {
-      throw new FoliwakeConfigError(`The ${channel} site needs ${PRIVATE_KEY_SHAPE} in the environment variable ${auth.privateKeyEnv} (named in ${config.from}); it is not set on this server.`);
+      throw new FoliwakeConfigError(
+        `The ${channel} site needs ${PRIVATE_KEY_SHAPE} in the environment variable ${auth.privateKeyEnv} ` +
+          `(named in ${config.from}); it is not set on this server.`,
+      );
     }
     if (last && last.text === text && last.kid === auth.kid) return last.key;
-    let jwk: unknown;
-    try {
-      jwk = JSON.parse(text);
-    } catch {
-      throw new FoliwakeConfigError(`${where} is not valid JSON: it must be ${PRIVATE_KEY_SHAPE}.`);
-    }
-    const key = jwk as Record<string, unknown>;
-    if (key === null || typeof key !== 'object' || Array.isArray(key) || key.kty !== 'EC' || key.crv !== 'P-256' || typeof key.d !== 'string') {
-      throw new FoliwakeConfigError(`${where} must be ${PRIVATE_KEY_SHAPE}.`);
-    }
-    if (key.alg !== undefined && key.alg !== 'ES256') throw new FoliwakeConfigError(`${where}: "alg" must be "ES256" when given.`);
-    if (key.kid !== undefined && key.kid !== auth.kid) {
-      throw new FoliwakeConfigError(`${where} has kid "${String(key.kid).slice(0, 128)}", but the config names kid "${auth.kid}": the delivery would look up the wrong public key.`);
-    }
-    const imported = importJWK(key as JWK, 'ES256').catch(() => {
+    const key = parsePrivateKey(text, auth, where);
+    const imported = importJWK(key, 'ES256').catch(() => {
       throw new FoliwakeConfigError(`${where} could not be read as ${PRIVATE_KEY_SHAPE}.`);
     });
     last = { text, kid: auth.kid, key: imported };
@@ -89,7 +118,13 @@ function createPrivateKeyReader() {
  * The service token of one request: ES256, header `kid`, claims `iss`, `aud: site:<site>`, `iat`,
  * `exp = iat + 60` and `path`, the exact path of the request as it goes on the wire (no query).
  */
-async function serviceTokenAuthorization(auth: ServiceTokenAuth, site: string, path: string, key: SigningKey, nowMs: number): Promise<string> {
+async function serviceTokenAuthorization(
+  auth: ServiceTokenAuth,
+  site: string,
+  path: string,
+  key: SigningKey,
+  nowMs: number,
+): Promise<string> {
   const iat = Math.floor(nowMs / 1000);
   const token = await new SignJWT({ path })
     .setProtectedHeader({ alg: 'ES256', kid: auth.kid, typ: 'JWT' })

@@ -64,7 +64,11 @@
       "properties": {
         "type": { "const": "basic" },
         "username": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[^:\\u0000-\\u001f\\u007f]+$" },
-        "passwordEnv": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]{0,127}$", "description": "The NAME of the environment variable holding the password." }
+        "passwordEnv": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+          "description": "The NAME of the environment variable holding the password."
+        }
       }
     },
     "serviceTokenAuth": {
@@ -72,9 +76,21 @@
       "type": "object", "additionalProperties": false, "required": ["type", "issuer", "kid", "privateKeyEnv"],
       "properties": {
         "type": { "const": "service-token" },
-        "issuer": { "type": "string", "pattern": "^[A-Za-z0-9._:/-]{1,256}$", "description": "The iss the delivery expects (its TOKEN_ISSUER)." },
-        "kid": { "type": "string", "pattern": "^[A-Za-z0-9._-]{1,128}$", "description": "The key id of the public key the delivery holds." },
-        "privateKeyEnv": { "type": "string", "pattern": "^[A-Z_][A-Z0-9_]{0,127}$", "description": "The NAME of the environment variable holding the ES256 private key as JWK JSON text." }
+        "issuer": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._:/-]{1,256}$",
+          "description": "The iss the delivery expects (its TOKEN_ISSUER)."
+        },
+        "kid": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$",
+          "description": "The key id of the public key the delivery holds."
+        },
+        "privateKeyEnv": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]{0,127}$",
+          "description": "The NAME of the environment variable holding the ES256 private key as JWK JSON text."
+        }
       }
     },
     "endpoint": {
