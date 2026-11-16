@@ -197,12 +197,12 @@ function parseServiceTokenAuth(auth: Obj, where: string, opts: ParseOptions): Se
   onlyKeys(auth, ['type', 'issuer', 'kid', 'privateKeyEnv'], where);
   if (typeof auth.issuer !== 'string' || !ISSUER.test(auth.issuer)) {
     throw new FoliwakeConfigError(
-      `${where}.issuer: the issuer the delivery expects (its TOKEN_ISSUER), [A-Za-z0-9._:/-], such as "gaiare-next".`,
+      `${where}.issuer: the issuer the delivery expects (its TOKEN_ISSUER), [A-Za-z0-9._:/-], such as "my-app".`,
     );
   }
   if (typeof auth.kid !== 'string' || !KID.test(auth.kid)) {
     throw new FoliwakeConfigError(
-      `${where}.kid: the key id of the public key the delivery holds, [A-Za-z0-9._-], such as "gaiare-next-2026-11".`,
+      `${where}.kid: the key id of the public key the delivery holds, [A-Za-z0-9._-], such as "my-app-2026-11".`,
     );
   }
   return {
@@ -322,7 +322,7 @@ export function parseFoliwakeConfig(text: string, opts: ParseOptions = {}): Foli
     throw new FoliwakeConfigError(`${file}: version 1 is no longer read. Rewrite it as version 2: add "version": 2 and "site": "<site name>" (docs: website/guide/embed-in-react.md, "The config file").`);
   }
   if (parsed.version !== 2) throw new FoliwakeConfigError(`${file}: "version" must be 2.`);
-  if (typeof parsed.site !== 'string' || !SITE.test(parsed.site)) throw new FoliwakeConfigError(`${file} "site": the site name, [a-z0-9-], such as "gaiare".`);
+  if (typeof parsed.site !== 'string' || !SITE.test(parsed.site)) throw new FoliwakeConfigError(`${file} "site": the site name, [a-z0-9-], such as "my-site".`);
   const live = parsed.live === undefined ? null : parseEndpoint(parsed.live, `${file} "live"`, opts);
   const preview = parsed.preview === undefined ? null : parseEndpoint(parsed.preview, `${file} "preview"`, opts);
   if (!live && !preview) throw new FoliwakeConfigError(`${file}: give at least one of "live" and "preview".`);

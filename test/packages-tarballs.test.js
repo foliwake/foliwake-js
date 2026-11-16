@@ -9,7 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { after, test } from 'node:test';
-import { tarballProblems } from '../tools/package-tarball-hygiene.mjs';
+import { fileProblems, privateNames, tarballProblems } from '../tools/package-tarball-hygiene.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const NAMES = ['blocks-contract', 'server', 'client', 'react', 'next'];
@@ -76,4 +76,13 @@ test('hygiene: local paths, internal hosts and source maps are refused', () => {
   refused('README.md', 'ssh root@10.20.30.40', /internal host 10\.20\.30\.40/);
   refused('dist/a.js.map', '{}', /is a source map/);
   refused('dist/b.js', 'x\n//# sourceMappingURL=b.js.map', /has a sourceMappingURL/);
+});
+
+test('a private project name from FOLIWAKE_PRIVATE_NAMES fails the tarball, case-insensitive; none by default', () => {
+  const file = { path: 'dist/index.js', text: 'export const site = "Secret-Client";' };
+  const names = privateNames({ FOLIWAKE_PRIVATE_NAMES: ' secret-client , other ' });
+  assert.deepEqual(names, ['secret-client', 'other']);
+  assert.match(fileProblems(file, names).join(), /names a private project \(1 private name\(s\)\)/);
+  assert.doesNotMatch(fileProblems(file, names).join(), /secret-client/i, 'the message never repeats the name');
+  assert.deepEqual(fileProblems(file, privateNames({})), []);
 });

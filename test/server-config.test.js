@@ -12,24 +12,24 @@ const require = createRequire(import.meta.url);
 const schema = require('@foliwake/server/schemas/remote-2.schema.json');
 const validate = new Ajv2020({ allErrors: true, strict: false }).compile(schema);
 
-const auth = { type: 'basic', username: 'gaiare-app', passwordEnv: 'FOLIWAKE_LIVE_PASSWORD' };
+const auth = { type: 'basic', username: 'my-app-reader', passwordEnv: 'FOLIWAKE_LIVE_PASSWORD' };
 const serviceAuth = {
   type: 'service-token',
-  issuer: 'gaiare-next',
-  kid: 'gaiare-next-2026-11',
+  issuer: 'my-app',
+  kid: 'my-app-2026-11',
   privateKeyEnv: 'FOLIWAKE_LIVE_SIGNING_KEY',
 };
 /** A valid config whose live endpoint has this `auth`. */
 const withLiveAuth = (liveAuth) => ({ ...base(), live: { url: 'https://l.example', auth: liveAuth } });
 const base = () => ({
   version: 2,
-  site: 'gaiare',
+  site: 'acme',
   live: { url: 'https://live.example.org', auth },
   preview: { url: 'https://preview.example.org', auth: { ...auth, passwordEnv: 'FOLIWAKE_PREVIEW_PASSWORD' } },
   app: {
     pages: ['/lessons/**'],
     proxies: { code: '/foliwake-code', media: '/foliwake-media', pages: null },
-    blocks: { entry: 'scripts/blocks.js', contract: 'foliwake-blocks/2', eventPrefix: 'gaiare' },
+    blocks: { entry: 'scripts/blocks.js', contract: 'foliwake-blocks/2', eventPrefix: 'acme' },
     media: { base: 'https://media.example.org', transform: 'cloudflare-images' },
     revalidate: 300,
   },
@@ -41,7 +41,7 @@ const REFUSED = [
   ['version 1', { version: 1, preview: { url: 'https://p.example' } }, /version 1 is no longer read/],
   ['version 3', { ...base(), version: 3 }, /"version" must be 2/],
   ['no site', { ...base(), site: undefined }, /"site"/],
-  ['bad site', { ...base(), site: 'Gaiare' }, /"site"/],
+  ['bad site', { ...base(), site: 'Acme' }, /"site"/],
   ['no channel', { version: 2, site: 'x', app: base().app }, /at least one of "live" and "preview"/],
   ['stored secret', { ...base(), live: { url: 'https://l.example', auth: { ...auth, password: 'x' } } }, /looks like a stored secret/],
   ['unknown top-level key', { ...base(), extra: 1 }, /unknown key "extra"/],
@@ -64,14 +64,14 @@ const REFUSED = [
   ['entry outside scripts', withApp({ blocks: { entry: 'styles/blocks.js' } }), /inside a code release/],
   ['entry with ..', withApp({ blocks: { entry: 'scripts/../x.js' } }), /inside a code release/],
   ['entry not js', withApp({ blocks: { entry: 'scripts/blocks.mjs' } }), /inside a code release/],
-  ['bad contract', withApp({ blocks: { contract: 'gaiare-blocks/1' } }), /foliwake-blocks/],
-  ['bad event prefix', withApp({ blocks: { eventPrefix: 'Gaiare' } }), /eventPrefix/],
+  ['bad contract', withApp({ blocks: { contract: 'acme-blocks/1' } }), /foliwake-blocks/],
+  ['bad event prefix', withApp({ blocks: { eventPrefix: 'Acme' } }), /eventPrefix/],
   ['media over http', withApp({ media: { base: 'http://media.example' } }), /https/],
   ['unknown transform', withApp({ media: { base: 'https://m.example', transform: 'imgix' } }), /cloudflare-images/],
   ['revalidate 0', withApp({ revalidate: 0 }), /revalidate/],
   ['unknown auth type', withLiveAuth({ type: 'bearer', tokenEnv: 'X_TOKEN' }), /"basic" or "service-token"/],
   ['service token without kid', withLiveAuth({ ...serviceAuth, kid: undefined }), /\.kid: the key id/],
-  ['service token with a bad issuer', withLiveAuth({ ...serviceAuth, issuer: 'gaiare next' }), /\.issuer: the issuer/],
+  ['service token with a bad issuer', withLiveAuth({ ...serviceAuth, issuer: 'my app' }), /\.issuer: the issuer/],
   [
     'service token key env is a value',
     withLiveAuth({ ...serviceAuth, privateKeyEnv: '{"kty":"EC"}' }),
@@ -100,11 +100,11 @@ const PARSER_ONLY = new Set([
 ]);
 
 describe('config v2', () => {
-  test('a complete Gaiare-shaped config parses, frozen, with defaults filled', () => {
+  test('a complete host-app config parses, frozen, with defaults filled', () => {
     const config = parseFoliwakeConfig(JSON.stringify(base()));
-    assert.equal(config.site, 'gaiare');
+    assert.equal(config.site, 'acme');
     assert.deepEqual(config.live, { origin: 'https://live.example.org', auth });
-    assert.deepEqual(config.app.blocks, { entry: 'scripts/blocks.js', contract: 'foliwake-blocks/2', major: 2, eventPrefix: 'gaiare' });
+    assert.deepEqual(config.app.blocks, { entry: 'scripts/blocks.js', contract: 'foliwake-blocks/2', major: 2, eventPrefix: 'acme' });
     assert.ok(Object.isFrozen(config));
     const minimal = parseFoliwakeConfig(JSON.stringify({ version: 2, site: 's', live: { url: 'http://127.0.0.1:9' }, app: { pages: ['/**'] } }));
     assert.deepEqual(minimal.app.proxies, { code: '/foliwake-code', media: '/foliwake-media', pages: null });
@@ -115,9 +115,9 @@ describe('config v2', () => {
   });
 
   test('a service-token endpoint parses next to a basic one', () => {
-    const text = JSON.stringify({ ...base(), live: { url: 'https://gaiare.worker.example', auth: serviceAuth } });
+    const text = JSON.stringify({ ...base(), live: { url: 'https://site.worker.example', auth: serviceAuth } });
     const config = parseFoliwakeConfig(text);
-    assert.deepEqual(config.live, { origin: 'https://gaiare.worker.example', auth: serviceAuth });
+    assert.deepEqual(config.live, { origin: 'https://site.worker.example', auth: serviceAuth });
     assert.deepEqual(config.preview.auth, { ...auth, passwordEnv: 'FOLIWAKE_PREVIEW_PASSWORD' });
   });
 
@@ -135,7 +135,7 @@ describe('config v2', () => {
   }
 
   test('the schema accepts what the parser accepts', () => {
-    const worker = { ...base(), live: { url: 'https://gaiare.worker.example', auth: serviceAuth } };
+    const worker = { ...base(), live: { url: 'https://site.worker.example', auth: serviceAuth } };
     const loopbackLive = { version: 2, site: 's', live: { url: 'http://127.0.0.1:9' }, app: { pages: ['/**'] } };
     const previewOnly = { version: 2, site: 's', preview: { url: 'https://p.example' } };
     for (const config of [base(), worker, loopbackLive, previewOnly]) {
@@ -157,9 +157,9 @@ describe('config v2', () => {
 
   test('clientSettings is the explicit projection and nothing else', () => {
     const settings = clientSettings(parseFoliwakeConfig(JSON.stringify(base())));
-    assert.deepEqual(settings, { site: 'gaiare', proxies: { code: '/foliwake-code', media: '/foliwake-media', pages: null }, blocks: { contract: 'foliwake-blocks/2', eventPrefix: 'gaiare' } });
+    assert.deepEqual(settings, { site: 'acme', proxies: { code: '/foliwake-code', media: '/foliwake-media', pages: null }, blocks: { contract: 'foliwake-blocks/2', eventPrefix: 'acme' } });
     const text = JSON.stringify(settings);
-    for (const hidden of ['example.org', 'gaiare-app', 'PASSWORD', '/lessons', 'scripts/blocks.js']) assert.ok(!text.includes(hidden), hidden);
+    for (const hidden of ['example.org', 'my-app-reader', 'PASSWORD', '/lessons', 'scripts/blocks.js']) assert.ok(!text.includes(hidden), hidden);
   });
 
   test('which file: explicit beats FOLIWAKE_REMOTE beats ./foliwake.remote.json', async () => {

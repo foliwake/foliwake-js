@@ -1,6 +1,6 @@
 // Media URLs in a body, channel-aware (design §9.3). The engine writes `/media/<sha256>.<ext>`.
 //  - live, with `app.media.transform: "cloudflare-images"`: Cloudflare Images on `app.media.base`
-//    (ported from Gaiare's media-url.ts: width from the srcset descriptor, the largest one or 1448 for src);
+//    (ported from a host app's media URL helper: width from the srcset descriptor, the largest one or 1448 for src);
 //  - live otherwise: `<proxies.media>/<key>`;
 //  - preview: always `<proxies.media>/preview/<key>` (never the public media host: an unpublished picture
 //    is fetched only through the app's authorisation).

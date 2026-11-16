@@ -1,4 +1,4 @@
-// @foliwake/server/html: the strict parse (Gaiare's html-fragment cases) and the body policy (design §9.4).
+// @foliwake/server/html: the strict parse (the host app's HTML fragment cases) and the body policy (design §9.4).
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { checkPlainBody, checkBody, componentNames, serialize, srcsetCandidates } from '@foliwake/server/html';

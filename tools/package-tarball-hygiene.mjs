@@ -36,6 +36,18 @@ const PUBLIC_FOLIWAKE_HOSTS = new Set(['docs.foliwake.dev']);
 const IPV4 = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;
 const PUBLIC_IPV4 = /^(127\.|0\.0\.0\.0$|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.)/;
 
+/**
+ * Names that must never appear in a published file (private projects, customers). The list is not kept in this
+ * public repository: CI passes it in FOLIWAKE_PRIVATE_NAMES (comma-separated, case-insensitive).
+ */
+export function privateNames(env = process.env) {
+  const list = env.FOLIWAKE_PRIVATE_NAMES ?? '';
+  return list
+    .split(',')
+    .map((name) => name.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 /** Source maps: none are shipped, so no module may point at one (bundlers and devtools warn about it). */
 const SOURCE_MAP_URL = /^\/\/# sourceMappingURL=/m;
 
@@ -50,7 +62,7 @@ export function fileListProblems(paths) {
 }
 
 /** Problems in one file: its name and its contents. */
-export function fileProblems({ path, text }) {
+export function fileProblems({ path, text }, names = privateNames()) {
   const problems = [];
   if (SECRET_FILES.test(path)) problems.push(`${path} looks like a credentials file`);
   if (path.endsWith('.map')) problems.push(`${path} is a source map`);
@@ -59,6 +71,9 @@ export function fileProblems({ path, text }) {
   if (local) problems.push(`${path} holds the local path ${local[0]}`);
   for (const host of internalHosts(text)) problems.push(`${path} names the internal host ${host}`);
   if (path.endsWith('.js') && SOURCE_MAP_URL.test(text)) problems.push(`${path} has a sourceMappingURL`);
+  const lowered = text.toLowerCase();
+  const named = names.filter((name) => lowered.includes(name));
+  if (named.length > 0) problems.push(`${path} names a private project (${named.length} private name(s))`);
   return problems;
 }
 
@@ -70,5 +85,5 @@ function internalHosts(text) {
 
 /** Every problem of a tarball, given its files as `{ path, text }` with paths relative to `package/`. */
 export function tarballProblems(files) {
-  return [...fileListProblems(files.map((f) => f.path)), ...files.flatMap(fileProblems)];
+  return [...fileListProblems(files.map((f) => f.path)), ...files.flatMap((file) => fileProblems(file))];
 }

@@ -77,6 +77,8 @@ jobs:
           ls -l "$RUNNER_TEMP/tarballs"
           (cd "$RUNNER_TEMP/tarballs" && sha256sum ./*.tgz | tee SHA256SUMS)
       - name: Install the tarballs into a consumer, use them, check their hygiene
+        env:
+          FOLIWAKE_PRIVATE_NAMES: ${{ vars.FOLIWAKE_PRIVATE_NAMES }}
         run: node tools/check-package-tarballs.mjs "$RUNNER_TEMP/tarballs"
       - name: npm publish --dry-run (no token)
         env:

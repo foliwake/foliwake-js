@@ -42,6 +42,8 @@ jobs:
       - name: Test
         run: node --test --test-concurrency=2 "test/**/*.test.js"
       - name: Pack, install the tarballs into a consumer, check their hygiene
+        env:
+          FOLIWAKE_PRIVATE_NAMES: ${{ vars.FOLIWAKE_PRIVATE_NAMES }}
         run: pnpm check:tarballs
       - name: npm publish --dry-run (no token)
         run: |
