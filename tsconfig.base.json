@@ -1,0 +1,14 @@
+{
+  "//": "Shared compiler options of the five packages; each packages/<name>/tsconfig.json extends this file and sets its target, libraries, module resolution, JSX and types.",
+  "compilerOptions": {
+    "strict": true,
+    "noEmitOnError": true,
+    "sourceMap": false,
+    "declaration": true,
+    "removeComments": false,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "newLine": "lf"
+  }
+}

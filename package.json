@@ -1,0 +1,38 @@
+{
+  "name": "foliwake-js",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Workspace of the Foliwake client packages: @foliwake/blocks-contract, server, client, react, next.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.22"
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "typecheck": "node tools/build.mjs --typecheck",
+    "test": "node tools/build.mjs && node --test --test-concurrency=4 \"test/**/*.test.js\"",
+    "packages:reference": "node tools/build.mjs && node tools/packages-reference.mjs",
+    "pack:all": "node tools/pack.mjs",
+    "check:tarballs": "node tools/pack.mjs && node tools/check-package-tarballs.mjs .tarballs"
+  },
+  "devDependencies": {
+    "@foliwake/blocks-contract": "workspace:*",
+    "@foliwake/client": "workspace:*",
+    "@foliwake/next": "workspace:*",
+    "@foliwake/react": "workspace:*",
+    "@foliwake/server": "workspace:*",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "ajv": "8.20.0",
+    "jose": "6.2.15",
+    "playwright-core": "1.64.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.2"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

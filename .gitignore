@@ -1,0 +1,11 @@
+node_modules/
+packages/*/dist/
+packages/*/dist.*
+.tarballs/
+*.tgz
+.DS_Store
+.env
+.env.*
+.npmrc
+test/.client-types-*/
+test/.readme-examples-*/
