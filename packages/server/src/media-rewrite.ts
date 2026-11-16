@@ -8,7 +8,8 @@ import type { ChannelName } from '@foliwake/blocks-contract/page';
 import type { FoliwakeAppSettings } from './config.js';
 import { srcsetCandidates } from './html.js';
 
-const ENGINE_MEDIA = /^\/media\/([0-9a-f]{64}\.(?:png|jpe?g|webp|gif|avif))$/;
+// `.svg`: inline reference images (engine content-components.md §3.7); never transformed.
+const ENGINE_MEDIA = /^\/media\/([0-9a-f]{64}\.(?:png|jpe?g|webp|gif|avif|svg))$/;
 const TRANSFORMABLE = /\.(?:png|jpe?g|webp|gif)$/;
 const TRANSFORM_OPTIONS = 'format=auto,quality=80,metadata=none';
 const WIDTH = /^(\d{1,5})w$/;
