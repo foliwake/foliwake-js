@@ -1,0 +1,33 @@
+{
+  "name": "@foliwake/site-check",
+  "version": "0.3.0",
+  "description": "The checks the Foliwake platform runs on a site's code repository (block definitions, templates, site.yaml, query.yaml, access.yaml, reference tables, layout, script and stylesheet references), as a library and the CLI `foliwake-site-check`.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": { "node": ">=22.22" },
+  "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/site-check" },
+  "homepage": "https://docs.foliwake.dev/reference/packages/site-check",
+  "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
+  "keywords": ["foliwake", "cms", "blocks", "lint", "validator", "cli"],
+  "publishConfig": { "access": "public", "provenance": true },
+  "foliwake": { "htmlContract": 2, "blocksPack": 1, "templates": 1, "references": 1, "query": 1 },
+  "exports": {
+    "./formats/access": { "types": "./dist/formats/access.d.ts", "default": "./dist/formats/access.js" },
+    "./formats/code-files": { "types": "./dist/formats/code-files.d.ts", "default": "./dist/formats/code-files.js" },
+    "./formats/constants": { "types": "./dist/formats/constants.d.ts", "default": "./dist/formats/constants.js" },
+    "./formats/descriptor": { "types": "./dist/formats/descriptor.d.ts", "default": "./dist/formats/descriptor.js" },
+    "./formats/diagnostics": { "types": "./dist/formats/diagnostics.d.ts", "default": "./dist/formats/diagnostics.js" },
+    "./formats/json-position": { "types": "./dist/formats/json-position.d.ts", "default": "./dist/formats/json-position.js" },
+    "./formats/layout": { "types": "./dist/formats/layout.d.ts", "default": "./dist/formats/layout.js" },
+    "./formats/query": { "types": "./dist/formats/query.d.ts", "default": "./dist/formats/query.js" },
+    "./formats/site-config": { "types": "./dist/formats/site-config.d.ts", "default": "./dist/formats/site-config.js" },
+    "./formats/templates": { "types": "./dist/formats/templates.d.ts", "default": "./dist/formats/templates.js" },
+    "./formats/yaml": { "types": "./dist/formats/yaml.d.ts", "default": "./dist/formats/yaml.js" },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  },
+  "files": ["dist/", "!dist/**/*.map", "LICENSE", "README.md", "CHANGELOG.md"]
+}
