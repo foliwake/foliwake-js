@@ -15,4 +15,18 @@ with them. While the version is 0.x, a minor release may break; breaking changes
     (`foliwake-templates/1`), the component descriptor, the diagnostic form and `jsonPointerPosition`.
   - `parseSiteConfig`, `parseQueryConfig` and `parseAccessConfig` report problems as
     `{ line, column, field, message }` instead of one string per problem.
+  - The Node layer: block definitions (`blocks/pack`, `blocks/authoring-keys`, `blocks/extras`,
+    `blocks/editor-config`), the JSON Schema of a block definition (`blocks/schema`), block example files
+    (`blocks/examples`), reference tables (`references/tables`), link URL safety (`urls`), the site code reader
+    (`site-code`: `siteCodeOf`, `readSiteCode`, `directoryTree`, `filesTree`), the descriptor check
+    (`descriptor-check`) and the reference scan of scripts and stylesheets (`code-references`).
+  - `checkCodeRelease(files)` over the captured files of a code release and `checkSiteCode(dir)` over a working
+    folder read the way a capture reads a commit. Both return sorted diagnostics, the site code, `query.yaml`,
+    `access.yaml`, the captured files and the ignored ones.
+  - The site code reader reports diagnostics (`SiteCode.diagnostics`) instead of `issues` with a pointer: the
+    pointer is the diagnostic's `field`, its position in the file the `line` and `column`.
+  - New codes: `CODE_FILE_REQUIRED`, `CODE_FILE_GENERATED`, `CODE_REFERENCE_NOT_RELATIVE`,
+    `CODE_REFERENCE_OUTSIDE`, `CODE_REFERENCE_MISSING`, `CODE_PATH_IGNORED` (info), `CODE_FOLDER_NAME_INVALID`,
+    `CODE_FILE_TOO_LARGE` and `CODE_RELEASE_TOO_LARGE` (warnings for now: 2 MiB per file, 30 MiB and 2000 files
+    per release), `QUERY_CONFIG_INVALID` and `ACCESS_CONFIG_INVALID` with a line, column and field.
   - Diagnostics have a third severity, `info`, for notes that are never problems (`CODE_PATH_IGNORED`).

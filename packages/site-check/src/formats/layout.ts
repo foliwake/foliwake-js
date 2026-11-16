@@ -62,6 +62,14 @@ export function isCodeInput(relative: string): boolean {
   return EXTENSIONS.has(extensionOf(relative)) || isExampleFile(relative);
 }
 
+/** Why a file under a code root is not captured (for a file that isCodeInput refuses). */
+export function ignoredReason(file: string): string {
+  if (hasHiddenSegment(file)) return 'a hidden path is never captured';
+  if (file.endsWith('.md')) return 'of Markdown files, only components/<name>/<name>.example.md is captured';
+  const extension = extensionOf(file);
+  return extension ? `${extension} is not a code file type` : 'a file without a code file type';
+}
+
 /** True for captured files: code inputs and the exact root files. */
 export function isCapturedInput(relative: string): boolean {
   return CODE_ROOT_FILES.includes(relative) || isCodeInput(relative);
