@@ -16,6 +16,7 @@
 //   LOADER_JS_FAILED          import() of the component module rejected (404, syntax error, ...)
 //   LOADER_INIT_INVALID       the module has no default export function
 //   LOADER_BLOCK_NAME_MISMATCH the module's defineBlock('<name>', …) names another block than its folder
+//   LOADER_BLOCK_CONTRACT     the module declares another major of the blocks contract (`init.contract`)
 //   LOADER_INIT_FAILED        init(root, host) threw synchronously or returned a rejected Promise
 //
 // `host` is the page's BlockHost (blocks contract foliwake-blocks/2 §2, @foliwake/blocks-contract):
@@ -33,11 +34,14 @@ const codeBase = new URL('../', import.meta.url);
 const descriptorUrl = new URL('components/components.json', codeBase);
 const NAME_PATTERN = /^[a-z][a-z0-9-]*$/;
 
+/** The major of the blocks contract this loader speaks; a block that declares another one is refused. */
+const BLOCKS_CONTRACT_MAJOR = 2;
+
 const html = document.documentElement;
 const prefers = (query) => typeof matchMedia === 'function' && matchMedia(query).matches;
 const theme = html.dataset.theme === 'dark' || html.dataset.theme === 'light' ? html.dataset.theme : prefers('(prefers-color-scheme: dark)') ? 'dark' : 'light';
 const host = Object.freeze({
-  contract: Object.freeze({ major: 2, minor: 0 }),
+  contract: Object.freeze({ major: BLOCKS_CONTRACT_MAJOR, minor: 0 }),
   shell: 'foliwake',
   htmlContract: html.dataset.htmlContract ?? '',
   channel: html.dataset.env === 'live' ? 'live' : 'preview',
@@ -151,6 +155,13 @@ function loadModule(name) {
         const declared = module.default.block;
         if (typeof declared === 'string' && declared !== name) {
           throw new LoaderError('LOADER_BLOCK_NAME_MISMATCH', `Module for "${name}" defines the block "${declared}".`);
+        }
+        // A declared contract major (block-kit sets it) must be this loader's; none declared is accepted.
+        const contract = module.default.contract;
+        if (contract !== undefined && contract !== BLOCKS_CONTRACT_MAJOR) {
+          const speaks = `foliwake-blocks/${contract}`;
+          const expected = `foliwake-blocks/${BLOCKS_CONTRACT_MAJOR}`;
+          throw new LoaderError('LOADER_BLOCK_CONTRACT', `Module for "${name}" speaks ${speaks}; this page loads ${expected}.`);
         }
         return module.default;
       },

@@ -7,7 +7,7 @@
 // ctx.emit sends the bubbling events "block:answer" and "block:complete" with
 // {key, block, ...detail}, and ctx.t reads the labels of quiz.json `ui`.
 // An answer's id is its `{#id}`; without ids (they are optional) it is o1, o2, … by position.
-import { defineBlock, html, nothing } from 'foliwake';
+import { defineBlock, html, nothing } from '@foliwake/block-kit';
 
 export default defineBlock('quiz', ({ options = [] }, ctx) => {
   const answered = ctx.state([]); // indexes of the answers clicked, in order

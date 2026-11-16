@@ -1,8 +1,9 @@
-// Foliwake block-kit (https://docs.foliwake.dev/guide/write-a-block): the module `foliwake` that site blocks import,
+// Foliwake block-kit (https://docs.foliwake.dev/guide/write-a-block): the module site blocks import,
 //
-//   import { defineBlock, html } from 'foliwake';
+//   import { defineBlock, html } from '@foliwake/block-kit';
 //
-// The engine maps the bare specifier to `<code release>/_foliwake/block-kit.js` with an import map in every
+// (`foliwake`, the previous specifier, is still mapped for one minor version.)
+// The engine maps the specifier to `<code release>/_foliwake/block-kit.js` with an import map in every
 // page it composes, and adds this file (with the vendored lit-html next to it) to every code release, so a
 // release always runs the kit it was prepared and tested with. No build step, no other dependency.
 //
@@ -411,5 +412,7 @@ export function defineBlock(name, setup, options = {}) {
     return (instance.handle = Promise.race([settled, disposed]));
   }
   Object.defineProperty(init, 'block', { value: name, enumerable: true });
+  // The contract major the block speaks: a loader refuses a block of another major (LOADER_BLOCK_CONTRACT).
+  Object.defineProperty(init, 'contract', { value: CONTRACT, enumerable: true });
   return init;
 }

@@ -55,7 +55,7 @@ Open http://127.0.0.1:3000/. Edit a page in `content/`, a block or a stylesheet 
    ```
 
    Field types: `heading`, `text`, `list`, `choices`, `quote`, `image`.
-2. Add `components/<name>/<name>.css` (and `<name>.js` if it needs JavaScript: its default export is `init(root, host, meta)`, best made with block-kit: `import { defineBlock, html } from 'foliwake'` and `defineBlock('<name>', (fields, ctx) => …)`, `jsconfig.json` gives your editor the types of `foliwake` (`.foliwake/types/foliwake.d.ts`, from `@foliwake/block-kit`, written by create) and, with the Foliwake CLI, of your blocks (`foliwake dev` writes them to `.foliwake/types/blocks/`)). With the Foliwake CLI, `foliwake blocks new <name> --js --example` writes all the files.
+2. Add `components/<name>/<name>.css` (and `<name>.js` if it needs JavaScript: its default export is `init(root, host, meta)`, best made with block-kit: `import { defineBlock, html } from '@foliwake/block-kit'` and `defineBlock('<name>', (fields, ctx) => …)`; the page maps that import to the kit of the code release, so nothing is installed. `jsconfig.json` gives your editor the kit's types (`.foliwake/types/foliwake.d.ts`, from `@foliwake/block-kit`, written by create) and, with the Foliwake CLI, of your blocks (`foliwake dev` writes them to `.foliwake/types/blocks/`)). With the Foliwake CLI, `foliwake blocks new <name> --js --example` writes all the files.
 3. Use it in a page:
 
    ```md

@@ -1,7 +1,8 @@
-// Types of the module `foliwake` (block-kit.js), self-contained for editors of a site folder without
-// node_modules: the Foliwake CLI writes this file as `.foliwake/types/foliwake.d.ts` (jsconfig `paths` maps the
-// specifier there), and `.foliwake/types/blocks/<name>.d.ts`, generated from each block's JSON, adds the block to
-// `FoliwakeBlocks`. The package's own entry (index.d.ts) re-exports these and the blocks contract's types.
+// Types of the module `@foliwake/block-kit` (block-kit.js; `foliwake` is its previous specifier), self-contained
+// for editors of a site folder without node_modules: create-foliwake and the Foliwake CLI write this file as
+// `.foliwake/types/foliwake.d.ts` (jsconfig `paths` maps both specifiers there), and
+// `.foliwake/types/blocks/<name>.d.ts`, generated from each block's JSON, adds the block to `FoliwakeBlocks`.
+// The package's own entry (index.d.ts) re-exports these and the blocks contract's types.
 
 /** What `html` returns (lit-html's template result). */
 export interface TemplateResult {
@@ -38,6 +39,18 @@ type ItemOf<T> = T extends ReadonlyArray<infer U> ? U : unknown;
 /** A view: what `html` returns, or `nothing`. */
 export type View = TemplateResult | typeof nothing | string | number | null | undefined;
 
+/** A React root (`createRoot`). */
+export interface ReactRoot {
+  render(children: unknown): void;
+  unmount(): void;
+}
+
+/** The app's React for blocks that render with it (`has('react')`). */
+export interface HostReact {
+  createElement(type: unknown, props?: Record<string, unknown> | null, ...children: unknown[]): unknown;
+  createRoot(container: Element, options?: Record<string, unknown>): ReactRoot;
+}
+
 /** The members of the page's host the kit reads: the core of the blocks contract (`HostCore`). */
 export interface HostMembers {
   contract: { major: number; minor: number };
@@ -54,7 +67,7 @@ export interface HostMembers {
   signal: AbortSignal;
   keyOf(root: Element): string;
   /** The app's React (`has('react')`). */
-  react?: { createElement(type: unknown, props?: Record<string, unknown> | null, ...children: unknown[]): unknown; createRoot(container: Element, options?: Record<string, unknown>): { render(children: unknown): void; unmount(): void } };
+  react?: HostReact;
   has(feature: string): boolean;
 }
 
@@ -70,24 +83,24 @@ export interface BlockMeta {
 }
 
 /** A framework view for `ctx.mount`: the site's adapter of React, Preact, Vue, … */
-export interface MountAdapter<Props> {
+export interface ViewAdapter<Props> {
   render(element: HTMLElement, props: Props, controls: { fail(error: unknown): void }): void | Promise<void>;
   unmount(element: HTMLElement): void;
 }
 
-export interface MountHandle<Props> {
+export interface ViewHandle<Props> {
   element: HTMLElement;
   update(props: Props): void;
   dispose(): void;
   fail(error: unknown): void;
 }
 
-export interface MountOptions<Props> {
+export interface ViewOptions<Props> {
   /** Hide the authored children while the view shows (they come back on failure and dispose). */
   replace?: boolean;
   /** A field name or an element of the block to mount in (default: the root, after its children). */
   into?: string | Element;
-  onReady?(handle: MountHandle<Props>): void;
+  onReady?(handle: ViewHandle<Props>): void;
   onError?(error: unknown): void;
 }
 
@@ -95,6 +108,12 @@ export interface MountOptions<Props> {
 export interface State<T> {
   value: T;
 }
+
+/** What `ctx.list` calls for each item of a list or choices field. */
+type ListItem<Field> = (item: HTMLElement, value: ItemOf<NonNullable<Field>>, index: number) => View | void;
+
+/** What a block's setup may return: nothing, a cleanup, a handle, or a promise of one of them. */
+type SetupResult = void | (() => void) | { dispose(): void };
 
 export interface BlockContext<Name extends string> {
   root: HTMLElement;
@@ -126,18 +145,24 @@ export interface BlockContext<Name extends string> {
   /** Renders `view()` into the root (after its children), a field or an element; returns the update. */
   render(view: () => View, options?: { into?: string | Element }): () => void;
   /** For each item of a list or choices field: `fn(item, value, index)`; a returned view is rendered into the item. */
-  list<K extends keyof Fields<Name> & string>(name: K, fn: (item: HTMLElement, value: ItemOf<NonNullable<Fields<Name>[K]>>, index: number) => View | void): HTMLElement[];
-  mount<Props>(adapter: MountAdapter<Props>, props: Props, options?: MountOptions<Props>): MountHandle<Props>;
+  list<K extends keyof Fields<Name> & string>(name: K, fn: ListItem<Fields<Name>[K]>): HTMLElement[];
+  mount<Props>(adapter: ViewAdapter<Props>, props: Props, options?: ViewOptions<Props>): ViewHandle<Props>;
 }
 
-/** The block's `init(root, host, meta)` for the loader (its `block` is the name). */
+/**
+ * The block's `init(root, host, meta)` for the loader: `block` is its name, `contract` the major of the blocks
+ * contract it speaks. The loader always passes `host`; `host` is optional here so a block also runs without one
+ * (an editor, a test), with the browser's fallbacks: its key from `data-block-key`, its labels from its own `ui`
+ * (English first), no signal; `ctx.host` is then undefined.
+ */
 export interface BlockInit {
   (root: Element, host?: HostMembers, meta?: BlockMeta): { dispose(): void } | Promise<{ dispose(): void }>;
   readonly block: string;
+  readonly contract: 2;
 }
 
 export declare function defineBlock<Name extends string>(
   name: Name,
-  setup: (fields: Fields<Name>, ctx: BlockContext<Name>) => void | (() => void) | { dispose(): void } | Promise<void | (() => void) | { dispose(): void }>,
+  setup: (fields: Fields<Name>, ctx: BlockContext<Name>) => SetupResult | Promise<SetupResult>,
   options?: { prefix?: string },
 ): BlockInit;

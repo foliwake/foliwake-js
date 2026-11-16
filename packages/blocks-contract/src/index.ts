@@ -4,6 +4,10 @@
 // subpaths such as `@foliwake/blocks-contract/assessment`, which extend the core through `BlockHost<Ext>` and
 // `BlockEvents<Ext>`. Minor versions only add; a major version changes anything else.
 
+import type { KnownShell } from './reserved.js';
+
+export type { KnownShell };
+
 /** The site channel a page comes from. */
 export type ChannelName = 'live' | 'preview';
 
@@ -17,7 +21,7 @@ export interface ContractVersion {
 export interface BlocksModule {
   /** `eventPrefix`: the prefix its blocks emit events with; absent → the app's configured one. */
   BLOCKS_CONTRACT: ContractVersion & { eventPrefix?: string };
-  /** Mounts every `[data-component]` root inside `container`; `host` optional (the module's browser host when omitted). */
+  /** Mounts every `[data-component]` root inside `container`; `host` optional (the module's browser host then). */
   mountBlocks(container: Element, host?: BlockHost): MountHandle;
 }
 
@@ -63,8 +67,19 @@ export interface BlockHandle {
 /**
  * A block module's default export: initialises one root. Called once per root by the loader; a second call on the
  * same root returns the first result. Async setup returns a promise of the handle.
+ *
+ * The loader always passes `host`: it is required here. A block may also accept being called without one (an
+ * editor, a test) and fall back to what the browser gives; the block kit's `defineBlock` does (its init takes
+ * `host?`).
+ *
+ * `contract`, optional: the major version of this contract the block was written for (the kit sets it). A loader
+ * refuses a block that declares another major (`LOADER_BLOCK_CONTRACT`); a block that declares none is accepted.
  */
-export type BlockInit<Host extends BlockHost = BlockHost> = (root: Element, host: Host, meta?: BlockMeta) => BlockHandle | Promise<BlockHandle>;
+export type BlockInit<Host extends BlockHost = BlockHost> = ((
+  root: Element,
+  host: Host,
+  meta?: BlockMeta,
+) => BlockHandle | Promise<BlockHandle>) & { readonly contract?: number };
 
 /**
  * React for blocks that render with it: the app's own `createElement` (from `react`) and `createRoot` (from
@@ -73,14 +88,17 @@ export type BlockInit<Host extends BlockHost = BlockHost> = (root: Element, host
  */
 export interface HostReact {
   createElement(type: unknown, props?: Record<string, unknown> | null, ...children: unknown[]): unknown;
-  createRoot(container: Element, options?: Record<string, unknown>): { render(children: unknown): void; unmount(): void };
+  createRoot(
+    container: Element,
+    options?: Record<string, unknown>,
+  ): { render(children: unknown): void; unmount(): void };
 }
 
 /** The members every host has (the core of `BlockHost`). Optional members are announced by `has(name)`. */
 export interface HostCore {
   contract: ContractVersion;
-  /** Which app mounts ('next', 'react', 'foliwake', 'webview', …). */
-  shell: string;
+  /** Which app mounts: one of KnownShell, or another app's own name. */
+  shell: KnownShell | (string & {});
   /** HTML contract of the body being mounted (`X-Html-Contract`). */
   htmlContract: string;
   channel: ChannelName;
@@ -115,7 +133,10 @@ export type BlockHost<Ext extends object = Record<never, never>> = HostCore & Ex
 
 /** The `detail` of the core event types (besides `key` and `block`). */
 export interface CoreEventDetails {
-  /** The block finished its setup: the block sends it, or the block-kit (`foliwake`) after setup when it did not (block-kit 1 does not). */
+  /**
+   * The block finished its setup: the block sends it, or the block-kit after setup when it did not (block-kit 1
+   * does not).
+   */
   ready: { contract: number };
   error: { code: string; message: string; recoverable: boolean };
 }
@@ -130,10 +151,16 @@ export type BlockEvents<Ext extends object = Record<never, never>> = CoreEventDe
 export type BlockEventType<Events extends object = BlockEvents> = keyof Events & string;
 
 /** Every event carries the block's key and name besides its own fields. */
-export type BlockEventDetail<Events extends object, T extends BlockEventType<Events>> = Events[T] & { key: string; block: string };
+export type BlockEventDetail<Events extends object, T extends BlockEventType<Events>> = Events[T] & {
+  key: string;
+  block: string;
+};
 
-/** A block event as an app receives it (`<prefix>:<type>` CustomEvent, bubbling from the block root); a union by type. */
-export type FoliwakeEvent<Events extends object = BlockEvents, T extends BlockEventType<Events> = BlockEventType<Events>> = {
+/** A block event as an app receives it (`<prefix>:<type>` CustomEvent, bubbling from its root); a union by type. */
+export type FoliwakeEvent<
+  Events extends object = BlockEvents,
+  T extends BlockEventType<Events> = BlockEventType<Events>,
+> = {
   [K in T]: { type: K; detail: BlockEventDetail<Events, K>; target: Element; native: CustomEvent };
 }[T];
 

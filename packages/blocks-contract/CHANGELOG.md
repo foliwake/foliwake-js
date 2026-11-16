@@ -11,6 +11,13 @@ published; 0.3.0 is the first release on npm, and its entries list the changes s
 ## 0.3.0 (unreleased)
 
 - Released together with the new `@foliwake/site-check` and `create-foliwake`, which share this version.
+- The kit's specifier is `@foliwake/block-kit` (`KIT_SPECIFIER`); `pageImportMap` maps it and, for one more
+  minor version, the previous `foliwake` (`LEGACY_KIT_SPECIFIER`, deprecated) to the release's kit.
+- `BlockInit` may declare its contract major (`init.contract`); a loader refuses another major
+  (`LOADER_BLOCK_CONTRACT`). Documented: the loader always passes `host`.
+- Reserved: `shell: 'web-component'` (`KnownShell`), the context key `'foliwake:host'`, and the loader's
+  attributes as values (`@foliwake/blocks-contract/reserved`: `BLOCK_ATTRIBUTES`, `KNOWN_SHELLS`,
+  `HOST_CONTEXT_KEY`).
 
 - **BREAKING** The contract is `foliwake-blocks/2` (was `/1`): `ContractVersion.major` is `2` and
   `package.json` carries `"foliwake": { "blocksContract": 2 }`. The core is project-agnostic: `HostCore`,

@@ -1,7 +1,7 @@
 // @foliwake/block-kit: the types of the kit (foliwake.d.ts) and of the blocks contract it speaks, so a block author
 // installs one package: `import { defineBlock, html, readFields, type BlockHost } from '@foliwake/block-kit'`.
-// The kit's own `BlockInit` (what `defineBlock` returns) and `MountHandle` (of `ctx.mount`) keep their names; the
-// contract's types of the same names are `ContractBlockInit` and `BlocksMountHandle` here.
+// The kit's own `BlockInit` (what `defineBlock` returns, with its name and contract) keeps its name; the
+// contract's `BlockInit` is `ContractBlockInit` here.
 export * from './foliwake.js';
 export type {
   BlockEventDetail,
@@ -19,7 +19,8 @@ export type {
   FoliwakeEvent,
   HostCore,
   HostReact,
-  MountHandle as BlocksMountHandle,
+  KnownShell,
+  MountHandle,
   MountReport,
   MountStatus,
 } from '@foliwake/blocks-contract';

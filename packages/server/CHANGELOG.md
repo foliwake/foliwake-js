@@ -11,6 +11,8 @@ published; 0.3.0 is the first release on npm, and its entries list the changes s
 ## 0.3.0 (unreleased)
 
 - Released together with the new `@foliwake/site-check` and `create-foliwake`, which share this version.
+- Preload hints follow the kit's specifiers `@foliwake/block-kit` and `foliwake` (from
+  `@foliwake/blocks-contract/import-map`).
 
 - **BREAKING** The default blocks contract is `foliwake-blocks/2`.
 - **BREAKING** `preparePage` `mode` is the site's own token (`[a-z][a-z0-9-]`, at most 32 characters), none

@@ -5,7 +5,8 @@
 `@foliwake/blocks-contract` holds the TypeScript types of the Foliwake blocks contract `foliwake-blocks/2`:
 what a site's blocks module exports (`BLOCKS_CONTRACT`, `mountBlocks`) and what each block's module exports
 (`init(root, host, meta)`), the host an app gives every block, the block events, and the page types that
-`@foliwake/server` produces and `@foliwake/client` / `@foliwake/react` consume. It has no runtime code besides `/import-map`.
+`@foliwake/server` produces and `@foliwake/client` / `@foliwake/react` consume. Its only runtime code is
+`/import-map` and the reserved names of `/reserved`.
 
 The core knows no kind of site: its host has the language, labels, theme, motion preference, channel, media
 and a signal; its events are `ready` and `error`, each carrying `key` and `block`. A kind of site extends it
@@ -14,9 +15,10 @@ that ask and grade (answers, verdicts, saved answers, `answer` and `complete` ev
 
 | Entry | Types |
 | --- | --- |
-| `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `MountReport`, `MountStatus`, `BlockInit`, `BlockMeta`, `BlockHandle`, `BlockHost`, `HostCore`, `HostReact`, `BlockEvents`, `BlockEventDetail`, `FoliwakeEvent` |
+| `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `MountReport`, `MountStatus`, `BlockInit`, `BlockMeta`, `BlockHandle`, `BlockHost`, `HostCore`, `HostReact`, `KnownShell`, `BlockEvents`, `BlockEventDetail`, `FoliwakeEvent` |
 | `@foliwake/blocks-contract/assessment` | `AssessmentHost`, `AssessmentHostMembers`, `AssessmentEvents`, `AssessmentMode`, `Answer`, `SavedAnswer`, `Verdict` |
-| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`foliwake` → its block-kit, scoped to its code path), the one runtime helper, shared by `@foliwake/server` and `@foliwake/client` |
+| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`@foliwake/block-kit`, and `foliwake` for one more minor version → its block-kit, scoped to its code path), shared by `@foliwake/server` and `@foliwake/client`; `KIT_SPECIFIER`, `KIT_SPECIFIERS`, `KIT_PATH` |
+| `@foliwake/blocks-contract/reserved` | `BLOCK_ATTRIBUTES`, `KNOWN_SHELLS`, `HOST_CONTEXT_KEY`: names of the contract as values |
 | `@foliwake/blocks-contract/page` | `PageEnvelope` (the origin's answer, the only thing an app caches), `FoliwakePageData` (the prepared page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex` |
 
 A change here is a contract change: minor versions of the contract only add.
@@ -173,6 +175,27 @@ export function cacheKey(envelope: PageEnvelope): string {
 export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === null;
 ```
 
+## Rules and reserved names
+
+- **The host is always given.** A loader always calls `init(root, host, meta)` with the page's host, so `host`
+  is required in `BlockInit`. A block may also run without one (an editor, a test) and fall back to what the
+  browser gives; the block kit's `defineBlock` does (its init takes `host?`).
+- **A block may declare its contract major**: `init.contract = 2` (the block kit sets it). A loader refuses a
+  block that declares another major with the code `LOADER_BLOCK_CONTRACT`; a block that declares none is
+  accepted. (A blocks module declares its own major in `BLOCKS_CONTRACT`; `@foliwake/client` refuses another one
+  with `BLOCKS_CONTRACT_UNSUPPORTED`.)
+- **The kit's specifier is `@foliwake/block-kit`**, the npm name of the kit, so its types need no path
+  mapping. The import map of a code release also maps the previous specifier `foliwake` to the same kit; that
+  key is **deprecated** and leaves the map in the next minor version.
+- **Attributes** a loader and an app share (`BLOCK_ATTRIBUTES`): `data-component` on a block root (written by the
+  engine), `data-component-status` (`loading` · `ready` · `error`) and `data-block-key` on a root, and
+  `data-component-css` (the block's name) with `data-code-release` on a block's stylesheet link.
+- **Shells** (`KNOWN_SHELLS`): `next`, `react`, `foliwake`, `webview`, and `web-component`, reserved for a
+  custom-element host adapter (`<foliwake-page>`; not implemented yet). Another app may name its own shell.
+- **Context key** `foliwake:host` (`HOST_CONTEXT_KEY`, a string, not a Symbol): reserved for the DOM context
+  protocol (`context-request` events), so that a nested island can ask for the host in a later minor version.
+  Nothing answers it yet; the host is the parameter of `init`.
+
 ## Compatibility
 
 | | |
@@ -239,7 +262,7 @@ interface BlocksModule
 | Member | Type | Description |
 | --- | --- | --- |
 | `BLOCKS_CONTRACT` | `ContractVersion & { eventPrefix?: string; }` | `eventPrefix`: the prefix its blocks emit events with; absent → the app's configured one. |
-| `mountBlocks()` | `(container: Element, host?: BlockHost) => MountHandle` | Mounts every `[data-component]` root inside `container`; `host` optional (the module's browser host when omitted). |
+| `mountBlocks()` | `(container: Element, host?: BlockHost) => MountHandle` | Mounts every `[data-component]` root inside `container`; `host` optional (the module's browser host then). |
 
 #### `ContractVersion`
 
@@ -264,7 +287,7 @@ interface CoreEventDetails
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit (`foliwake`) after setup when it did not (block-kit 1 does not). |
+| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit after setup when it did not (block-kit 1 does not). |
 | `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
 
 #### `HostCore`
@@ -278,7 +301,7 @@ interface HostCore
 | Member | Type | Description |
 | --- | --- | --- |
 | `contract` | `ContractVersion` |  |
-| `shell` | `string` | Which app mounts ('next', 'react', 'foliwake', 'webview', …). |
+| `shell` | `KnownShell \| (string & {})` | Which app mounts: one of KnownShell, or another app's own name. |
 | `htmlContract` | `string` | HTML contract of the body being mounted (`X-Html-Contract`). |
 | `channel` | `ChannelName` |  |
 | `env?` | `string` | 'local' \| 'preview' show loader notices before failed roots; anything else: console only. |
@@ -376,10 +399,12 @@ type BlockHost<Ext extends object = Record<never, never>> = HostCore & Ext
 
 #### `BlockInit`
 
-A block module's default export: initialises one root. Called once per root by the loader; a second call on the same root returns the first result. Async setup returns a promise of the handle.
+A block module's default export: initialises one root. Called once per root by the loader; a second call on the same root returns the first result. Async setup returns a promise of the handle. The loader always passes `host`: it is required here. A block may also accept being called without one (an editor, a test) and fall back to what the browser gives; the block kit's `defineBlock` does (its init takes `host?`). `contract`, optional: the major version of this contract the block was written for (the kit sets it). A loader refuses a block that declares another major (`LOADER_BLOCK_CONTRACT`); a block that declares none is accepted.
 
 ```ts
-type BlockInit<Host extends BlockHost = BlockHost> = (root: Element, host: Host, meta?: BlockMeta) => BlockHandle | Promise<BlockHandle>
+type BlockInit<Host extends BlockHost = BlockHost> = ((root: Element, host: Host, meta?: BlockMeta) => BlockHandle | Promise<BlockHandle>) & {
+    readonly contract?: number;
+}
 ```
 
 #### `BlockLabels`
@@ -408,7 +433,7 @@ type ChannelName = 'live' | 'preview'
 
 #### `FoliwakeEvent`
 
-A block event as an app receives it (`<prefix>:<type>` CustomEvent, bubbling from the block root); a union by type.
+A block event as an app receives it (`<prefix>:<type>` CustomEvent, bubbling from its root); a union by type.
 
 ```ts
 type FoliwakeEvent<Events extends object = BlockEvents, T extends BlockEventType<Events> = BlockEventType<Events>> = {
@@ -419,6 +444,14 @@ type FoliwakeEvent<Events extends object = BlockEvents, T extends BlockEventType
         native: CustomEvent;
     };
 }[T]
+```
+
+#### `KnownShell`
+
+One of KNOWN_SHELLS.
+
+```ts
+type KnownShell = (typeof KNOWN_SHELLS)[number]
 ```
 
 #### `MountStatus`
@@ -554,10 +587,26 @@ const KIT_PATH = "_foliwake/block-kit.js"
 
 #### `KIT_SPECIFIER`
 
-The bare specifier blocks import the block-kit with.
+The specifier blocks import the block-kit with: the kit's npm name, so its types need no path mapping.
 
 ```ts
-const KIT_SPECIFIER = "foliwake"
+const KIT_SPECIFIER = "@foliwake/block-kit"
+```
+
+#### `KIT_SPECIFIERS`
+
+Every specifier the import map of a code release resolves to its kit.
+
+```ts
+const KIT_SPECIFIERS: readonly string[]
+```
+
+#### `LEGACY_KIT_SPECIFIER`
+
+The previous specifier, mapped to the same kit for one more minor version. Deprecated: import `@foliwake/block-kit`; this key leaves the map in the next minor version.
+
+```ts
+const LEGACY_KIT_SPECIFIER = "foliwake"
 ```
 
 ### `@foliwake/blocks-contract/page`
@@ -667,5 +716,48 @@ type CodeReleaseId = `cd_${string}` | 'local'
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/blocks-contract`: `ChannelName`
+
+### `@foliwake/blocks-contract/reserved`
+
+**Constants**
+
+#### `BLOCK_ATTRIBUTES`
+
+Attributes of the HTML a loader manages (HTML contract 2).
+
+```ts
+const BLOCK_ATTRIBUTES: Readonly<{
+    /** A block root: `<div data-component="<name>">` (written by the engine). */
+    readonly component: "data-component";
+    /** A root's state while and after it mounts: MountStatus (written by the loader). */
+    readonly status: "data-component-status";
+    /** A root's key, `host.keyOf(root)` (written by the loader). */
+    readonly key: "data-block-key";
+    /** On a block stylesheet `<link>`: the block's name (written by the loader or the app's preload). */
+    readonly css: "data-component-css";
+    /** On a block stylesheet `<link>`: the code release it belongs to. */
+    readonly codeRelease: "data-code-release";
+}>
+```
+
+#### `HOST_CONTEXT_KEY`
+
+The context key of the host (Context Community Protocol, `context-request` events): a string, not a Symbol, so it works across copies of a library. Reserved: a later minor version lets a nested island get the host this way; today the host is the parameter of `init`.
+
+```ts
+const HOST_CONTEXT_KEY = "foliwake:host"
+```
+
+#### `KNOWN_SHELLS`
+
+The shells this contract names: the Next and React adapters, the engine's own pages, a native app's webview, and `web-component` (reserved for a custom-element host adapter, `<foliwake-page>`; not implemented yet).
+
+```ts
+const KNOWN_SHELLS: readonly ["next", "react", "foliwake", "webview", "web-component"]
+```
+
+**Also exported** (documented where they are defined)
+
+- from `@foliwake/blocks-contract`: `KnownShell`
 
 <!-- apistop -->

@@ -1,15 +1,17 @@
-// Preload hints for a page's blocks (owner addition 2026-11-10): the browser should fetch the blocks module,
+// Preload hints for a page's blocks: the browser should fetch the blocks module,
 // the modules of the blocks actually on the page, their static imports (the block-kit, the shared React chunk)
 // and their stylesheets in parallel with the HTML, not as an import waterfall.
 //
 // Everything comes from the page's own code release, read on the server through the origin client:
 //  - `components/components.json` says which blocks have a .js and a .css;
 //  - each module's static relative imports are followed (`import … from "./x.js"`, `import "./x.js"`,
-//    `export … from "./x.js"`; dynamic import() is not followed), depth ≤ 4, at most 48 modules. The bare
-//    `foliwake` is the release's block-kit (the page's import map maps it to `_foliwake/block-kit.js`).
+//    `export … from "./x.js"`; dynamic import() is not followed), depth ≤ 4, at most 48 modules. The kit's
+//    specifiers (`@foliwake/block-kit`, and `foliwake` while it is mapped) are the release's block-kit (the
+//    page's import map maps them to `_foliwake/block-kit.js`).
 // A code release is immutable, so results are kept in memory per (channel, code release, file). Hints are an
 // optimisation: a failed read gives fewer hints, never an error. Every href is a same-origin proxy URL
 // (`<proxies.code>[/preview]/<cd>/<path>`) that the code proxy's allow-list accepts, so CSP 'self' covers it.
+import { KIT_PATH, KIT_SPECIFIERS } from '@foliwake/blocks-contract/import-map';
 import type { FoliwakePageData, PreloadHint } from '@foliwake/blocks-contract/page';
 import { appOf, type FoliwakeAppConfig } from './config.js';
 import { CODE_ROOTS, CODE_SEGMENT } from './constants.js';
@@ -22,10 +24,11 @@ const MAX_MODULES = 48;
 const MAX_DEPTH = 4;
 const FILE_LIMIT = 1024 * 1024;
 const CACHE_LIMIT = 2048;
-const STATIC_IMPORT = /(?:^|[;\s}])(?:import|export)\s*(?:[\w$*{}\s,]*?\s*from\s*)?["'](\.{1,2}\/[^"'\s]+|foliwake)["']/g;
-/** The bare specifier of the block-kit, and the kit's path in a code release. */
-const KIT_SPECIFIER = 'foliwake';
-const KIT_PATH = '_foliwake/block-kit.js';
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+const KIT_ALTERNATIVES = KIT_SPECIFIERS.map(escapeRegExp).join('|');
+/** A static `import`/`export … from` of a relative module or of the kit. */
+const IMPORT_HEAD = '(?:^|[;\\s}])(?:import|export)\\s*(?:[\\w$*{}\\s,]*?\\s*from\\s*)?';
+const STATIC_IMPORT = new RegExp(`${IMPORT_HEAD}["'](\\.{1,2}\\/[^"'\\s]+|${KIT_ALTERNATIVES})["']`, 'g');
 
 const files = new Map<string, Promise<string | null>>();
 
@@ -45,20 +48,25 @@ export function codePath(relative: string): string | null {
 
 /** Resolves `specifier` against the module at `from` (both inside the release), or null when it leaves it. */
 export function resolveInRelease(from: string, specifier: string): string | null {
-  if (specifier === KIT_SPECIFIER) return KIT_PATH;
+  if (KIT_SPECIFIERS.includes(specifier)) return KIT_PATH;
   const url = new URL(specifier, `https://release.invalid/${from}`);
   if (url.origin !== 'https://release.invalid' || url.search || url.hash) return null;
   return codePath(url.pathname.slice(1));
 }
 
-/** The relative static import specifiers of an ES module's text, and `foliwake`. */
+/** The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIERS). */
 export function staticImports(source: string): string[] {
   const out = new Set<string>();
   for (const match of source.matchAll(STATIC_IMPORT)) out.add(match[1]!);
   return [...out];
 }
 
-async function readText(client: OriginClient, channel: FoliwakePageData['channel'], cd: string, file: string): Promise<string | null> {
+async function readText(
+  client: OriginClient,
+  channel: FoliwakePageData['channel'],
+  cd: string,
+  file: string,
+): Promise<string | null> {
   const key = `${channel}|${cd}|${file}`;
   const known = files.get(key);
   if (known) return known;
@@ -82,7 +90,11 @@ async function readText(client: OriginClient, channel: FoliwakePageData['channel
 }
 
 /** Hints for a prepared page: modulepreload for its modules, preload as=style for its block stylesheets. */
-export async function preloadHints(config: FoliwakeAppConfig, client: OriginClient, page: FoliwakePageData): Promise<PreloadHint[]> {
+export async function preloadHints(
+  config: FoliwakeAppConfig,
+  client: OriginClient,
+  page: FoliwakePageData,
+): Promise<PreloadHint[]> {
   const app = appOf(config);
   if (!page.codeBase || !page.codeRelease || !app.blocks.entry) return [];
   const cd = page.codeRelease;

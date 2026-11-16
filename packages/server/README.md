@@ -981,7 +981,7 @@ function resolveInRelease(from: string, specifier: string): string | null
 
 #### `staticImports()`
 
-The relative static import specifiers of an ES module's text, and `foliwake`.
+The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIERS).
 
 ```ts
 function staticImports(source: string): string[]

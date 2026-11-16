@@ -39,6 +39,12 @@ async function open() {
 const buttons = (page, n) => page.waitForFunction((count) => document.querySelectorAll('button.fw').length === count, n);
 const mounts = (s) => s.log.filter(([k]) => k === 'mount');
 
+/** The import map of a release: the kit under its specifier and, for one more minor, under `foliwake`. */
+function kitMap(cd) {
+  const kit = `/foliwake-code/${cd}/_foliwake/block-kit.js`;
+  return { '@foliwake/block-kit': kit, foliwake: kit };
+}
+
 describe('@foliwake/client without a framework', () => {
   test('the harness bundle has no framework in it', async () => {
     const assets = path.join(dist, 'assets');
@@ -63,7 +69,7 @@ describe('@foliwake/client without a framework', () => {
     assert.equal(mounts(s)[0][4], 'harness');
     assert.equal(mounts(s)[0][5], CDS.a, 'the module\'s `foliwake` is its own release\'s kit (the import map the client added)');
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('script[type="importmap"]')].map((m) => [m.dataset.foliwakeCode, JSON.parse(m.textContent)])), [
-      [`/foliwake-code/${CDS.a}/`, { scopes: { [`/foliwake-code/${CDS.a}/`]: { foliwake: `/foliwake-code/${CDS.a}/_foliwake/block-kit.js` } } }],
+      [`/foliwake-code/${CDS.a}/`, { scopes: { [`/foliwake-code/${CDS.a}/`]: kitMap(CDS.a) } }],
     ]);
     assert.deepEqual(s.status.map(([, x]) => x), ['mounting', 'ready']);
     assert.equal(await h('status', 'm'), 'ready');
