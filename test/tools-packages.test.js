@@ -45,3 +45,27 @@ test('one shared version: final 0.x.y or a release candidate 0.x.y-rc.N; candida
   assert.equal(tarballName('@foliwake/site-check', '0.3.0-rc.1'), 'foliwake-site-check-0.3.0-rc.1.tgz');
   assert.equal(tarballName('create-foliwake', '0.3.0'), 'create-foliwake-0.3.0.tgz');
 });
+
+test('changesets: one fixed group of exactly the packages; every workflow action pinned to a commit', () => {
+  const config = JSON.parse(read('.changeset/config.json'));
+  assert.deepEqual([...config.fixed[0]].sort(), PACKAGES.map((p) => p.name).sort());
+  assert.equal(config.fixed.length, 1);
+  assert.equal(config.access, 'public');
+  assert.equal(config.baseBranch, 'main');
+  for (const file of ['ci.yml', 'publish.yml', 'release.yml']) {
+    const text = read(`.github/workflows/${file}`);
+    for (const [, action] of text.matchAll(/^\s*(?:- )?uses: ([^\s#]+)/gm)) {
+      if (action.startsWith('./')) continue;
+      assert.match(action, /@[0-9a-f]{40}$/, `${file}: ${action} is pinned to a commit SHA`);
+    }
+  }
+});
+
+test('release.yml publishes through publish.yml, never with a copy of its steps', () => {
+  const release = read('.github/workflows/release.yml');
+  assert.match(release, /uses: \.\/\.github\/workflows\/publish\.yml/);
+  assert.match(release, /commit: Version packages$/m, 'the version commit carries no skip marker');
+  assert.doesNotMatch(release, /npm publish/);
+  assert.match(read('.github/workflows/publish.yml'), /^  workflow_call:$/m);
+  assert.match(read('.github/workflows/ci.yml'), /pnpm changeset status --since="origin\/\$BASE_REF"/);
+});

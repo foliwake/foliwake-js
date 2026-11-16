@@ -2,12 +2,15 @@ name: Publish
 
 # Publishes the packages on npm (npmjs.com, public, with provenance) from a release tag v<version> on main,
 # after the owner approves the `publish` job (README.md, "Releasing"). Agents never tag or publish.
+# Runs on the push of a tag, on a manual dispatch, and as a reusable workflow: release.yml calls it with the tag
+# it made when a "Version packages" pull request was merged (one publish path for both).
 #
 #  - pack:    no token, contents: read. Checks the version (and the tag), builds, typechecks, runs the tests,
 #             packs the tarballs in publish order, installs exactly those files into a throwaway consumer and
 #             checks their hygiene (tools/check-package-tarballs.mjs), runs `npm publish --dry-run` on each
 #             tarball and uploads them. A workflow_dispatch run with dry-run (the default) stops here.
-#  - publish: only on a tag v<version> (push of the tag, or a dispatch on the tag with dry-run off). Runs in
+#  - publish: only for a tag v<version> (push of the tag, a dispatch on the tag with dry-run off, or the tag
+#             release.yml gives). Runs in
 #             the GitHub environment `packages-publish` (the owner's approval), checks that the tag points at a
 #             commit on main, refuses a private repository (npm provenance needs a public one) and existing
 #             versions, then publishes exactly the checked tarballs (checksums), in dependency order, with
@@ -24,12 +27,22 @@ on:
         description: 'Build, test, pack and npm publish --dry-run only; publish nothing'
         type: boolean
         default: true
+  workflow_call:
+    inputs:
+      tag:
+        description: 'The release tag v<version> to publish (made by release.yml on main)'
+        type: string
+        required: true
 
 permissions: {}
 
 concurrency:
   group: publish
   cancel-in-progress: false
+
+env:
+  # The tag being released: the caller's input, else the pushed or dispatched tag; empty on a dispatch on main.
+  TAG: ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
 
 jobs:
   pack:
@@ -43,10 +56,12 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      tag: ${{ env.TAG }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
+          ref: ${{ env.TAG || github.ref }}
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           version: 10.33.0
@@ -60,9 +75,7 @@ jobs:
         id: version
         run: |
           set -eu
-          tag=""
-          case "$GITHUB_REF" in refs/tags/*) tag="$GITHUB_REF_NAME" ;; esac
-          version=$(node tools/packages-version.mjs ${tag:+"$tag"})
+          version=$(node tools/packages-version.mjs ${TAG:+"$TAG"})
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Build and typecheck
         run: pnpm typecheck
@@ -96,13 +109,15 @@ jobs:
 
   publish:
     needs: pack
+    # A tag is being released (pushed, dispatched with dry-run off, or given by release.yml).
     if: >-
-      github.repository == 'foliwake/foliwake-js' && startsWith(github.ref, 'refs/tags/v') &&
-      (github.event_name == 'push' || inputs.dry-run == false)
+      github.repository == 'foliwake/foliwake-js' && needs.pack.outputs.tag != '' &&
+      (github.event_name != 'workflow_dispatch' || inputs.dry-run == false)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Owner setup (once, README.md "Releasing"): environment `packages-publish` with the owner as required
-    # reviewer and a deployment tag rule `v*`; the secret NPM_TOKEN (environment secret preferred).
+    # reviewer and the deployment rules tag `v*` and branch `main` (release.yml calls this from main); the secret
+    # NPM_TOKEN (environment secret preferred).
     environment: packages-publish
     permissions:
       contents: read
@@ -119,17 +134,19 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+          ref: ${{ env.TAG }}
       - name: Check the tag (v<version>, the commit being run, on main)
         run: |
           set -eu
-          node tools/packages-version.mjs "$GITHUB_REF_NAME"
-          tagged=$(git rev-parse "$GITHUB_REF^{commit}")
-          if [ "$tagged" != "$GITHUB_SHA" ]; then
-            echo "the tag points at $tagged, the run at $GITHUB_SHA" >&2
+          node tools/packages-version.mjs "$TAG"
+          tagged=$(git rev-parse "refs/tags/$TAG^{commit}")
+          checked=$(git rev-parse HEAD)
+          if [ "$tagged" != "$checked" ]; then
+            echo "the tag points at $tagged, the checkout at $checked" >&2
             exit 1
           fi
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
-            echo "$GITHUB_SHA is not on main: only reviewed main history is published" >&2
+          if ! git merge-base --is-ancestor "$checked" refs/remotes/origin/main; then
+            echo "$checked is not on main: only reviewed main history is published" >&2
             exit 1
           fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2

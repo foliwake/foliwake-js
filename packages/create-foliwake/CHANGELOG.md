@@ -3,15 +3,8 @@
 `create-foliwake` shares one version with the `@foliwake/*` packages of this repository and is released together
 with them. While the version is 0.x, a minor release may break; breaking changes are marked **BREAKING**.
 
-## 0.3.0 (unreleased)
+Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
-- First release: `npm create foliwake@latest` (and `npx`, `pnpm`, `yarn`, `bun create`). The create command of
-  the Foliwake CLI, moved out of the engine without its server step: the same starters (now inside this
-  package), questions, flags and write guarantees, plus `--install` for Storybook's packages.
-- The planned project is checked with `@foliwake/site-check` before anything is written; the generated
-  "Frontend checks" workflow runs `npx @foliwake/site-check@<version> . --format github`, and the project's
-  `tests/` keep only what the checker does not cover.
-- The project gets the types of `foliwake` for editors (`.foliwake/types/foliwake.d.ts`, from
-  `@foliwake/block-kit`) and the JSON Schema of block definitions; both git-ignored.
-- React for the starters is vendored when the package is built (`vendor/react.js` and its license).
-- `createProject()` and `create-foliwake/starters` for the Foliwake CLI's `foliwake create` wrapper.
+## 0.2.0 and earlier (never published on npm)
+
+The package did not exist yet; it is first released with the shared version after 0.2.0.
