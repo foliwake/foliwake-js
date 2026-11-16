@@ -20,19 +20,11 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 
 ## Install
 
-The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
-
-```ini
-@foliwake:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
-not work with this registry (on Vercel, set it as a build environment variable). Install exact versions, the
-same for every `@foliwake/*` package:
+The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
+needed. Install exact versions, the same for every `@foliwake/*` package:
 
 ```bash
-pnpm add @foliwake/next@0.1.0 @foliwake/react@0.1.0 @foliwake/server@0.1.0
+pnpm add @foliwake/next@0.2.0 @foliwake/react@0.2.0 @foliwake/server@0.2.0
 ```
 
 The app also needs `foliwake.remote.json` in its root (or `FOLIWAKE_REMOTE` naming another file): the site,
@@ -226,6 +218,9 @@ Unlike `<FoliwakeServerPage>`, `readPage` does not call `notFound()`: it throws 
 | Node.js | 22.22 or newer |
 | Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); an older origin gives pages without blocks |
 | Config | `foliwake.remote.json` version 2 |
+
+Changes per version, breaking ones marked: `CHANGELOG.md` in the package
+(`node_modules/@foliwake/next/CHANGELOG.md`).
 
 ## Good to know
 

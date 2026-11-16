@@ -14,19 +14,11 @@ Foliwake origin: it imports the blocks module from your app's own code proxy (a 
 
 ## Install
 
-The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
-
-```ini
-@foliwake:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
-not work with this registry. Install an exact version, and use the same version for every `@foliwake/*`
-package:
+The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
+needed. Install an exact version, and use the same version for every `@foliwake/*` package:
 
 ```bash
-pnpm add @foliwake/client@0.1.0
+pnpm add @foliwake/client@0.2.0
 ```
 
 ## Minimal example
@@ -186,6 +178,9 @@ modules before it.
 | Frameworks | none required; React 19.2+ through `@foliwake/react` |
 
 Importing the package on a server is safe: nothing touches the DOM before a call.
+
+Changes per version, breaking ones marked: `CHANGELOG.md` in the package
+(`node_modules/@foliwake/client/CHANGELOG.md`).
 
 ## Good to know
 

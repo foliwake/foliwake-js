@@ -13,19 +13,11 @@ The page comes from your server as a `FoliwakePageData` object (`preparePage` of
 
 ## Install
 
-The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
-
-```ini
-@foliwake:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
-not work with this registry. Install an exact version, and use the same version for every `@foliwake/*`
-package:
+The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
+needed. Install an exact version, and use the same version for every `@foliwake/*` package:
 
 ```bash
-pnpm add @foliwake/react@0.1.0 @foliwake/server@0.1.0
+pnpm add @foliwake/react@0.2.0 @foliwake/server@0.2.0
 ```
 
 ## Minimal example
@@ -159,6 +151,9 @@ Statuses: `mounting`, then `ready`, `partial` (some blocks failed) or `static` (
 
 The package is marked `'use client'`. Rendering on the server is safe: the body is rendered as HTML and
 blocks mount only in the browser.
+
+Changes per version, breaking ones marked: `CHANGELOG.md` in the package
+(`node_modules/@foliwake/react/CHANGELOG.md`).
 
 ## Good to know
 

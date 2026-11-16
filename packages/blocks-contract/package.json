@@ -1,13 +1,16 @@
 {
   "name": "@foliwake/blocks-contract",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Types of the Foliwake blocks contract (foliwake-blocks/2: the core, and the /assessment extension) and the page types shared by @foliwake/server and @foliwake/client; one browser-safe runtime helper, the import map of a code release (/import-map).",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
   "engines": { "node": ">=22.22" },
   "repository": { "type": "git", "url": "git+https://github.com/adjioev/foliwake.git", "directory": "packages/blocks-contract" },
-  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "homepage": "https://docs.foliwake.dev/reference/packages/blocks-contract",
+  "bugs": { "url": "https://github.com/adjioev/foliwake/issues" },
+  "keywords": ["foliwake", "cms", "headless", "blocks", "types", "typescript", "contract"],
+  "publishConfig": { "access": "public", "provenance": true },
   "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 2 },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
@@ -16,5 +19,5 @@
     "./page": { "types": "./dist/page.d.ts", "default": "./dist/page.js" },
     "./package.json": "./package.json"
   },
-  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md"]
+  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md", "CHANGELOG.md"]
 }

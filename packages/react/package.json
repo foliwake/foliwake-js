@@ -1,12 +1,16 @@
 {
   "name": "@foliwake/react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "React components for Foliwake pages: <FoliwakePage> mounts a page's blocks from its code release, useFoliwakeEvents, createHost. A thin wrapper of @foliwake/client; SSR-safe.",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
   "repository": { "type": "git", "url": "git+https://github.com/adjioev/foliwake.git", "directory": "packages/react" },
-  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "homepage": "https://docs.foliwake.dev/reference/packages/react",
+  "bugs": { "url": "https://github.com/adjioev/foliwake/issues" },
+  "keywords": ["foliwake", "cms", "headless", "blocks", "react", "components"],
+  "engines": { "node": ">=22.22" },
+  "publishConfig": { "access": "public", "provenance": true },
   "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 2 },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
@@ -23,5 +27,5 @@
     "@types/react": "19.3.0",
     "react": "19.3.0"
   },
-  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md"]
+  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md", "CHANGELOG.md"]
 }

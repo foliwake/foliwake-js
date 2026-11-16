@@ -22,18 +22,11 @@ directly with another server framework (a Vite or Remix server, Hono, Express wi
 
 ## Install
 
-The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your app:
-
-```ini
-@foliwake:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
-not work with this registry. Install an exact version, the same for every `@foliwake/*` package:
+The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
+needed. Install an exact version, the same for every `@foliwake/*` package:
 
 ```bash
-pnpm add @foliwake/server@0.1.0
+pnpm add @foliwake/server@0.2.0
 ```
 
 The config file sits in the app's root and holds no secrets, only the names of the variables with passwords or keys:
@@ -182,6 +175,9 @@ export const settingsForBrowser = clientSettings(config);
 | Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); a plain/1 origin gives bodies without blocks |
 | Config | `foliwake.remote.json` version 2 (version 1 files are refused) |
 | Blocks contract | `foliwake-blocks/2` |
+
+Changes per version, breaking ones marked: `CHANGELOG.md` in the package
+(`node_modules/@foliwake/server/CHANGELOG.md`).
 
 ## Good to know
 

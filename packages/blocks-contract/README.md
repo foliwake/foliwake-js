@@ -23,19 +23,12 @@ A change here is a contract change: minor versions of the contract only add.
 
 ## Install
 
-The packages are published to GitHub Packages under the `@foliwake` scope. Add an `.npmrc` to your project:
-
-```ini
-@foliwake:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-`NODE_AUTH_TOKEN` is a GitHub personal access token (classic) with `read:packages`; fine-grained tokens do
-not work with this registry. Install an exact version, the same as your other `@foliwake/*` packages; as it
-holds only types, a dev dependency is enough:
+The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
+needed. Install an exact version, the same as your other `@foliwake/*` packages; as it holds only types, a dev
+dependency is enough:
 
 ```bash
-pnpm add -D @foliwake/blocks-contract@0.1.0
+pnpm add -D @foliwake/blocks-contract@0.2.0
 ```
 
 ## Minimal example
@@ -187,6 +180,9 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
 | Contract | `foliwake-blocks/2` (minor 0): the core, and the `/assessment` extension |
 | TypeScript | types only; written for TypeScript 5.9 |
 | Node.js | 22.22 or newer (`engines`) |
+
+Changes per version, breaking ones marked: `CHANGELOG.md` in the package
+(`node_modules/@foliwake/blocks-contract/CHANGELOG.md`).
 
 ## Guides
 
