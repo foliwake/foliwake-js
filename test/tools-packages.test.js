@@ -64,7 +64,7 @@ test('changesets: one fixed group of exactly the packages; every workflow action
 test('release.yml publishes through publish.yml, never with a copy of its steps', () => {
   const release = read('.github/workflows/release.yml');
   assert.match(release, /uses: \.\/\.github\/workflows\/publish\.yml/);
-  assert.match(release, /commit: Version packages$/m, 'the version commit carries no skip marker');
+  assert.match(release, /commit-message: Version packages$/m, 'the version commit carries no skip marker');
   assert.doesNotMatch(release, /npm publish/);
   assert.match(read('.github/workflows/publish.yml'), /^  workflow_call:$/m);
   assert.match(read('.github/workflows/ci.yml'), /pnpm changeset status --since="origin\/\$BASE_REF"/);
