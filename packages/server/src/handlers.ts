@@ -116,7 +116,10 @@ export function mediaHandler(config: FoliwakeAppConfig, client: OriginClient, op
     if (target.rest.length !== 1) return notFound(errorCc);
     const match = MEDIA_KEY_PATTERN.exec(target.rest[0]!);
     if (!match) return notFound(errorCc);
-    const extra: Record<string, string> = match[1] === 'svg' ? { 'Content-Security-Policy': SVG_CODE_CSP } : {};
-    return forward(request, client, target.channel, `/media/${target.rest[0]}`, MEDIA_TYPES[match[1]!]!, LIMITS.media, extra, true);
+    const extension = match[1]!;
+    // A reference image (SVG media) is sandboxed like a code SVG.
+    const extra: Record<string, string> = extension === 'svg' ? { 'Content-Security-Policy': SVG_CODE_CSP } : {};
+    const mediaPath = `/media/${target.rest[0]}`;
+    return forward(request, client, target.channel, mediaPath, MEDIA_TYPES[extension]!, LIMITS.media, extra, true);
   };
 }

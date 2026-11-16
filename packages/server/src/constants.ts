@@ -34,7 +34,8 @@ export const CODE_ROOTS: readonly string[] = Object.freeze(['components', 'scrip
  */
 export const MEDIA_KEY_PATTERN = /^[0-9a-f]{64}\.(png|jpe?g|webp|gif|avif|svg)$/;
 export const MEDIA_TYPES: Readonly<Record<string, string>> = Object.freeze({
-  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', svg: 'image/svg+xml',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif',
+  svg: 'image/svg+xml',
 });
 
 /** One segment of a path inside a code release, after a single decode. */
