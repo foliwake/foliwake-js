@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "@foliwake/blocks-contract": "workspace:*",
-    "htmlparser2": "10.1.0"
+    "htmlparser2": "10.1.0",
+    "jose": "6.2.15"
   },
   "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "schemas/", "LICENSE", "README.md"]
 }

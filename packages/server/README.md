@@ -36,7 +36,7 @@ not work with this registry. Install an exact version, the same for every `@foli
 pnpm add @foliwake/server@0.1.0
 ```
 
-The config file sits in the app's root and holds no secrets, only the names of the variables with passwords:
+The config file sits in the app's root and holds no secrets, only the names of the variables with passwords or keys:
 
 ```json
 {
@@ -53,6 +53,23 @@ The config file sits in the app's root and holds no secrets, only the names of t
   }
 }
 ```
+
+An endpoint is open (no `auth`), behind HTTP Basic (`"type": "basic"`), or behind a delivery that checks
+service tokens, such as the Cloudflare Worker (`packages/worker-origin`):
+
+```json
+"live": {
+  "url": "https://mysite.worker.example.org",
+  "auth": { "type": "service-token", "issuer": "mysite-app", "kid": "mysite-app-2026-11", "privateKeyEnv": "MYSITE_LIVE_SIGNING_KEY" }
+}
+```
+
+With `service-token`, every origin request carries `Authorization: Bearer <JWT>`, signed for that request
+alone: ES256, header `kid`, claims `iss` (= `issuer`, the delivery's `TOKEN_ISSUER`), `aud: site:<site>`,
+`iat`, `exp = iat + 60` and `path`, the exact path of the request as sent, without the query
+(`/lessons/a.plain.html`, `/lessons/query-index.json`). A token for a page does not open its `.plain.html`.
+The variable holds the ES256 private key as JWK JSON text; the delivery holds the public key under the same
+`kid`. Tokens are never cached, reused or logged.
 
 ## Minimal example
 
@@ -173,9 +190,11 @@ export const settingsForBrowser = clientSettings(config);
   returned is serialised from the checked tree. A refused body throws `FoliwakePageError` with kind `invalid`.
 - Origin responses are size-limited while streaming (body 2 MB, code 5 MB, media 25 MB); requests time out
   after 10 s.
-- Credentials never appear in messages; a missing password variable is a `FoliwakeConfigError` that names
-  the variable, not its value. The password is read at each request, so a rotated secret works without a
-  restart.
+- Credentials never appear in messages; a missing or malformed password or key variable is a
+  `FoliwakeConfigError` that names the variable, not its value. The secret is read at each request, so a
+  rotated secret works without a restart. A private key whose own `kid` differs from the config's is refused.
+- Rotating a service-token key: add the new public key to the delivery's key set first (both `kid`s listed),
+  then switch the app's `kid` and private key, then remove the old public key.
 - `preparePage` leaves `page.preload` empty; `preloadHints` fills it from the release's
   `components/components.json` (only blocks that declare a `.js` or `.css` get hints).
 
@@ -359,6 +378,20 @@ const CONFIG_FILE = "foliwake.remote.json"
 
 **Interfaces**
 
+#### `BasicAuth`
+
+HTTP Basic credentials: a user name and the NAME of the variable holding the password.
+
+```ts
+interface BasicAuth
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `type` | `'basic'` |  |
+| `username` | `string` |  |
+| `passwordEnv` | `string` |  |
+
 #### `FoliwakeAppConfig`
 
 A parsed and validated `foliwake.remote.json` (version 2). It holds credential variable names, never secrets.
@@ -419,19 +452,30 @@ interface ParseOptions
 | `requireApp?` | `boolean` | Refuse a file without `app` (default true; the CLI passes false). |
 | `envNameProblem?` | `(name: string, what: string) => string \| null` | An additional rule for credential variable names (the engine CLI passes its own). |
 
-#### `RemoteAuth`
+#### `ServiceTokenAuth`
 
-HTTP Basic credentials: a user name and the NAME of the variable holding the password.
+A service token: each request carries a fresh ES256 JWT for its exact path, signed with the private key in the variable `privateKeyEnv` (a JWK as JSON text). Delivery checks it with the public key of `kid`.
 
 ```ts
-interface RemoteAuth
+interface ServiceTokenAuth
 ```
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `type` | `'basic'` |  |
-| `username` | `string` |  |
-| `passwordEnv` | `string` |  |
+| `type` | `'service-token'` |  |
+| `issuer` | `string` | The `iss` the delivery expects (its TOKEN_ISSUER). |
+| `kid` | `string` | The key id the delivery looks the public key up by. |
+| `privateKeyEnv` | `string` | The NAME of the variable holding the private key. |
+
+**Types**
+
+#### `RemoteAuth`
+
+The credential of an endpoint.
+
+```ts
+type RemoteAuth = BasicAuth | ServiceTokenAuth
+```
 
 **Also exported** (documented where they are defined)
 
@@ -443,7 +487,7 @@ interface RemoteAuth
 
 #### `createOriginClient()`
 
-The client for the config's origins. The password is read from `env[passwordEnv]` at each request (a rotated secret takes effect without a restart) and goes only into the Authorization header.
+The client for the config's origins. The secret is read from the environment at each request (a rotated secret takes effect without a restart) and goes only into the Authorization header: `basic` sends the password of `passwordEnv`; `service-token` signs a fresh token for the request's exact path with the private key of `privateKeyEnv`.
 
 ```ts
 function createOriginClient(config: FoliwakeAppConfig, env?: NodeJS.ProcessEnv, opts?: OriginClientOptions): OriginClient
@@ -452,10 +496,20 @@ function createOriginClient(config: FoliwakeAppConfig, env?: NodeJS.ProcessEnv, 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `config` | `FoliwakeAppConfig` |  |
-| `env?` | `NodeJS.ProcessEnv` | Where passwords are read (default `process.env`). |
+| `env?` | `NodeJS.ProcessEnv` | Where secrets are read (default `process.env`). |
 | `opts?` | `OriginClientOptions` |  |
 
 **Returns** `OriginClient`
+
+**Constants**
+
+#### `SERVICE_TOKEN_LIFETIME_SECONDS`
+
+Seconds a service token lives: `exp = iat + 60`. Delivery accepts at most 120, with 5 s of clock skew.
+
+```ts
+const SERVICE_TOKEN_LIFETIME_SECONDS = 60
+```
 
 **Interfaces**
 
@@ -485,6 +539,7 @@ interface OriginClientOptions
 | --- | --- | --- |
 | `fetch?` | `typeof fetch` | A fetch implementation (tests); default globalThis.fetch. |
 | `timeoutMs?` | `number` |  |
+| `now?` | `() => number` | The clock of service tokens, in milliseconds (tests); default Date.now. |
 
 #### `OriginRequestOptions`
 

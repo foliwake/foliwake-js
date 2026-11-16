@@ -22,11 +22,28 @@ export const CONFIG_ENV = 'FOLIWAKE_REMOTE';
 export const CHANNELS: readonly ChannelName[] = Object.freeze(['live', 'preview']);
 
 /** HTTP Basic credentials: a user name and the NAME of the variable holding the password. */
-export interface RemoteAuth {
+export interface BasicAuth {
   type: 'basic';
   username: string;
   passwordEnv: string;
 }
+
+/**
+ * A service token: each request carries a fresh ES256 JWT for its exact path, signed with the private key
+ * in the variable `privateKeyEnv` (a JWK as JSON text). Delivery checks it with the public key of `kid`.
+ */
+export interface ServiceTokenAuth {
+  type: 'service-token';
+  /** The `iss` the delivery expects (its TOKEN_ISSUER). */
+  issuer: string;
+  /** The key id the delivery looks the public key up by. */
+  kid: string;
+  /** The NAME of the variable holding the private key. */
+  privateKeyEnv: string;
+}
+
+/** The credential of an endpoint. */
+export type RemoteAuth = BasicAuth | ServiceTokenAuth;
 
 /** A channel's origin and its optional credential. */
 export interface FoliwakeEndpoint {
@@ -71,7 +88,9 @@ export interface ParseOptions {
   envNameProblem?: (name: string, what: string) => string | null;
 }
 
-const SECRET_KEYS = /^(password|passwd|pass|secret|token|apikey|api_key|authorization|credentials?)$/i;
+const SECRET_KEYS = /^(password|passwd|pass|secret|token|apikey|api_key|authorization|credentials?|private_?key|signing_?key|jwk|d)$/i;
+const ISSUER = /^[A-Za-z0-9._:/-]{1,256}$/;
+const KID = /^[A-Za-z0-9._-]{1,128}$/;
 const SITE = /^[a-z0-9][a-z0-9-]{0,62}$/;
 const PREFIX = /^(?:\/[a-z0-9-]+)+$/;
 const RESERVED_PREFIXES = ['/', '/_next', '/api', '/code', '/media'];
@@ -136,7 +155,7 @@ function refuseSecrets(value: unknown, at: string, file: string): void {
   if (!isObject(value)) return;
   for (const [key, child] of Object.entries(value)) {
     if (SECRET_KEYS.test(key)) {
-      throw new FoliwakeConfigError(`${file}: "${at}${key}" looks like a stored secret. This file is committed: keep only the NAME of an environment variable in "passwordEnv" and remove the secret (rotate it if it was committed).`);
+      throw new FoliwakeConfigError(`${file}: "${at}${key}" looks like a stored secret. This file is committed: keep only the NAME of an environment variable ("passwordEnv", "privateKeyEnv") and remove the secret (rotate it if it was committed).`);
     }
     refuseSecrets(child, `${at}${key}.`, file);
   }
@@ -153,14 +172,23 @@ function parseEndpoint(value: unknown, where: string, opts: ParseOptions): Foliw
   onlyKeys(value, ['url', 'auth'], where);
   const origin = parseRemoteUrl(value.url, `${where}.url`);
   if (value.auth === undefined || value.auth === null) return { origin, auth: null };
-  const auth = value.auth;
-  if (!isObject(auth)) throw new FoliwakeConfigError(`${where}.auth: must be {"type": "basic", "username": …, "passwordEnv": …}.`);
-  onlyKeys(auth, ['type', 'username', 'passwordEnv'], `${where}.auth`);
-  if (auth.type !== 'basic') throw new FoliwakeConfigError(`${where}.auth.type: only "basic" is supported.`);
-  return {
-    origin,
-    auth: { type: 'basic', username: checkUsername(auth.username, `${where}.auth.username`), passwordEnv: checkEnvName(auth.passwordEnv, `${where}.auth.passwordEnv`, opts.envNameProblem) },
-  };
+  return { origin, auth: parseAuth(value.auth, `${where}.auth`, opts) };
+}
+
+function parseAuth(auth: unknown, where: string, opts: ParseOptions): RemoteAuth {
+  const shapes = '{"type": "basic", "username": …, "passwordEnv": …} or {"type": "service-token", "issuer": …, "kid": …, "privateKeyEnv": …}';
+  if (!isObject(auth)) throw new FoliwakeConfigError(`${where}: must be ${shapes}.`);
+  if (auth.type === 'basic') {
+    onlyKeys(auth, ['type', 'username', 'passwordEnv'], where);
+    return { type: 'basic', username: checkUsername(auth.username, `${where}.username`), passwordEnv: checkEnvName(auth.passwordEnv, `${where}.passwordEnv`, opts.envNameProblem) };
+  }
+  if (auth.type === 'service-token') {
+    onlyKeys(auth, ['type', 'issuer', 'kid', 'privateKeyEnv'], where);
+    if (typeof auth.issuer !== 'string' || !ISSUER.test(auth.issuer)) throw new FoliwakeConfigError(`${where}.issuer: the issuer the delivery expects (its TOKEN_ISSUER), [A-Za-z0-9._:/-], such as "gaiare-next".`);
+    if (typeof auth.kid !== 'string' || !KID.test(auth.kid)) throw new FoliwakeConfigError(`${where}.kid: the key id of the public key the delivery holds, [A-Za-z0-9._-], such as "gaiare-next-2026-11".`);
+    return { type: 'service-token', issuer: auth.issuer, kid: auth.kid, privateKeyEnv: checkEnvName(auth.privateKeyEnv, `${where}.privateKeyEnv`, opts.envNameProblem) };
+  }
+  throw new FoliwakeConfigError(`${where}.type: "basic" or "service-token"; the auth must be ${shapes}.`);
 }
 
 function parsePrefix(value: unknown, fallback: string, where: string): string {
