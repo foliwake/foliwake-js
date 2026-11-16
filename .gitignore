@@ -11,3 +11,4 @@ packages/create-foliwake/vendor.next/
 .npmrc
 test/.client-types-*/
 test/.readme-examples-*/
+test/.block-kit-types-*/

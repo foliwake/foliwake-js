@@ -15,6 +15,8 @@ const NAMES = PUBLISH_ORDER;
 /** The app packages: they carry the origin and blocks contract versions they speak. */
 const APP_PACKAGES = ['blocks-contract', 'server', 'client', 'react', 'next'];
 const FORMATS = { htmlContract: 2, blocksPack: 1, templates: 1, references: 1, query: 1 };
+/** What the other packages carry in `foliwake`: the versions they speak. */
+const METADATA = { 'block-kit': { blocksContract: 2 } };
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const manifest = (name) => JSON.parse(read(`packages/${name}/package.json`));
 
@@ -35,7 +37,8 @@ test('one coordinated 0.x version, compatibility metadata, public npm metadata',
   for (const name of NAMES) {
     const m = manifest(name);
     assert.equal(m.name, PACKAGES.find((p) => p.dir === name).name);
-    const compatibility = APP_PACKAGES.includes(name) ? { plain: 2, blocksContract: 2, remoteConfig: 2 } : FORMATS;
+    const app = { plain: 2, blocksContract: 2, remoteConfig: 2 };
+    const compatibility = APP_PACKAGES.includes(name) ? app : (METADATA[name] ?? FORMATS);
     assert.deepEqual(m.foliwake, compatibility, name);
     const publicOnNpm = { access: 'public', provenance: true };
     assert.deepEqual(m.publishConfig, publicOnNpm, `${name}: public on npm, no custom registry`);
@@ -68,7 +71,7 @@ test('tarballs: dist/ without maps or build stamps, plus LICENSE, README and CHA
     const files = JSON.parse(stdout)[0].files.map((f) => f.path);
     const always = ['LICENSE', 'README.md', 'CHANGELOG.md', 'package.json'];
     assert.ok(always.every((f) => files.includes(f)), `${name}: ${files.join(', ')}`);
-    const unexpected = files.filter((f) => !always.includes(f) && !(f.startsWith('dist/') && /\.(js|d\.ts)$/.test(f)) && !(name === 'server' && f.startsWith('schemas/')) && !(name === 'create-foliwake' && /^(starters|vendor)\//.test(f)));
+    const unexpected = files.filter((f) => !always.includes(f) && !(f.startsWith('dist/') && /\.(js|d\.ts)$/.test(f)) && !(name === 'server' && f.startsWith('schemas/')) && !(name === 'create-foliwake' && /^(starters|vendor)\//.test(f)) && !(name === 'block-kit' && f === 'dist/lit-html.LICENSE'));
     assert.deepEqual(unexpected, [], name);
     const exported = Object.values(manifest(name).exports).flatMap((e) => (typeof e === 'string' ? [e] : Object.values(e))).map((p) => p.replace(/^\.\//, ''));
     for (const target of exported) if (target !== 'package.json') assert.ok(files.includes(target), `${name} exports ${target}`);

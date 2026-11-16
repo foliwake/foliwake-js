@@ -33,6 +33,7 @@ const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const MINIMAL_FILES = [
   '.foliwake/schemas/block-1.schema.json', // for editors (`$schema`), git-ignored: not committed
+  '.foliwake/types/foliwake.d.ts', // the types of `foliwake` for editors (jsconfig.json), git-ignored
   '.github/actions/foliwake-request/action.yml',
   '.github/scripts/foliwake-report.py',
   '.github/workflows/branch-preview.yml',
@@ -73,7 +74,7 @@ test('without a terminal nothing is asked: foliwake-site, minimal, no site id, a
   const subject = `Create the site with create-foliwake ${CREATE_VERSION} (template minimal)`;
   assert.equal(git(target, w.env, 'log', '-1', '--format=%s'), subject);
   assert.equal(git(target, w.env, 'status', '--porcelain'), '');
-  assert.equal(git(target, w.env, 'ls-files').split('\n').length, MINIMAL_FILES.length - 1, 'all but the schema');
+  assert.equal(git(target, w.env, 'ls-files').split('\n').length, MINIMAL_FILES.length - 2, 'all but the files for editors');
   const report = new RegExp(
     `\\nChecked with @foliwake/site-check ${escaped(SITE_CHECK_VERSION)}: no problems\\.\\n` +
       `Created foliwake-site \\(template minimal, create-foliwake ${escaped(CREATE_VERSION)}\\)\\.\\n` +

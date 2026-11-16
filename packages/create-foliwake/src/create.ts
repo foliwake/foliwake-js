@@ -8,7 +8,8 @@
 //      repository) and the files planned in memory from the starters;
 //   4. @foliwake/site-check over the planned files (validate.ts);
 //   5. the files written as one transaction: on any failure nothing of this run stays, and with --overwrite the
-//      original files are put back; then the JSON Schema for editors (git-ignored);
+//      original files are put back; then the files for editors (git-ignored: the JSON Schema of block
+//      definitions, the types of `foliwake`);
 //   6. the npm packages installed, when the project has some (Storybook) and that was asked;
 //   7. `git init` and the first commit (when asked; never inside another repository, and not when that cannot
 //      be determined).
@@ -46,7 +47,7 @@ import {
   askTemplate,
   welcome,
 } from './prompts.js';
-import { writeLocalSchema } from './schema.js';
+import { writeKitTypes, writeLocalSchema } from './editor-files.js';
 import { packageVersion, siteCheckVersion } from './starters.js';
 import { projectProblems } from './validate.js';
 
@@ -278,6 +279,11 @@ export async function createProject(request: CreateRequest, io: CreateIO): Promi
   let status = 0;
   await writeLocalSchema(answers.target).catch((error: Error) => {
     notes.push(`The JSON Schema for editors was not written (${error.message}); \`foliwake dev\` writes it.`);
+  });
+  await writeKitTypes(answers.target).catch((error: Error) => {
+    notes.push(
+      `The types of \`foliwake\` for editors were not written (${error.message}); \`foliwake dev\` writes them.`,
+    );
   });
   if (written.leftover) {
     status = 1;

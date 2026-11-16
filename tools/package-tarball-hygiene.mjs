@@ -10,6 +10,8 @@ const WHITELIST = [
   /^(LICENSE|NOTICE)$/,
   /^dist\/[\w./-]+\.(js|d\.ts)$/,
   /^schemas\/[\w.-]+\.schema\.json$/,
+  // @foliwake/block-kit: the license of the vendored lit-html next to it.
+  /^dist\/lit-html\.LICENSE$/,
   // create-foliwake: the starters it copies into a new project, and the vendored React they may get.
   /^starters\/[\w.-]+(\/[\w.-]+)+$/,
   /^vendor\/react(\.js|\.LICENSE\.txt)$/,

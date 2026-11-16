@@ -11,6 +11,7 @@ release; and what a site developer uses to create and check the site's code repo
 | [`@foliwake/client`](packages/client/README.md) | framework-free browser client: `mountFoliwakePage`, `createHost`, `subscribeBlockEvents`; the base of every adapter |
 | [`@foliwake/react`](packages/react/README.md) | `<FoliwakePage>`, `useFoliwakeEvents`, `FoliwakeProvider`: a thin, SSR-safe wrapper of `@foliwake/client` |
 | [`@foliwake/next`](packages/next/README.md) | Next.js App Router adapter: `withFoliwake`, cached envelope read, `<FoliwakeServerPage>`, preview pages, code and media route handlers, CSP header |
+| [`@foliwake/block-kit`](packages/block-kit/README.md) | the module `foliwake` site blocks import (`defineBlock`, `html`), its types and the blocks contract's; the browser files of a code release |
 | [`@foliwake/site-check`](packages/site-check/README.md) | the checks the platform runs on a site's code repository, as a library and the CLI `npx @foliwake/site-check` |
 | [`create-foliwake`](packages/create-foliwake/README.md) | `npm create foliwake@latest`: a new site code repository from the starters, checked with `@foliwake/site-check` |
 
