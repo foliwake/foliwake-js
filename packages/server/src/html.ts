@@ -79,7 +79,7 @@ function checkElement(element: HtmlElement, pagePath: string): void {
   if (element.name === 'form') {
     const a = element.attribs;
     // Exactly `dialog` (ASCII case-insensitive, as HTML matches enumerated keywords). No trimming: HTML does not
-    // trim either, so `method=" dialog "` is an invalid value that falls back to GET (Codex recheck of #133).
+    // trim either, so `method=" dialog "` is an invalid value that falls back to GET.
     if (a.method?.toLowerCase() !== 'dialog' || 'action' in a || 'target' in a || 'enctype' in a) {
       throw invalid('a <form> may only be <form method="dialog"> without action, target or enctype');
     }

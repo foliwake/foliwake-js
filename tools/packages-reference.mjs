@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Generates the API sections of the published packages' documentation from their type declarations:
-// `pnpm packages:reference`. For each of the five packages it writes the Markdown between the `<!-- api -->`
+// `pnpm packages:reference`. For each app package (PACKAGES below) it writes the Markdown between the `<!-- api -->`
 // and `<!-- apistop -->` markers of packages/<name>/README.md. The README ships in the tarball; the
 // documentation site (docs.foliwake.dev/reference/packages/<name>) copies its hand-written part (between the
 // `<!-- usage -->` markers) and this API section from the installed package, so the README is the one source.

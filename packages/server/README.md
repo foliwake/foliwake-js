@@ -26,7 +26,7 @@ The packages are published on npm (npmjs.com) under the `@foliwake` scope; no re
 needed. Install an exact version, the same for every `@foliwake/*` package:
 
 ```bash
-pnpm add @foliwake/server@0.2.0
+pnpm add @foliwake/server@0.3.0
 ```
 
 The config file sits in the app's root and holds no secrets, only the names of the variables with passwords or keys:

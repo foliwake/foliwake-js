@@ -1,4 +1,4 @@
-// The block ↔ app contract `foliwake-blocks/2` (docs/contracts/blocks-contract.md): the project-agnostic core.
+// The block ↔ app contract `foliwake-blocks/2`: the project-agnostic core.
 // Types only: a code release implements `BlocksModule` and its blocks `BlockInit`; an app builds a `BlockHost`
 // (or lets @foliwake/client build it). Vocabulary of a kind of site (answers and verdicts of exercises) lives in
 // subpaths such as `@foliwake/blocks-contract/assessment`, which extend the core through `BlockHost<Ext>` and

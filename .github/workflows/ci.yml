@@ -1,6 +1,6 @@
 name: CI
 
-# Every pull request and every push to main: install from the lockfile, build and typecheck the five packages,
+# Every pull request and every push to main: install from the lockfile, build and typecheck the packages,
 # run their tests (unit, browser with the runner's Google Chrome, tarball install), pack them, check the
 # tarballs' hygiene and run `npm publish --dry-run` on each. No token, read-only. Main merges never carry
 # [skip ci] (CONTRIBUTING.md): main is what a release tag points at, so it must have been checked.
@@ -35,7 +35,7 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      - name: Check the version (one 0.x version for all five)
+      - name: Check the version (one 0.x version for all packages)
         run: node tools/packages-version.mjs
       - name: Build and typecheck
         run: pnpm typecheck
@@ -49,6 +49,7 @@ jobs:
         run: |
           set -eu
           version=$(node tools/packages-version.mjs)
-          for p in blocks-contract client react server next; do
-            npm publish ".tarballs/foliwake-$p-$version.tgz" --dry-run --access public --provenance=false
+          tag=$(node tools/packages-version.mjs --dist-tag)
+          for t in $(node tools/packages.mjs --tarballs "$version"); do
+            npm publish ".tarballs/$t" --dry-run --access public --provenance=false --tag "$tag"
           done

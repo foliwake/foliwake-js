@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Installs the packed @foliwake/* tarballs into a throwaway consumer project and uses them there, so the files
+// Installs the packed tarballs of this repository into a throwaway consumer project and uses them there, so the files
 // the publish job uploads are the files that were checked (.github/workflows/publish.yml, `pack` job;
 // test/packages-tarballs.test.js).
 //
@@ -14,6 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tarballProblems } from './package-tarball-hygiene.mjs';
+import { PACKAGES, tarballName } from './packages.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dir = process.argv[2] ? path.resolve(process.argv[2]) : null;
@@ -28,9 +29,11 @@ const fail = (message) => {
   throw new CheckFailure(message);
 };
 
-const tarballs = readdirSync(dir).filter((f) => /^foliwake-[a-z-]+-\d+\.\d+\.\d+\.tgz$/.test(f)).sort();
+const INTERNAL = new Set(PACKAGES.map((p) => p.name));
+const TARBALL = /^[a-z][a-z-]*-\d+\.\d+\.\d+(-rc\.\d+)?\.tgz$/;
+const tarballs = readdirSync(dir).filter((f) => TARBALL.test(f)).sort();
 if (tarballs.length === 0) {
-  console.error(`check-package-tarballs: no foliwake-*.tgz in ${dir}`);
+  console.error(`check-package-tarballs: no package tarball in ${dir}`);
   process.exit(1);
 }
 
@@ -50,8 +53,8 @@ try {
     const staging = mkdtempSync(path.join(consumer, 'x-'));
     execFileSync('tar', ['-xzf', path.join(dir, file), '-C', staging]);
     const manifest = JSON.parse(readFileSync(path.join(staging, 'package', 'package.json'), 'utf8'));
-    if (!manifest.name?.startsWith('@foliwake/')) fail(`${file}: package name ${manifest.name}`);
-    if (file !== `${manifest.name.slice(1).replace('/', '-')}-${manifest.version}.tgz`) fail(`${file}: holds ${manifest.name}@${manifest.version}`);
+    if (!INTERNAL.has(manifest.name)) fail(`${file}: package name ${manifest.name}`);
+    if (file !== tarballName(manifest.name, manifest.version)) fail(`${file}: holds ${manifest.name}@${manifest.version}`);
     const target = path.join(modules, manifest.name);
     mkdirSync(path.dirname(target), { recursive: true });
     execFileSync('mv', [path.join(staging, 'package'), target]);
@@ -68,10 +71,10 @@ try {
   const [version] = versions;
   const external = new Map();
   for (const [name, manifest] of manifests) {
-    const short = name.slice('@foliwake/'.length);
+    const short = PACKAGES.find((p) => p.name === name).dir;
     for (const [dep, range] of Object.entries({ ...manifest.dependencies, ...manifest.peerDependencies })) {
       if (String(range).startsWith('workspace:')) fail(`${name}: ${dep} is still ${range}`);
-      if (dep.startsWith('@foliwake/')) {
+      if (INTERNAL.has(dep)) {
         if (range !== version) fail(`${name}: ${dep} is ${range}, not ${version}`);
         if (!manifests.has(dep)) fail(`${name} needs ${dep}, which is not among the tarballs`);
       } else if (!external.has(dep)) {
@@ -120,6 +123,23 @@ if (has('@foliwake/server')) {
   assert.deepEqual(page.blocks, ['quiz']);
   assert.match(page.identity, /^demo\\|live\\|\\/a\\|/);
   assert.throws(() => checkPlainBody('<script>x()</script>', '/a'));
+}
+if (has('@foliwake/site-check')) {
+  const { checkCodeRelease } = await import('@foliwake/site-check');
+  const { parseAccessConfig } = await import('@foliwake/site-check/formats/access');
+  const bytes = (text) => new TextEncoder().encode(text);
+  const files = new Map([
+    ['scripts/components.js', bytes("import 'foliwake';")],
+    ['styles/styles.css', bytes('')],
+    ['components/note/note.json', bytes('{"fields": [{"name": "text", "type": "text"}]}')],
+    ['components/note/note.css', bytes('')],
+  ]);
+  const result = await checkCodeRelease(files);
+  assert.deepEqual(result.diagnostics, []);
+  assert.ok(parseAccessConfig(bytes('version: 1\\nallow: ["/"]\\n')).config);
+  const { execFileSync } = await import('node:child_process');
+  const bin = fileURLToPath(new URL('dist/bin.js', import.meta.resolve('@foliwake/site-check/package.json')));
+  assert.match(execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' }), /^0\./);
 }
 if (has('@foliwake/client')) {
   const client = await import('@foliwake/client');

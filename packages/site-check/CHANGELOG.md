@@ -29,4 +29,7 @@ with them. While the version is 0.x, a minor release may break; breaking changes
     `CODE_REFERENCE_OUTSIDE`, `CODE_REFERENCE_MISSING`, `CODE_PATH_IGNORED` (info), `CODE_FOLDER_NAME_INVALID`,
     `CODE_FILE_TOO_LARGE` and `CODE_RELEASE_TOO_LARGE` (warnings for now: 2 MiB per file, 30 MiB and 2000 files
     per release), `QUERY_CONFIG_INVALID` and `ACCESS_CONFIG_INVALID` with a line, column and field.
+  - The CLI `foliwake-site-check` (`npx @foliwake/site-check [dir]`): text, `--json` (schema
+    `foliwake-site-check/1`) or `--format github` (Actions annotations), `--strict`, `--quiet`; exit status 0
+    (no errors), 1 (errors; warnings too with `--strict`), 2 (usage).
   - Diagnostics have a third severity, `info`, for notes that are never problems (`CODE_PATH_IGNORED`).

@@ -1,13 +1,16 @@
 # Changelog: @foliwake/blocks-contract
 
-The five app packages (`@foliwake/blocks-contract`, `@foliwake/client`, `@foliwake/server`, `@foliwake/react`,
-`@foliwake/next`) share one version and are released together; each changelog lists the changes of its own
-package. While the version is 0.x, a minor release may break; breaking changes are marked **BREAKING**.
+The packages of this repository (`@foliwake/blocks-contract`, `@foliwake/site-check`, `@foliwake/client`,
+`@foliwake/server`, `@foliwake/react`, `@foliwake/next`, `create-foliwake`) share one version and are released
+together; each changelog lists the changes of its own package. While the version is 0.x, a minor release may break; breaking changes are marked **BREAKING**.
 
-0.1.0 was packed for review only (GitHub Packages setup, never published on npm). 0.2.0 is the first release on
-npm; its entries list the changes since the first 0.1.0 tarballs (2026-11-11).
+0.1.0 was packed for review only (GitHub Packages setup, never published on npm). 0.2.0 was prepared but not
+published; 0.3.0 is the first release on npm, and its entries list the changes since the first 0.1.0 tarballs
+(2026-11-11).
 
-## 0.2.0 (unreleased)
+## 0.3.0 (unreleased)
+
+- Released together with the new `@foliwake/site-check` and `create-foliwake`, which share this version.
 
 - **BREAKING** The contract is `foliwake-blocks/2` (was `/1`): `ContractVersion.major` is `2` and
   `package.json` carries `"foliwake": { "blocksContract": 2 }`. The core is project-agnostic: `HostCore`,

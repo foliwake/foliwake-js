@@ -1,6 +1,6 @@
-// `foliwake.remote.json` version 2 (docs/plan/react-packages.md §3, schema schemas/remote-2.schema.json):
+// `foliwake.remote.json` version 2 (schema schemas/remote-2.schema.json):
 // which Foliwake site an app reads, with which credential NAMES, and the app's settings. One parser for the
-// engine CLI (`foliwake dev --remote`) and the app packages. Version 1 is no longer read (owner P4).
+// engine CLI (`foliwake dev --remote`) and the app packages. Version 1 is no longer read.
 //
 // No secrets: anything that looks like a stored secret refuses the file; credentials are variable names,
 // read on the server per origin request (./origin), never logged, never sent to a browser.

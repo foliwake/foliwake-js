@@ -12,6 +12,9 @@
   "keywords": ["foliwake", "cms", "blocks", "lint", "validator", "cli"],
   "publishConfig": { "access": "public", "provenance": true },
   "foliwake": { "htmlContract": 2, "blocksPack": 1, "templates": 1, "references": 1, "query": 1 },
+  "bin": {
+    "foliwake-site-check": "./dist/bin.js"
+  },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./blocks/authoring-keys": { "types": "./dist/blocks/authoring-keys.d.ts", "default": "./dist/blocks/authoring-keys.js" },
@@ -21,6 +24,7 @@
     "./blocks/pack": { "types": "./dist/blocks/pack.d.ts", "default": "./dist/blocks/pack.js" },
     "./blocks/schema": { "types": "./dist/blocks/schema.d.ts", "default": "./dist/blocks/schema.js" },
     "./check": { "types": "./dist/check.d.ts", "default": "./dist/check.js" },
+    "./cli": { "types": "./dist/cli.d.ts", "default": "./dist/cli.js" },
     "./code-references": { "types": "./dist/code-references.d.ts", "default": "./dist/code-references.js" },
     "./descriptor-check": { "types": "./dist/descriptor-check.d.ts", "default": "./dist/descriptor-check.js" },
     "./references/messages": { "types": "./dist/references/messages.d.ts", "default": "./dist/references/messages.js" },

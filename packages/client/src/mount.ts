@@ -2,7 +2,7 @@
 // release. Every framework adapter (@foliwake/react's <FoliwakePage>, a Vue or Svelte component, a web
 // component) is a wrapper around this function.
 //
-// Invariants (docs/plan/react-packages.md §6.2):
+// Invariants:
 //  1. page.identity is the mount's identity (it includes a digest of the final prepared body): a new body,
 //     code release, channel or mode is a new mount
 //     (`update({ page })` with another identity disposes and mounts again); nothing else remounts.

@@ -8,8 +8,13 @@ import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 
+import { PACKAGES, PUBLISH_ORDER } from '../tools/packages.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const NAMES = ['blocks-contract', 'server', 'client', 'react', 'next'];
+const NAMES = PUBLISH_ORDER;
+/** The app packages: they carry the origin and blocks contract versions they speak. */
+const APP_PACKAGES = ['blocks-contract', 'server', 'client', 'react', 'next'];
+const FORMATS = { htmlContract: 2, blocksPack: 1, templates: 1, references: 1, query: 1 };
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const manifest = (name) => JSON.parse(read(`packages/${name}/package.json`));
 
@@ -26,11 +31,12 @@ test("'use client', 'use cache' and the runtime import comments are kept in dist
 test('one coordinated 0.x version, compatibility metadata, public npm metadata', () => {
   const versions = new Set(NAMES.map((n) => manifest(n).version));
   assert.equal(versions.size, 1);
-  assert.match([...versions][0], /^0\.\d+\.\d+$/);
+  assert.match([...versions][0], /^0\.\d+\.\d+(-rc\.\d+)?$/);
   for (const name of NAMES) {
     const m = manifest(name);
-    assert.equal(m.name, `@foliwake/${name}`);
-    assert.deepEqual(m.foliwake, { plain: 2, blocksContract: 2, remoteConfig: 2 }, name);
+    assert.equal(m.name, PACKAGES.find((p) => p.dir === name).name);
+    const compatibility = APP_PACKAGES.includes(name) ? { plain: 2, blocksContract: 2, remoteConfig: 2 } : FORMATS;
+    assert.deepEqual(m.foliwake, compatibility, name);
     const publicOnNpm = { access: 'public', provenance: true };
     assert.deepEqual(m.publishConfig, publicOnNpm, `${name}: public on npm, no custom registry`);
     assert.equal(m.private, undefined, `${name} must be publishable`);
