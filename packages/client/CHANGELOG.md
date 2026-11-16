@@ -11,6 +11,7 @@ published; 0.3.0 is the first release on npm, and its entries list the changes s
 ## 0.3.0 (unreleased)
 
 - Released together with the new `@foliwake/site-check` and `create-foliwake`, which share this version.
+- The import map the client adds maps `@foliwake/block-kit` and, for one more minor version, `foliwake`.
 
 First release. The package did not exist when the first 0.1.0 tarballs were packed; it was split out of
 `@foliwake/react` afterwards (its in-repository 0.1.0 was never published).

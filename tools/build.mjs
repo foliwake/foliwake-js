@@ -9,7 +9,7 @@
 //   node tools/build.mjs              build every package
 //   node tools/build.mjs --typecheck  build, then typecheck every package's sources (tsc --noEmit)
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, renameSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +28,29 @@ function run(args) {
   return result.status ?? 1;
 }
 
+/**
+ * Files a package ships as written (browser modules and declarations that are not compiled): copied from src/ to
+ * dist/ after tsc checked the package.
+ */
+const COPIED = {
+  'block-kit': [
+    'block-kit.js',
+    'block-kit-1.js',
+    'lit-html.js',
+    'lit-html.LICENSE',
+    'foliwake.d.ts',
+    'index.d.ts',
+    'assessment.d.ts',
+    'assessment.js',
+  ],
+};
+
+function copySources(name, staging) {
+  mkdirSync(staging, { recursive: true });
+  for (const file of COPIED[name] ?? [])
+    copyFileSync(path.join(ROOT, 'packages', name, 'src', file), path.join(staging, file));
+}
+
 function build(name) {
   const dir = path.join(ROOT, 'packages', name);
   const staging = path.join(dir, 'dist.next');
@@ -39,6 +62,7 @@ function build(name) {
     console.error(`build: packages/${name} failed; its previous dist/ is unchanged.`);
     return status;
   }
+  copySources(name, staging);
   if (existsSync(live)) rmSync(live, { recursive: true, force: true });
   renameSync(staging, live);
   return 0;

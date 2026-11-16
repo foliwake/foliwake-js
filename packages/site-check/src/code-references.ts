@@ -1,10 +1,11 @@
 // The reference scan of a code release: imports of its scripts and url()/@import of its stylesheets must be
-// relative and stay inside the release. The one bare specifier allowed is `foliwake` in scripts: the release's
-// block kit, which every page maps with an import map. A static scan, good enough for plain ES modules and CSS
+// relative and stay inside the release. The only bare specifiers allowed are the kit's in scripts
+// (`@foliwake/block-kit`, and `foliwake` while it is still mapped): the release's block kit, which every page maps
+// with an import map. A static scan, good enough for plain ES modules and CSS
 // without a parser: a guard against mistakes in trusted code, not a sandbox.
 import path from 'node:path';
 
-import { KIT_PATH, KIT_SPECIFIER } from '@foliwake/blocks-contract/import-map';
+import { KIT_PATH, KIT_SPECIFIERS } from '@foliwake/blocks-contract/import-map';
 
 import { type Diagnostic, makeDiagnostic } from './formats/diagnostics.js';
 import { positionAt } from './formats/json-position.js';
@@ -67,8 +68,8 @@ function staticPrefix(template: string): string | null {
 
 function checkReference(scan: Scan, offset: number, specifier: string): void {
   if (/^data:/i.test(specifier) || specifier.startsWith('#')) return;
-  if (specifier === KIT_SPECIFIER && scan.file.endsWith('.js')) {
-    if (!scan.has(KIT_PATH)) missing(scan, offset, `imports "${KIT_SPECIFIER}", but the release has no ${KIT_PATH}`);
+  if (KIT_SPECIFIERS.includes(specifier) && scan.file.endsWith('.js')) {
+    if (!scan.has(KIT_PATH)) missing(scan, offset, `imports "${specifier}", but the release has no ${KIT_PATH}`);
     return;
   }
   if (!(specifier.startsWith('./') || specifier.startsWith('../'))) {

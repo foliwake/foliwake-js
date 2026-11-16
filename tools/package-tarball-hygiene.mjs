@@ -10,6 +10,8 @@ const WHITELIST = [
   /^(LICENSE|NOTICE)$/,
   /^dist\/[\w./-]+\.(js|d\.ts)$/,
   /^schemas\/[\w.-]+\.schema\.json$/,
+  // @foliwake/block-kit: the license of the vendored lit-html next to it.
+  /^dist\/lit-html\.LICENSE$/,
   // create-foliwake: the starters it copies into a new project, and the vendored React they may get.
   /^starters\/[\w.-]+(\/[\w.-]+)+$/,
   /^vendor\/react(\.js|\.LICENSE\.txt)$/,
@@ -58,7 +60,7 @@ export function privateNames(env = process.env) {
  */
 const INTERNAL_REFERENCES = [
   { name: 'a private planning document', pattern: /\bdocs\/(plan|phases|contracts|briefs?)\//i },
-  { name: 'a dated owner decision', pattern: /\bowner(?: decision)?,? 20\d\d-\d\d/i },
+  { name: 'a dated owner decision', pattern: /\bowner(?: [a-z]+)?,? 20\d\d-\d\d/i },
   { name: 'a review id', pattern: /\b(RR|P\d+-R)-?\d{2}\b/ },
   { name: 'an agent name', pattern: /\b(Codex|Fable)\b/ },
   { name: 'a pull request number', pattern: /\b(?:PR|pull request|review of|issue)\s*#\d+/i },

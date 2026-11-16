@@ -21,5 +21,5 @@ export {
   type TemplateName,
   localSiteId,
 } from './options.js';
-export { LOCAL_SCHEMA_PATH, writeLocalSchema } from './schema.js';
+export { KIT_TYPES_PATH, LOCAL_SCHEMA_PATH, writeKitTypes, writeLocalSchema } from './editor-files.js';
 export { projectProblems } from './validate.js';

@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",
+    "@foliwake/block-kit": "workspace:*",
     "@foliwake/site-check": "workspace:*"
   },
   "files": ["dist/", "!dist/**/*.map", "starters/", "vendor/", "LICENSE", "README.md", "CHANGELOG.md"]

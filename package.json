@@ -17,6 +17,7 @@
     "check:tarballs": "node tools/pack.mjs && node tools/check-package-tarballs.mjs .tarballs"
   },
   "devDependencies": {
+    "@foliwake/block-kit": "workspace:*",
     "@foliwake/blocks-contract": "workspace:*",
     "@foliwake/client": "workspace:*",
     "@foliwake/next": "workspace:*",
