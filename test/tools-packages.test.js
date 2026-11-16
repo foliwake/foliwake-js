@@ -61,6 +61,16 @@ test('changesets: one fixed group of exactly the packages; every workflow action
   }
 });
 
+test('publish.yml hands npm a file path, never a bare "dir/file" (npm reads that as a GitHub repository)', () => {
+  const publish = read('.github/workflows/publish.yml');
+  const commands = publish.match(/npm publish "[^"]+"/g) ?? [];
+  assert.ok(commands.length > 0, 'publish.yml runs npm publish');
+  for (const command of commands) {
+    const target = command.slice('npm publish "'.length, -1);
+    assert.match(target, /^(\.\/|\$RUNNER_TEMP\/|\/)/, `${command} must start with ./, / or $RUNNER_TEMP/`);
+  }
+});
+
 test('release.yml publishes through publish.yml, never with a copy of its steps', () => {
   const release = read('.github/workflows/release.yml');
   assert.match(release, /uses: \.\/\.github\/workflows\/publish\.yml/);
