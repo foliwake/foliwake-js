@@ -3,10 +3,13 @@
 // before it): `pnpm build`. Each package is compiled into dist.next/ and swapped in only when tsc succeeds,
 // so a failed build leaves the previous dist/ in place and never a partial one.
 //
+// create-foliwake also gets the vendored React of its starters (vendor/react.js and its license), built with Vite
+// from this repository's exact-pinned react and react-dom (tools/vendor-react/), staged and swapped the same way.
+//
 //   node tools/build.mjs              build every package
 //   node tools/build.mjs --typecheck  build, then typecheck every package's sources (tsc --noEmit)
 import { spawnSync } from 'node:child_process';
-import { existsSync, renameSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, renameSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,9 +44,36 @@ function build(name) {
   return 0;
 }
 
+const VENDOR_PACKAGE = 'create-foliwake';
+
+function buildVendorReact() {
+  const require = createRequire(import.meta.url);
+  const vite = path.join(path.dirname(require.resolve('vite/package.json')), 'bin/vite.js');
+  const config = path.join(ROOT, 'tools/vendor-react/vite.config.mjs');
+  const staging = path.join(ROOT, 'packages', VENDOR_PACKAGE, 'vendor.next');
+  const live = path.join(ROOT, 'packages', VENDOR_PACKAGE, 'vendor');
+  rmSync(staging, { recursive: true, force: true });
+  const args = [vite, 'build', '--config', config, '--outDir', staging, '--emptyOutDir', '--logLevel', 'warn'];
+  const result = spawnSync(process.execPath, args, { cwd: ROOT, stdio: 'inherit' });
+  if (result.status !== 0) {
+    rmSync(staging, { recursive: true, force: true });
+    console.error('build: the vendored React failed; the previous vendor/ is unchanged.');
+    return result.status ?? 1;
+  }
+  const license = path.join(path.dirname(require.resolve('react/package.json')), 'LICENSE');
+  copyFileSync(license, path.join(staging, 'react.LICENSE.txt'));
+  if (existsSync(live)) rmSync(live, { recursive: true, force: true });
+  renameSync(staging, live);
+  return 0;
+}
+
 const typecheck = process.argv.includes('--typecheck');
 for (const name of BUILD_ORDER) {
   const status = build(name);
+  if (status !== 0) process.exit(status);
+}
+if (BUILD_ORDER.includes(VENDOR_PACKAGE)) {
+  const status = buildVendorReact();
   if (status !== 0) process.exit(status);
 }
 if (typecheck) {

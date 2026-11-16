@@ -1,0 +1,13 @@
+{
+  "$schema": "../../.foliwake/schemas/block-1.schema.json",
+  "label": { "en": "Poll" },
+  "fields": [
+    { "name": "question", "type": "heading", "level": 3, "label": { "en": "Question" } },
+    { "name": "options", "type": "choices", "ids": "required", "correct": { "": "any" }, "label": { "en": "Options" } }
+  ],
+  "ui": { "en": { "thanks": "Thank you! You chose" } },
+  "events": {
+    "answer": { "detail": { "selected": "string[]", "correct": "unknown", "graded": "string" } },
+    "complete": {}
+  }
+}

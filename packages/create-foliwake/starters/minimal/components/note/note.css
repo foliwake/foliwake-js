@@ -1,0 +1,15 @@
+/* note: a short remark with an optional title.
+   Definition: note.json. HTML: <div data-component="note">[<h3 data-field="title">]<div data-field="text"><p>… */
+
+@layer blocks {
+  [data-component="note"] {
+    border-left: 4px solid var(--color-accent);
+
+    & [data-field="title"] {
+      margin: 0 0 0.5rem;
+      font-size: 1.05rem;
+    }
+
+    & p:last-child { margin-bottom: 0; }
+  }
+}

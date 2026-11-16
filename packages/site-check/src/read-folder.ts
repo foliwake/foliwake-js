@@ -4,7 +4,7 @@
 import { lstat, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
-import { CODE_ROOTS, CODE_ROOT_FILES, ignoredReason, isCapturedInput } from './formats/layout.js';
+import { CODE_ROOTS, CODE_ROOT_FILES, ignoredReason, isCapturedInput, isLicenseFile } from './formats/layout.js';
 
 /** A file under a code root that the platform never captures, and why. */
 export interface IgnoredFile {
@@ -47,5 +47,5 @@ async function walk(root: string, relative: string, found: FolderFiles): Promise
 // A captured file's bytes are read; any other file is only listed.
 async function addFile(root: string, relative: string, found: FolderFiles): Promise<void> {
   if (isCapturedInput(relative)) found.files.set(relative, await readFile(path.join(root, ...relative.split('/'))));
-  else found.ignored.push({ file: relative, reason: ignoredReason(relative) });
+  else if (!isLicenseFile(relative)) found.ignored.push({ file: relative, reason: ignoredReason(relative) });
 }

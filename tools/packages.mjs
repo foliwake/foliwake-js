@@ -18,6 +18,7 @@ export const PACKAGES = Object.freeze([
   { dir: 'react', name: '@foliwake/react' },
   { dir: 'server', name: '@foliwake/server' },
   { dir: 'next', name: '@foliwake/next' },
+  { dir: 'create-foliwake', name: 'create-foliwake' },
 ]);
 
 /** The folder names in build and publish order. */

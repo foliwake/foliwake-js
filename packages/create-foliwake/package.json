@@ -1,0 +1,28 @@
+{
+  "name": "create-foliwake",
+  "version": "0.3.0",
+  "description": "Create a Foliwake site frontend: npm create foliwake@latest. Blocks, styles, local sample pages, checks and GitHub workflows, checked with @foliwake/site-check before anything is written.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": { "node": ">=22.22" },
+  "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/create-foliwake" },
+  "homepage": "https://docs.foliwake.dev/reference/packages/create-foliwake",
+  "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
+  "keywords": ["foliwake", "cms", "blocks", "create", "starter", "scaffold"],
+  "publishConfig": { "access": "public", "provenance": true },
+  "foliwake": { "htmlContract": 2, "blocksPack": 1, "templates": 1, "references": 1, "query": 1 },
+  "bin": {
+    "create-foliwake": "./dist/bin.js"
+  },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./starters": { "types": "./dist/starters.d.ts", "default": "./dist/starters.js" },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@clack/prompts": "1.8.1",
+    "@foliwake/site-check": "workspace:*"
+  },
+  "files": ["dist/", "!dist/**/*.map", "starters/", "vendor/", "LICENSE", "README.md", "CHANGELOG.md"]
+}

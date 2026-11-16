@@ -12,6 +12,7 @@ release; and what a site developer uses to create and check the site's code repo
 | [`@foliwake/react`](packages/react/README.md) | `<FoliwakePage>`, `useFoliwakeEvents`, `FoliwakeProvider`: a thin, SSR-safe wrapper of `@foliwake/client` |
 | [`@foliwake/next`](packages/next/README.md) | Next.js App Router adapter: `withFoliwake`, cached envelope read, `<FoliwakeServerPage>`, preview pages, code and media route handlers, CSP header |
 | [`@foliwake/site-check`](packages/site-check/README.md) | the checks the platform runs on a site's code repository, as a library and the CLI `npx @foliwake/site-check` |
+| [`create-foliwake`](packages/create-foliwake/README.md) | `npm create foliwake@latest`: a new site code repository from the starters, checked with `@foliwake/site-check` |
 
 Documentation: [docs.foliwake.dev](https://docs.foliwake.dev), with the guide
 [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react) and one reference
@@ -92,7 +93,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY
   3. Approve the `publish` job (environment `packages-publish`).
 - Owner setup (once, before the first publish):
   1. npm: in the `foliwake` organisation, a **granular access token** with read and write on packages, limited
-     to the `@foliwake` scope, with a short expiry (renew before a release). Alternative: npm trusted
+     to the `@foliwake` scope and the unscoped package `create-foliwake` (which the first publish creates; a token
+     limited to the scope cannot publish it), with a short expiry (renew before a release). Alternative: npm trusted
      publishing (OIDC) for this repository and `publish.yml`, which needs no token; the workflow would then drop
      `NODE_AUTH_TOKEN`.
   2. GitHub: Settings → Environments → `packages-publish`: required reviewer = the owner, deployment branches

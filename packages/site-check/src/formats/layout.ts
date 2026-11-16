@@ -62,6 +62,15 @@ export function isCodeInput(relative: string): boolean {
   return EXTENSIONS.has(extensionOf(relative)) || isExampleFile(relative);
 }
 
+/**
+ * Whether a file is a license or notice that travels with third-party code (`scripts/vendor/react.LICENSE.txt`,
+ * `LICENSE`, `NOTICE.md`): expected next to code, never captured, never noted.
+ */
+export function isLicenseFile(relative: string): boolean {
+  const name = relative.slice(relative.lastIndexOf('/') + 1);
+  return /(^|\.)(LICEN[CS]E|NOTICE|COPYING)(\.(txt|md))?$/i.test(name);
+}
+
 /** Why a file under a code root is not captured (for a file that isCodeInput refuses). */
 export function ignoredReason(file: string): string {
   if (hasHiddenSegment(file)) return 'a hidden path is never captured';

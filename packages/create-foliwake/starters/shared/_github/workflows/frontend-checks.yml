@@ -1,0 +1,28 @@
+# Frontend checks: the required status check for pull requests into main, and
+# the gate of the production workflow (production.yml calls this workflow).
+# No secrets, read-only token, nothing installed in the project: @foliwake/site-check runs with npx at the
+# version the project was created with. Safe for fork pull requests.
+name: Frontend checks
+on:
+  pull_request:
+  push:
+    branches-ignore: [main] # main runs these checks inside production.yml
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  test:
+    name: frontend-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Site code (the platform's own checks)
+        run: npx -y @foliwake/site-check@{{siteCheckVersion}} . --format github
+      - name: Tests (vendored scripts, workflow guards)
+        run: node --test "tests/*.test.mjs"

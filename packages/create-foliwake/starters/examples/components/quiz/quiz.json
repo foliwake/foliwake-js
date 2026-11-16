@@ -1,0 +1,14 @@
+{
+  "$schema": "../../.foliwake/schemas/block-1.schema.json",
+  "label": { "en": "Quiz" },
+  "fields": [
+    { "name": "question", "type": "heading", "level": 3, "label": { "en": "Question" } },
+    { "name": "options", "type": "choices", "correct": { "": "at-least-one" }, "label": { "en": "Answers" } },
+    { "name": "explanation", "type": "text", "min": 0, "max": null, "label": { "en": "Explanation, shown after an answer" } }
+  ],
+  "ui": { "en": { "right": "right", "wrong": "not right" } },
+  "events": {
+    "answer": { "detail": { "selected": "string[]", "correct": "boolean", "graded": "string" } },
+    "complete": {}
+  }
+}

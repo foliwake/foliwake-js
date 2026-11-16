@@ -1,0 +1,45 @@
+# One request to a Foliwake forced command over SSH: the request travels on stdin only, the key
+# and known hosts exist only for this step (removed on exit), the JSON answer is left at
+# $RUNNER_TEMP/foliwake-result.json. Used by production.yml and branch-preview.yml.
+name: Foliwake request
+description: Send one JSON request to a Foliwake forced command over SSH
+inputs:
+  command:
+    description: 'frontend-production or branch-preview (ignored by the forced command; names the key in logs)'
+    required: true
+  request:
+    description: Path of the JSON request file
+    required: true
+  ssh-key:
+    required: true
+  known-hosts:
+    required: true
+  target:
+    required: true
+outputs:
+  exit:
+    description: Exit status of the forced command (0 done, 1 refused or failed, 3 committed with a pending cache refresh)
+    value: ${{ steps.send.outputs.exit }}
+runs:
+  using: composite
+  steps:
+    - id: send
+      shell: bash
+      env:
+        SSH_KEY: ${{ inputs.ssh-key }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+        TARGET: ${{ inputs.target }}
+        COMMAND: ${{ inputs.command }}
+        REQUEST: ${{ inputs.request }}
+      run: |
+        set +e
+        material=$(mktemp -d)
+        trap 'rm -rf "$material"' EXIT
+        printf '%s\n' "$SSH_KEY" > "$material/key"
+        printf '%s\n' "$KNOWN_HOSTS" > "$material/known_hosts"
+        chmod 600 "$material/key" "$material/known_hosts"
+        cat "$REQUEST"
+        ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o UserKnownHostsFile="$material/known_hosts" -i "$material/key" "$TARGET" "$COMMAND" \
+          < "$REQUEST" > "$RUNNER_TEMP/foliwake-result.json"
+        echo "exit=$?" >> "$GITHUB_OUTPUT"
+        cat "$RUNNER_TEMP/foliwake-result.json"
