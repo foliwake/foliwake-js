@@ -6,7 +6,7 @@
 // hides it while React shows the poll. A vote emits "block:answer"
 // ({key, block, selected, correct: null, graded}) and "block:complete"; the
 // component is exported too, for an app that renders it itself.
-import { defineBlock } from 'foliwake';
+import { defineBlock } from '@foliwake/block-kit';
 import { reactView } from '../../scripts/react-view.js';
 
 /** The poll as a React component, for a given createElement. */

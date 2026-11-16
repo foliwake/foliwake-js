@@ -83,13 +83,17 @@ async function newPage() {
   return opened.page;
 }
 
-/** A page with the generated body, the kit at /_foliwake/ and the import map `foliwake` (no loader). */
+/** The import map of a page: the kit under `@foliwake/block-kit` and its previous specifier `foliwake`. */
+const IMPORT_MAP =
+  '<script type="importmap">' +
+  '{"imports":{"@foliwake/block-kit":"/_foliwake/block-kit.js","foliwake":"/_foliwake/block-kit.js"}}</script>';
+
+/** A page with the generated body, the kit at /_foliwake/ and the import map (no loader). */
 async function open(extra = {}) {
   server.set('/_foliwake/block-kit.js', kit);
   server.set('/_foliwake/lit-html.js', lit);
   for (const [key, value] of Object.entries(extra)) server.set(key, value);
-  const map = '<script type="importmap">{"imports":{"foliwake":"/_foliwake/block-kit.js"}}</script>';
-  const head = `<meta charset="utf-8"><title>T</title>${map}`;
+  const head = `<meta charset="utf-8"><title>T</title>${IMPORT_MAP}`;
   const html = `<!doctype html><html lang="en"><head>${head}</head><body><main>${body}</main></body></html>`;
   const url = server.set('/page', html, 'text/html');
   const page = await newPage();
@@ -97,7 +101,7 @@ async function open(extra = {}) {
   page.on('pageerror', (error) => errors.push(String(error)));
   await page.goto(url);
   await page.evaluate(async () => {
-    window.kit = await import('foliwake');
+    window.kit = await import('@foliwake/block-kit');
     window.events = [];
     document.addEventListener('block:ready', (e) => window.events.push(['ready', e.detail]));
     document.addEventListener('block:error', (e) => window.events.push(['error', e.detail]));
@@ -901,4 +905,39 @@ test('legacy block-kit-1.js: fields, field, on with a selector, emit with key an
   assert.equal(out.sentBefore, true);
   assert.equal(out.sentAfter, false, 'nothing is sent after dispose');
   assert.deepEqual(out.sent, [{ key: 'b1', block: 'all', n: 1 }]);
+});
+
+test('specifiers: `@foliwake/block-kit` and the previous `foliwake` are one module; '
+  + 'init declares contract 2', async () => {
+  const page = await open();
+  const result = await page.evaluate(async () => {
+    const legacy = await import('foliwake');
+    const init = window.kit.defineBlock('probe', () => {});
+    return { same: legacy === window.kit, contract: init.contract, block: init.block, kit: window.kit.CONTRACT };
+  });
+  assert.deepEqual(result, { same: true, contract: 2, block: 'probe', kit: 2 });
+});
+
+test('the starter loader refuses a block that declares another contract major; '
+  + 'one that declares none loads', async () => {
+  const loader = await readFile(path.join(STARTERS, 'shared/scripts/components.js'), 'utf8');
+  server.set('/scripts/components.js', loader);
+  const script = { css: false, js: true };
+  const descriptor = { htmlContract: 2, components: { old: script, plain: script } };
+  server.set('/components/components.json', JSON.stringify(descriptor), 'application/json');
+  const init = 'root.dataset.ran = "yes"; return { dispose() {} };';
+  server.set('/components/old/old.js', `export default Object.assign((root) => { ${init} }, { contract: 1 });`);
+  server.set('/components/plain/plain.js', `export default (root) => { ${init} };`);
+  const roots = '<div data-component="old" class="old"></div><div data-component="plain" class="plain"></div>';
+  const head = '<meta charset="utf-8"><title>T</title><script type="module" src="/scripts/components.js"></script>';
+  const html = `<!doctype html><html lang="en" data-env="local" data-html-contract="2"><head>${head}</head>`
+    + `<body><main>${roots}</main></body></html>`;
+  const page = await newPage();
+  await page.goto(server.set('/', html, 'text/html'));
+  const attached = { state: 'attached' };
+  await page.waitForSelector('[data-component="old"][data-component-status="error"]', attached);
+  await page.waitForSelector('[data-component="plain"][data-component-status="ready"]', attached);
+  assert.match(await page.textContent('p[data-component-error="old"]'), /LOADER_BLOCK_CONTRACT/);
+  assert.equal(await page.getAttribute('[data-component="old"]', 'data-ran'), null, 'a refused block never runs');
+  assert.equal(await page.getAttribute('[data-component="plain"]', 'data-ran'), 'yes');
 });

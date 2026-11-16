@@ -14,11 +14,12 @@ const PACKAGE = path.join(ROOT, 'packages/block-kit');
 const read = (file) => readFileSync(path.join(PACKAGE, file), 'utf8');
 
 const AUTHOR = `
-import { defineBlock, html, readFields, type BlockHost, type BlockInit, type ContractBlockInit } from '@foliwake/block-kit';
+import { defineBlock, html, readFields } from '@foliwake/block-kit';
+import type { BlockHost, BlockInit, ContractBlockInit } from '@foliwake/block-kit';
 import type { AssessmentHost, SavedAnswer } from '@foliwake/block-kit';
 import type { AssessmentEvents } from '@foliwake/block-kit/assessment';
 import type { BlockMeta as ContractMeta } from '@foliwake/blocks-contract';
-import type { BlockMeta, HostMembers } from '@foliwake/block-kit';
+import type { BlockMeta, HostMembers, KnownShell, MountHandle, ViewAdapter, ViewHandle } from '@foliwake/block-kit';
 
 export const note: BlockInit = defineBlock('note', (fields, ctx) => {
   ctx.render(() => html\`<p>\${String(fields.text ?? '')}</p>\`);
@@ -43,6 +44,21 @@ declare const meta: ContractMeta;
 const kitMeta: BlockMeta = meta;
 const back: ContractMeta = kitMeta;
 void back;
+
+// The kit's init declares its name and the contract major; the contract's init may declare a major.
+const major: 2 = note.contract;
+const declared: number | undefined = (note as ContractBlockInit).contract;
+void major;
+void declared;
+const shell: KnownShell = 'web-component';
+void shell;
+// ctx.mount's types are views; the contract's MountHandle is the blocks module's.
+declare const adapter: ViewAdapter<{ n: number }>;
+declare const view: ViewHandle<{ n: number }>;
+declare const mounted: MountHandle;
+void adapter;
+void view.update({ n: 1 });
+void mounted.ready;
 
 declare const saved: SavedAnswer;
 const correct: boolean | null = saved.correct;
@@ -91,6 +107,7 @@ test('dist/ holds the browser files as written; lit-html without its source map 
     assert.equal(read(`dist/${file}`), read(`src/${file}`), file);
   }
   assert.doesNotMatch(read('dist/lit-html.js'), /sourceMappingURL/);
-  assert.match(read('dist/block-kit.js'), /^import \{ html, nothing, render as renderTemplate \} from '\.\/lit-html\.js';$/m);
+  const litImport = /^import \{ html, nothing, render as renderTemplate \} from '\.\/lit-html\.js';$/m;
+  assert.match(read('dist/block-kit.js'), litImport);
   assert.match(read('dist/block-kit.js'), /^export function readFields\(root\) \{$/m);
 });

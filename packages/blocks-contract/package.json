@@ -17,6 +17,7 @@
     "./assessment": { "types": "./dist/assessment.d.ts", "default": "./dist/assessment.js" },
     "./import-map": { "types": "./dist/import-map.d.ts", "default": "./dist/import-map.js" },
     "./page": { "types": "./dist/page.d.ts", "default": "./dist/page.js" },
+    "./reserved": { "types": "./dist/reserved.d.ts", "default": "./dist/reserved.js" },
     "./package.json": "./package.json"
   },
   "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md", "CHANGELOG.md"]

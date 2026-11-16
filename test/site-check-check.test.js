@@ -127,9 +127,15 @@ describe('checkCodeRelease: the engine files and the limits', () => {
     assert.equal(result.captured.some((file) => file.startsWith('_foliwake/')), false);
   });
 
-  test('`import … from "foliwake"` is accepted without the kit among the inputs', async () => {
-    const result = await checkCodeRelease(filesOf({ ...BASE, 'components/note/note.js': KIT_IMPORT }));
-    assert.deepEqual(errorsOf(result), []);
+  test('the kit\'s specifiers (`@foliwake/block-kit`, `foliwake`) are accepted without the kit among the inputs', async () => {
+    for (const specifier of ['@foliwake/block-kit', 'foliwake']) {
+      const script = KIT_IMPORT.replace("'foliwake'", `'${specifier}'`);
+      const result = await checkCodeRelease(filesOf({ ...BASE, 'components/note/note.js': script }));
+      assert.deepEqual(errorsOf(result), [], specifier);
+    }
+    const other = KIT_IMPORT.replace("'foliwake'", "'@foliwake/other'");
+    const refused = await checkCodeRelease(filesOf({ ...BASE, 'components/note/note.js': other }));
+    assert.deepEqual(withCode(refused, 'CODE_REFERENCE_NOT_RELATIVE').length, 1);
   });
 
   test('a file over 2 MiB is CODE_FILE_TOO_LARGE, a warning', async () => {

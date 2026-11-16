@@ -116,6 +116,7 @@ test('create --storybook: files, next step, no install unless asked; the config 
   assert.deepEqual(vite.resolve.alias[0], { find: '@app', replacement: '/app' }, 'existing aliases kept');
   const [kit, legacy] = vite.resolve.alias.slice(-2);
   assert.equal('foliwake'.replace(kit.find, kit.replacement), kitCopy);
+  assert.equal('@foliwake/block-kit'.replace(kit.find, kit.replacement), kitCopy);
   assert.ok(!kit.find.test('foliwake-ui') && !kit.find.test('./foliwake'), 'only the bare specifier');
   // Blocks still on the previous kit import ../../_foliwake/block-kit-1.js: mapped to the same folder.
   const previous = '../../_foliwake/block-kit-1.js'.replace(legacy.find, legacy.replacement);
