@@ -116,6 +116,7 @@ export function mediaHandler(config: FoliwakeAppConfig, client: OriginClient, op
     if (target.rest.length !== 1) return notFound(errorCc);
     const match = MEDIA_KEY_PATTERN.exec(target.rest[0]!);
     if (!match) return notFound(errorCc);
-    return forward(request, client, target.channel, `/media/${target.rest[0]}`, MEDIA_TYPES[match[1]!]!, LIMITS.media, {}, true);
+    const extra: Record<string, string> = match[1] === 'svg' ? { 'Content-Security-Policy': SVG_CODE_CSP } : {};
+    return forward(request, client, target.channel, `/media/${target.rest[0]}`, MEDIA_TYPES[match[1]!]!, LIMITS.media, extra, true);
   };
 }

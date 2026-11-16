@@ -28,10 +28,13 @@ export const SVG_CODE_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-
 /** First segments of a path inside a code release the proxy serves. */
 export const CODE_ROOTS: readonly string[] = Object.freeze(['components', 'scripts', 'styles', '_foliwake']);
 
-/** A media key as the engine writes it: `<sha256>.<ext>`, images only (SVG refused in 0.1). */
-export const MEDIA_KEY_PATTERN = /^[0-9a-f]{64}\.(png|jpe?g|webp|gif|avif)$/;
+/**
+ * A media key as the engine writes it: `<sha256>.<ext>`, images only. SVG (refused in 0.1) since 2026-11-16: the
+ * engine's inline reference images (content-components.md §3.7), served with SVG_CODE_CSP like a code SVG.
+ */
+export const MEDIA_KEY_PATTERN = /^[0-9a-f]{64}\.(png|jpe?g|webp|gif|avif|svg)$/;
 export const MEDIA_TYPES: Readonly<Record<string, string>> = Object.freeze({
-  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', svg: 'image/svg+xml',
 });
 
 /** One segment of a path inside a code release, after a single decode. */
