@@ -1,0 +1,87 @@
+name: Release
+
+# Versions with Changesets (.changeset/, CONTRIBUTING.md). On every push to main:
+#  - while changesets are pending, opens or updates the pull request "Version packages" (changesets/action):
+#    every package gets the next shared version (`fixed` in .changeset/config.json) and its CHANGELOG.md the
+#    entries of the changesets, which are consumed;
+#  - once that pull request is merged (no changeset left) and the version has no tag and is not on npm, tags the
+#    merge commit v<version> and runs publish.yml with that tag: the one publish path (pack, tests, tarball
+#    hygiene with FOLIWAKE_PRIVATE_NAMES, checksums, the owner's approval in `packages-publish`, provenance,
+#    dist-tag `next` for a release candidate). A tag pushed with the workflow token starts no other workflow,
+#    so nothing is published twice.
+# Release candidates: `pnpm changeset pre enter rc` in a pull request (README.md, "Releasing").
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    if: github.repository == 'foliwake/foliwake-js'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      # Credentials are kept in this job only: changesets/action pushes the "Version packages" branch, and the
+      # tag step pushes the tag.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Open or update the "Version packages" pull request
+        id: changesets
+        uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          version: pnpm run version-packages
+          title: Version packages
+          commit: Version packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag the released version (no changeset left; not tagged, not on npm)
+        id: tag
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          set -eu
+          version=$(node tools/packages-version.mjs)
+          tag="v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "$tag exists: nothing to release."
+            exit 0
+          fi
+          first=$(node tools/packages.mjs --names | head -n 1)
+          if npm view "$first@$version" version >/dev/null 2>&1; then
+            echo "$first@$version is on npm: nothing to release."
+            exit 0
+          fi
+          git tag "$tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: version
+    if: needs.version.outputs.tag != ''
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag: ${{ needs.version.outputs.tag }}
+    permissions:
+      contents: read
+      id-token: write
+    secrets: inherit
