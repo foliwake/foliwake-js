@@ -11,6 +11,45 @@ the server.
 What it does not do: render block examples or pages. That needs the engine (`foliwake page check` locally, or
 the branch preview on the platform).
 
+## CLI
+
+```sh
+npx @foliwake/site-check [dir] [--json | --format text|json|github] [--strict] [--quiet]
+```
+
+`pnpm dlx`, `yarn dlx` and `bunx` work the same way; the command installed with the package is
+`foliwake-site-check`. It checks the folder (default: the current one) the way the platform checks a commit of
+it, including files that are not committed yet:
+
+```text
+@foliwake/site-check 0.3.0 — site code in . (HTML contract 2)
+components/quiz/quiz.json:5:7 error BLOCKS_PACK_INVALID quiz /fields/1/type: Unknown field type "choice".
+    fix: Use one of: text, heading, list, choices, quote, image.
+scripts/old.ts:1:1 info CODE_PATH_IGNORED: .ts is not a code file type; the platform never captures this file.
+    fix: Rename or move it if a page needs it; otherwise ignore this note.
+17 files would be captured (components/, scripts/, …, site.yaml): 1 error, 0 warnings, 1 note.
+Block examples and pages are rendered only by the engine: `foliwake page check` locally, or the branch preview on the platform.
+```
+
+- Exit status: `0` no errors (warnings and notes allowed), `1` errors (with `--strict`, warnings too), `2` a
+  usage error or `dir` is not a folder.
+- `--quiet`: only the problems and the summary line (no header, no notes, no closing line).
+- `--format github`: one GitHub Actions annotation per diagnostic (`::error file=…,line=…,col=…,title=CODE::…`;
+  warnings `::warning`, notes `::notice`), then the summary line. In a workflow:
+  `npx -y @foliwake/site-check@0.3.0 . --format github`.
+- `--json` (or `--format json`): one object, schema `foliwake-site-check/1`:
+
+  ```json
+  { "schema": "foliwake-site-check/1", "version": "0.3.0", "htmlContract": 2, "root": "/abs/path",
+    "captured": ["components/quiz/quiz.json", "…"], "ignored": [{ "file": "scripts/old.ts", "reason": "…" }],
+    "diagnostics": [{ "code": "…", "severity": "error", "file": "…", "line": 5, "column": 7,
+                      "component": "quiz", "field": "/fields/1/type", "message": "…", "fix": "…" }],
+    "errors": 1, "warnings": 0, "notes": 1 }
+  ```
+
+A site that passes can still be refused by the platform for what only the engine checks: block examples or
+pages whose content does not fit a block's fields, or a commit with uncommitted inputs.
+
 ## Library
 
 ```js

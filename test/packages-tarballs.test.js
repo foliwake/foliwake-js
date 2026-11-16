@@ -10,14 +10,15 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { after, test } from 'node:test';
 import { fileProblems, privateNames, tarballProblems } from '../tools/package-tarball-hygiene.mjs';
+import { PUBLISH_ORDER } from '../tools/packages.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const NAMES = ['blocks-contract', 'server', 'client', 'react', 'next'];
+const NAMES = PUBLISH_ORDER;
 const run = promisify(execFile);
 let dir;
 after(() => dir && rm(dir, { recursive: true, force: true }));
 
-test('pnpm pack of every app package, installed from the tarballs into a consumer and used there', async () => {
+test('pnpm pack of every package, installed from the tarballs into a consumer and used there', async () => {
   dir = await mkdtemp(path.join(os.tmpdir(), 'foliwake-tarballs-'));
   for (const name of NAMES) await run('pnpm', ['pack', '--pack-destination', dir], { cwd: path.join(ROOT, 'packages', name), maxBuffer: 16 << 20 });
   const files = (await readdir(dir)).sort();
@@ -85,4 +86,16 @@ test('a private project name from FOLIWAKE_PRIVATE_NAMES fails the tarball, case
   assert.match(fileProblems(file, names).join(), /names a private project \(1 private name\(s\)\)/);
   assert.doesNotMatch(fileProblems(file, names).join(), /secret-client/i, 'the message never repeats the name');
   assert.deepEqual(fileProblems(file, privateNames({})), []);
+});
+
+test('hygiene: references to the private history of moved code are refused', () => {
+  refused('dist/a.js', '// see docs/plan/17-site-blocks.md', /cites a private planning document/);
+  refused('dist/a.js', '// (owner 2026-10-31: fewer moving parts)', /cites a dated owner decision/);
+  refused('dist/a.js', '// RR-04: directories', /cites a review id \(RR-04\)/);
+  refused('dist/a.js', '// P5-R07', /cites a review id/);
+  refused('dist/a.js', '// as Codex suggested', /cites an agent name/);
+  refused('README.md', 'Fixed after review of #117.', /cites a pull request number/);
+  refused('dist/a.js', '// changed after some-site #15', /cites a pull request of another repository/);
+  refused('dist/a.js', '// plan 17 §4.0', /cites a plan number/);
+  assert.deepEqual(problemsWith({ path: 'dist/a.css.js', text: 'color: #18181b; /* the owner of a block */' }), []);
 });

@@ -1,5 +1,5 @@
 // <FoliwakePage>: renders a prepared page body (SSR-safe) and hands the element to @foliwake/client's
-// mountFoliwakePage, which holds the lifecycle invariants (docs/plan/react-packages.md §6.2). React's part:
+// mountFoliwakePage, which holds the lifecycle invariants. React's part:
 //  1. page.identity (with its digest of the final body) is the React key: a new body, code release, channel or
 //     mode remounts; nothing else does.
 //  2. Every render passes the latest props to the mount (`update()`): callbacks and host are read at call time.

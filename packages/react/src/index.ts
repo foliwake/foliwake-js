@@ -1,5 +1,5 @@
 'use client';
-// @foliwake/react: show Foliwake pages in a React app (docs/plan/react-packages.md §4.3). A thin wrapper of
+// @foliwake/react: show Foliwake pages in a React app. A thin wrapper of
 // @foliwake/client, which holds the lifecycle; this package adds the component, the hook and the context.
 export { FoliwakePage, type FoliwakePageProps } from './foliwake-page.js';
 export { useFoliwakeEvents } from './events.js';

@@ -11,10 +11,12 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PUBLISH_ORDER } from './packages.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The packages in build (and publish) order: each after the packages it depends on. */
-export const BUILD_ORDER = ['blocks-contract', 'site-check', 'client', 'react', 'server', 'next'];
+export const BUILD_ORDER = PUBLISH_ORDER;
 
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 
@@ -31,7 +33,7 @@ function build(name) {
   const status = run(['-p', path.join(dir, 'tsconfig.json'), '--outDir', staging]);
   if (status !== 0) {
     rmSync(staging, { recursive: true, force: true });
-    console.error(`build: @foliwake/${name} failed; its previous dist/ is unchanged.`);
+    console.error(`build: packages/${name} failed; its previous dist/ is unchanged.`);
     return status;
   }
   if (existsSync(live)) rmSync(live, { recursive: true, force: true });

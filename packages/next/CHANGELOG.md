@@ -1,13 +1,16 @@
 # Changelog: @foliwake/next
 
-The five app packages (`@foliwake/blocks-contract`, `@foliwake/client`, `@foliwake/server`, `@foliwake/react`,
-`@foliwake/next`) share one version and are released together; each changelog lists the changes of its own
-package. While the version is 0.x, a minor release may break; breaking changes are marked **BREAKING**.
+The packages of this repository (`@foliwake/blocks-contract`, `@foliwake/site-check`, `@foliwake/client`,
+`@foliwake/server`, `@foliwake/react`, `@foliwake/next`, `create-foliwake`) share one version and are released
+together; each changelog lists the changes of its own package. While the version is 0.x, a minor release may break; breaking changes are marked **BREAKING**.
 
-0.1.0 was packed for review only (GitHub Packages setup, never published on npm). 0.2.0 is the first release on
-npm; its entries list the changes since the first 0.1.0 tarballs (2026-11-11).
+0.1.0 was packed for review only (GitHub Packages setup, never published on npm). 0.2.0 was prepared but not
+published; 0.3.0 is the first release on npm, and its entries list the changes since the first 0.1.0 tarballs
+(2026-11-11).
 
-## 0.2.0 (unreleased)
+## 0.3.0 (unreleased)
+
+- Released together with the new `@foliwake/site-check` and `create-foliwake`, which share this version.
 
 - **BREAKING** Through `@foliwake/react`: block events are delivered only when listed in the `events` prop
   (core `ready`/`error` always); contract `foliwake-blocks/2`; assessment types come from

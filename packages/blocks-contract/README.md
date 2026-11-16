@@ -28,7 +28,7 @@ needed. Install an exact version, the same as your other `@foliwake/*` packages;
 dependency is enough:
 
 ```bash
-pnpm add -D @foliwake/blocks-contract@0.2.0
+pnpm add -D @foliwake/blocks-contract@0.3.0
 ```
 
 ## Minimal example

@@ -1,5 +1,6 @@
-// Hygiene rules for a packed @foliwake/* tarball (tools/check-package-tarballs.mjs): only whitelisted files, no
-// secrets, no paths of the machine that packed it, no internal hosts, no source maps. Every rule returns the
+// Hygiene rules for a packed tarball of this repository (tools/check-package-tarballs.mjs): only whitelisted
+// files, no secrets, no paths of the machine that packed it, no internal hosts, no source maps, no references to
+// the private history of moved code. Every rule returns the
 // problems it found as messages; an empty list means the tarball may be published.
 
 /** Paths inside `package/` that a published tarball may hold. */
@@ -48,6 +49,20 @@ export function privateNames(env = process.env) {
     .filter(Boolean);
 }
 
+/**
+ * References to the private history of code moved from the engine: its planning documents, review ids, dated
+ * owner decisions, agent names and pull request numbers. Comments of published code cite public contracts only.
+ */
+const INTERNAL_REFERENCES = [
+  { name: 'a private planning document', pattern: /\bdocs\/(plan|phases|contracts|briefs?)\//i },
+  { name: 'a dated owner decision', pattern: /\bowner(?: decision)?,? 20\d\d-\d\d/i },
+  { name: 'a review id', pattern: /\b(RR|P\d+-R)-?\d{2}\b/ },
+  { name: 'an agent name', pattern: /\b(Codex|Fable)\b/ },
+  { name: 'a pull request number', pattern: /\b(?:PR|pull request|review of|issue)\s*#\d+/i },
+  { name: 'a pull request of another repository', pattern: /\b[a-z][a-z0-9]*(?:-[a-z0-9]+)+ #\d+\b/ },
+  { name: 'a plan number', pattern: /\b(?:plan|brief) \d+\b/i },
+];
+
 /** Source maps: none are shipped, so no module may point at one (bundlers and devtools warn about it). */
 const SOURCE_MAP_URL = /^\/\/# sourceMappingURL=/m;
 
@@ -71,6 +86,10 @@ export function fileProblems({ path, text }, names = privateNames()) {
   if (local) problems.push(`${path} holds the local path ${local[0]}`);
   for (const host of internalHosts(text)) problems.push(`${path} names the internal host ${host}`);
   if (path.endsWith('.js') && SOURCE_MAP_URL.test(text)) problems.push(`${path} has a sourceMappingURL`);
+  for (const { name, pattern } of INTERNAL_REFERENCES) {
+    const found = text.match(pattern);
+    if (found) problems.push(`${path} cites ${name} (${found[0]})`);
+  }
   const lowered = text.toLowerCase();
   const named = names.filter((name) => lowered.includes(name));
   if (named.length > 0) problems.push(`${path} names a private project (${named.length} private name(s))`);

@@ -24,7 +24,7 @@ The packages are published on npm (npmjs.com) under the `@foliwake` scope; no re
 needed. Install exact versions, the same for every `@foliwake/*` package:
 
 ```bash
-pnpm add @foliwake/next@0.2.0 @foliwake/react@0.2.0 @foliwake/server@0.2.0
+pnpm add @foliwake/next@0.3.0 @foliwake/react@0.3.0 @foliwake/server@0.3.0
 ```
 
 The app also needs `foliwake.remote.json` in its root (or `FOLIWAKE_REMOTE` naming another file): the site,

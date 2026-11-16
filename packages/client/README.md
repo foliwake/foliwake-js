@@ -18,7 +18,7 @@ The packages are published on npm (npmjs.com) under the `@foliwake` scope; no re
 needed. Install an exact version, and use the same version for every `@foliwake/*` package:
 
 ```bash
-pnpm add @foliwake/client@0.2.0
+pnpm add @foliwake/client@0.3.0
 ```
 
 ## Minimal example
