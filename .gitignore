@@ -2,6 +2,8 @@ node_modules/
 packages/*/dist/
 packages/*/dist.*
 .tarballs/
+packages/create-foliwake/vendor/
+packages/create-foliwake/vendor.next/
 *.tgz
 .DS_Store
 .env

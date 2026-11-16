@@ -10,6 +10,9 @@ const WHITELIST = [
   /^(LICENSE|NOTICE)$/,
   /^dist\/[\w./-]+\.(js|d\.ts)$/,
   /^schemas\/[\w.-]+\.schema\.json$/,
+  // create-foliwake: the starters it copies into a new project, and the vendored React they may get.
+  /^starters\/[\w.-]+(\/[\w.-]+)+$/,
+  /^vendor\/react(\.js|\.LICENSE\.txt)$/,
 ];
 
 /** Files every published tarball must hold. */

@@ -16,5 +16,6 @@ const out = path.resolve(process.argv[2] ?? path.join(ROOT, '.tarballs'));
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 for (const name of PUBLISH_ORDER) {
-  execFileSync('pnpm', ['pack', '--pack-destination', out], { cwd: path.join(ROOT, 'packages', name), stdio: 'inherit' });
+  const cwd = path.join(ROOT, 'packages', name);
+  execFileSync('pnpm', ['pack', '--pack-destination', out], { cwd, stdio: 'inherit' });
 }

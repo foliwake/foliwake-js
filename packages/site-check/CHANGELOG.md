@@ -32,4 +32,6 @@ with them. While the version is 0.x, a minor release may break; breaking changes
   - The CLI `foliwake-site-check` (`npx @foliwake/site-check [dir]`): text, `--json` (schema
     `foliwake-site-check/1`) or `--format github` (Actions annotations), `--strict`, `--quiet`; exit status 0
     (no errors), 1 (errors; warnings too with `--strict`), 2 (usage).
+  - License and notice files next to code (`scripts/vendor/react.LICENSE.txt`, `LICENSE`, `NOTICE.md`) are
+    not captured and not noted.
   - Diagnostics have a third severity, `info`, for notes that are never problems (`CODE_PATH_IGNORED`).

@@ -141,6 +141,15 @@ if (has('@foliwake/site-check')) {
   const bin = fileURLToPath(new URL('dist/bin.js', import.meta.resolve('@foliwake/site-check/package.json')));
   assert.match(execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' }), /^0\./);
 }
+if (has('create-foliwake')) {
+  const { projectFiles, projectProblems } = await import('create-foliwake');
+  const files = await projectFiles({ template: 'examples', target: '/tmp/x-site', siteId: null, react: true });
+  assert.ok(files.some((file) => file.path === 'scripts/vendor/react.js'), 'the vendored React ships');
+  assert.deepEqual(await projectProblems(files), []);
+  const { execFileSync } = await import('node:child_process');
+  const bin = fileURLToPath(new URL('dist/bin.js', import.meta.resolve('create-foliwake/package.json')));
+  assert.match(execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' }), /^0\./);
+}
 if (has('@foliwake/client')) {
   const client = await import('@foliwake/client');
   assert.equal(typeof client.mountFoliwakePage, 'function');

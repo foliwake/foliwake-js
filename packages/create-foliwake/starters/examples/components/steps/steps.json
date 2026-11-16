@@ -1,0 +1,8 @@
+{
+  "$schema": "../../.foliwake/schemas/block-1.schema.json",
+  "label": { "en": "Steps" },
+  "fields": [
+    { "name": "title", "type": "heading", "level": 3, "min": 0, "label": { "en": "Title" } },
+    { "name": "items", "type": "list", "minItems": 2, "label": { "en": "Steps" } }
+  ]
+}

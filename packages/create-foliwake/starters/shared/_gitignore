@@ -1,0 +1,8 @@
+# Local Foliwake state of `foliwake dev` and other local commands
+.foliwake/
+node_modules/
+storybook-static/
+.DS_Store
+# Environment files hold secrets; never commit them
+.env
+.env.*

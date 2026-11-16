@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "paths": { "foliwake": ["./.foliwake/types/foliwake.d.ts"] }
+  },
+  "include": ["components/**/*.js", "scripts/**/*.js", "templates/**/*.js", ".foliwake/types/**/*.d.ts"],
+  "exclude": ["scripts/vendor/**"]
+}

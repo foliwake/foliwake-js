@@ -1,0 +1,8 @@
+# For pnpm only (npm and Yarn do not read this file): Storybook needs esbuild, whose install script
+# fetches its binary. pnpm runs no dependency's build scripts until they are approved, and pnpm 11
+# fails the install without this (ERR_PNPM_IGNORED_BUILDS). `allowBuilds` is the setting of
+# pnpm 10.26 and later; `onlyBuiltDependencies` the same for older pnpm 10.
+allowBuilds:
+  esbuild: true
+onlyBuiltDependencies:
+  - esbuild

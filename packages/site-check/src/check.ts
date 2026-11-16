@@ -18,6 +18,7 @@ import {
   isCapturedInput,
   isExampleFile,
   isGeneratedPath,
+  isLicenseFile,
   isUnderCodeRoot,
 } from './formats/layout.js';
 import { type QueryConfig, QUERY_FILE, parseQueryConfig } from './formats/query.js';
@@ -108,7 +109,7 @@ function sortInputs(files: ReadonlyMap<string, Uint8Array>, engineFiles: readonl
     if (engineFiles.includes(file)) continue;
     if (isGeneratedPath(file)) sorted.generated.push(file);
     else if (isCapturedInput(file)) sorted.captured.set(file, bytes);
-    else if (isUnderCodeRoot(file)) sorted.ignored.push({ file, reason: ignoredReason(file) });
+    else if (isUnderCodeRoot(file) && !isLicenseFile(file)) sorted.ignored.push({ file, reason: ignoredReason(file) });
   }
   return sorted;
 }

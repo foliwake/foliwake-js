@@ -21,6 +21,7 @@ import {
   isCodeInput,
   isExampleFile,
   isGeneratedPath,
+  isLicenseFile,
   isUnderCodeRoot,
 } from '@foliwake/site-check/formats/layout';
 
@@ -111,6 +112,15 @@ test('layout: captured inputs are the code roots with code extensions, examples,
   assert.ok(!isExampleFile('components/note/other.example.md'));
   assert.ok(isGeneratedPath('shell.json') && isGeneratedPath('_foliwake/block-kit.js'));
   assert.ok(!isGeneratedPath('styles/styles.css'));
+});
+
+test('license and notice files next to code are recognised; code files are not', () => {
+  for (const file of ['scripts/vendor/react.LICENSE.txt', 'scripts/vendor/LICENSE', 'styles/fonts/NOTICE.md']) {
+    assert.ok(isLicenseFile(file), file);
+  }
+  for (const file of ['scripts/license.js', 'styles/licenses.css', 'scripts/vendor/react.js']) {
+    assert.ok(!isLicenseFile(file), file);
+  }
 });
 
 test('extensionOf agrees with path.posix.extname; code extensions are matched as written', () => {
