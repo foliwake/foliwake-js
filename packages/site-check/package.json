@@ -13,6 +13,20 @@
   "publishConfig": { "access": "public", "provenance": true },
   "foliwake": { "htmlContract": 2, "blocksPack": 1, "templates": 1, "references": 1, "query": 1 },
   "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./blocks/authoring-keys": { "types": "./dist/blocks/authoring-keys.d.ts", "default": "./dist/blocks/authoring-keys.js" },
+    "./blocks/editor-config": { "types": "./dist/blocks/editor-config.d.ts", "default": "./dist/blocks/editor-config.js" },
+    "./blocks/examples": { "types": "./dist/blocks/examples.d.ts", "default": "./dist/blocks/examples.js" },
+    "./blocks/extras": { "types": "./dist/blocks/extras.d.ts", "default": "./dist/blocks/extras.js" },
+    "./blocks/pack": { "types": "./dist/blocks/pack.d.ts", "default": "./dist/blocks/pack.js" },
+    "./blocks/schema": { "types": "./dist/blocks/schema.d.ts", "default": "./dist/blocks/schema.js" },
+    "./check": { "types": "./dist/check.d.ts", "default": "./dist/check.js" },
+    "./code-references": { "types": "./dist/code-references.d.ts", "default": "./dist/code-references.js" },
+    "./descriptor-check": { "types": "./dist/descriptor-check.d.ts", "default": "./dist/descriptor-check.js" },
+    "./references/messages": { "types": "./dist/references/messages.d.ts", "default": "./dist/references/messages.js" },
+    "./references/tables": { "types": "./dist/references/tables.d.ts", "default": "./dist/references/tables.js" },
+    "./site-code": { "types": "./dist/site-code.d.ts", "default": "./dist/site-code.js" },
+    "./urls": { "types": "./dist/urls.d.ts", "default": "./dist/urls.js" },
     "./formats/access": { "types": "./dist/formats/access.d.ts", "default": "./dist/formats/access.js" },
     "./formats/code-files": { "types": "./dist/formats/code-files.d.ts", "default": "./dist/formats/code-files.js" },
     "./formats/constants": { "types": "./dist/formats/constants.d.ts", "default": "./dist/formats/constants.js" },
@@ -27,7 +41,14 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@foliwake/blocks-contract": "workspace:*",
+    "micromark-util-sanitize-uri": "2.0.1",
+    "remark-parse": "11.0.0",
+    "unified": "11.0.5",
     "yaml": "2.9.1"
   },
-  "files": ["dist/", "!dist/**/*.map", "LICENSE", "README.md", "CHANGELOG.md"]
+  "files": ["dist/", "!dist/**/*.map", "LICENSE", "README.md", "CHANGELOG.md"],
+  "devDependencies": {
+    "@types/mdast": "4.0.4"
+  }
 }

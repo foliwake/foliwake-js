@@ -1,0 +1,9 @@
+{
+  "htmlContract": 2,
+  "components": {
+    "hero": { "css": true, "js": false },
+    "accordion": { "css": true, "js": true },
+    "lesson": { "css": true, "js": true },
+    "question": { "css": true, "js": true }
+  }
+}

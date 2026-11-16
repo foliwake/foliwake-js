@@ -11,6 +11,29 @@ the server.
 What it does not do: render block examples or pages. That needs the engine (`foliwake page check` locally, or
 the branch preview on the platform).
 
+## Library
+
+```js
+import { checkSiteCode, formatDiagnostic, hasErrors } from '@foliwake/site-check';
+
+const result = await checkSiteCode('.');
+for (const diagnostic of result.diagnostics) console.log(formatDiagnostic(diagnostic));
+process.exitCode = hasErrors(result.diagnostics) ? 1 : 0;
+```
+
+- `checkSiteCode(dir, options?)` reads a folder the way the platform captures a commit of it: the regular files
+  under `components/`, `scripts/`, `styles/`, `templates/` and `references/` with a code file type, the block
+  example files, and `site.yaml`, `query.yaml` and `access.yaml` at the root. Other files under those folders
+  are listed in `ignored` with a `CODE_PATH_IGNORED` note. Nothing else is read (`content/` never is).
+- `checkCodeRelease(files, options?)` checks the captured files themselves (a `Map` of posix path → bytes).
+- Both resolve to `{ diagnostics, siteCode, query, access, captured, ignored }`; the diagnostics are sorted.
+- Options: `htmlContract` (default `HTML_CONTRACT`), `engineFiles` (the engine's files a release holds under
+  `_foliwake/`), `catalogueComponents` (the names a hand-written `components/components.json` must declare).
+
+Finer entries: `site-code` (the reader: block pack, descriptor, templates, `site.yaml` default, reference
+tables), `blocks/pack`, `blocks/schema` (the JSON Schema of a block definition), `blocks/examples`,
+`blocks/editor-config`, `references/tables`, `code-references`, `descriptor-check`, `urls`.
+
 ## Formats
 
 `@foliwake/site-check/formats/*` are pure modules: no Node imports, no file system, no network. They describe
