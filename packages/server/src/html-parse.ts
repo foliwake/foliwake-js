@@ -1,4 +1,4 @@
-// A strict htmlparser2 reader for Foliwake bodies (ported from Gaiare's lib/foliwake-lessons/html-fragment.ts):
+// A strict htmlparser2 reader for Foliwake bodies (ported from a host app's HTML fragment reader):
 // bodies are serialiser output, so anything the parser would have to REPAIR is an error (fail closed):
 // an implied end or start tag, an end tag with nothing to close, a tag or comment cut off by the end of
 // the document, an attribute given twice. Void elements and `/>` are the only closings without an end tag.

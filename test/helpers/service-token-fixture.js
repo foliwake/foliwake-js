@@ -5,7 +5,7 @@
 import { exportJWK, generateKeyPair } from 'jose';
 
 export const SITE = 'local';
-export const ISSUER = 'gaiare-next';
+export const ISSUER = 'my-app';
 export const KID = 'app-2026-11';
 export const OLD_KID = 'app-2026-05';
 export const PRIVATE_KEY_ENV = 'FOLIWAKE_LIVE_SIGNING_KEY';
