@@ -181,5 +181,5 @@ jobs:
           set -eu
           tag=$(node tools/packages-version.mjs --dist-tag)
           for t in $(node tools/packages.mjs --tarballs "$VERSION"); do
-            npm publish "tarballs/$t" --provenance --access public --tag "$tag"
+            npm publish "./tarballs/$t" --provenance --access public --tag "$tag"
           done
