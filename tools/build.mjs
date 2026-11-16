@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Builds the five packages with tsc, in dependency order (each compiles against the declarations of those
+// Builds the packages with tsc, in dependency order (each compiles against the declarations of those
 // before it): `pnpm build`. Each package is compiled into dist.next/ and swapped in only when tsc succeeds,
 // so a failed build leaves the previous dist/ in place and never a partial one.
 //
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The packages in build (and publish) order: each after the packages it depends on. */
-export const BUILD_ORDER = ['blocks-contract', 'client', 'react', 'server', 'next'];
+export const BUILD_ORDER = ['blocks-contract', 'site-check', 'client', 'react', 'server', 'next'];
 
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 
