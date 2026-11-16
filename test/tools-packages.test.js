@@ -65,6 +65,9 @@ test('release.yml publishes through publish.yml, never with a copy of its steps'
   const release = read('.github/workflows/release.yml');
   assert.match(release, /uses: \.\/\.github\/workflows\/publish\.yml/);
   assert.match(release, /commit-message: Version packages$/m, 'the version commit carries no skip marker');
+  // changesets/action 2.x names its outputs in kebab case; a camelCase name reads as empty and skips the tag.
+  assert.match(release, /steps\.changesets\.outputs\.has-changesets == 'false'/, 'the tag step reads has-changesets');
+  assert.doesNotMatch(release, /outputs\.hasChangesets/, 'no camelCase output names of changesets/action');
   assert.doesNotMatch(release, /npm publish/);
   assert.match(read('.github/workflows/publish.yml'), /^  workflow_call:$/m);
   assert.match(read('.github/workflows/ci.yml'), /pnpm changeset status --since="origin\/\$BASE_REF"/);
