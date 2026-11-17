@@ -28,3 +28,25 @@
     height: 320px;
   }
 }
+
+/* Diagrams: light cards (docs/public/diagrams). Images in the article body open full screen on click
+   (medium-zoom, theme/index.js). */
+.vp-doc img {
+  cursor: zoom-in;
+}
+
+/* Dark theme: the light diagram card sits on the dark page like the hero art, slightly dimmed. */
+.dark .vp-doc img[src*='/diagrams/'] {
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+  filter: brightness(0.92);
+}
+
+.medium-zoom-overlay {
+  z-index: 100;
+}
+
+.medium-zoom-image--opened {
+  z-index: 101;
+  cursor: zoom-out;
+}

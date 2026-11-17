@@ -5,12 +5,7 @@ Read it once; the guides and the reference assume it.
 
 ## Who does what
 
-```text
-author         Markdown pages ──▶ platform ──▶ page HTML (<path>.plain.html, X-Code-Release: cd_…)
-block author   Git commit     ──▶ platform ──▶ code release cd_… (components/, scripts/, styles/, …)
-app developer  server: @foliwake/server or /next (read, prepare, proxy)
-               browser: @foliwake/client or /react (mount blocks)
-```
+![Authors write Markdown pages and block authors make Git commits; the Foliwake platform turns them into page HTML and code releases. On your side, the app developer uses the SDK: @foliwake/server or /next on the server reads, prepares and proxies; @foliwake/client or /react in the browser mounts blocks.](/diagrams/who-does-what.svg)
 
 The **platform** renders pages, captures code releases and serves both.
 It is not part of this SDK.
@@ -102,11 +97,7 @@ So:
 
 ## Content and code are released separately
 
-```text
-commit ──▶ push a branch ──▶ branch preview (that branch's code, the preview content)
-       ──▶ merge to main ──▶ site-check ──▶ code release cd_N ──▶ preview rebuilt with it
-       ──▶ release ──▶ live
-```
+![A commit pushed to a branch gives a branch preview. A commit merged to main goes through site-check, becomes code release cd_N, the preview is rebuilt with it, and the release (auto or manual) takes it live.](/diagrams/release-flow.svg)
 
 Publishing pages keeps the live code.
 New code reaches live only through the preview, where every page is rebuilt with it first.
@@ -145,12 +136,7 @@ A difference is reported as `EVENT_PREFIX_MISMATCH`.
 
 ## Embedding: envelope, prepare, mount
 
-```text
-browser ──▶ your app /pages/x ──(server, with the credential)──▶ origin /x.plain.html
-                                envelope (cached) ──▶ preparePage (per request) ──▶ FoliwakePageData
-browser ──▶ your app /foliwake-code/cd_A/scripts/blocks.js ──(proxy)──▶ origin (immutable)
-browser ◀── <FoliwakePage page>: the body first, then mountBlocks(container, host) ──▶ events
-```
+![The browser opens /pages/x in your app; your server reads /x.plain.html from the origin with the credential and caches the envelope; preparePage runs per request and returns FoliwakePageData; the browser renders the body, imports the blocks module through your code proxy (the release is immutable), mounts blocks and receives their events.](/diagrams/embedding.svg)
 
 1. **Envelope.** Your server reads `<path>.plain.html` with the credential.
    What the origin answered (body, `X-Code-Release`, language, ETag) is the envelope.
