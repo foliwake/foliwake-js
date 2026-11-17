@@ -1,19 +1,21 @@
 {
+  "//": "The kit (src/block-kit.ts) compiles to one browser module, dist/block-kit.js, importing only the vendored ./lit-html.js: no bundler, tsc emits each source file as it is. block-kit-1.js and lit-html.js are frozen JS, copied as written (tools/build.mjs).",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2023",
     "lib": [
       "ES2023",
-      "DOM"
+      "DOM",
+      "DOM.Iterable"
     ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "types": [],
-    "noEmit": true,
     "skipLibCheck": false,
-    "rootDir": "src"
+    "rootDir": "src",
+    "outDir": "dist"
   },
   "include": [
-    "src/**/*.d.ts"
+    "src/**/*.ts"
   ]
 }

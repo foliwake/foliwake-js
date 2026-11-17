@@ -3,17 +3,23 @@
 // before it): `pnpm build`. Each package is compiled into dist.next/ and swapped in only when tsc succeeds,
 // so a failed build leaves the previous dist/ in place and never a partial one.
 //
+// @foliwake/block-kit's kit is compiled by tsc like the other sources: src/block-kit.ts becomes dist/block-kit.js, one
+// browser module whose only import is the vendored ./lit-html.js (the engine copies it as it is into every code
+// release). Its standalone declaration, dist/foliwake.d.ts, is composed from the generated one
+// (tools/block-kit-declaration.mjs).
+//
 // create-foliwake also gets the vendored React of its starters (vendor/react.js and its license), built with Vite
 // from this repository's exact-pinned react and react-dom (tools/vendor-react/), staged and swapped the same way.
 //
 //   node tools/build.mjs              build every package
 //   node tools/build.mjs --typecheck  build, then typecheck every package's sources (tsc --noEmit)
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { standaloneDeclaration } from './block-kit-declaration.mjs';
 import { PUBLISH_ORDER } from './packages.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,19 +36,27 @@ function run(args) {
 
 /**
  * Files a package ships as written (browser modules and declarations that are not compiled): copied from src/ to
- * dist/ after tsc checked the package.
+ * dist/ after tsc checked the package. block-kit-1.js (the kit of blocks contract 1) and lit-html.js (lit-html 3.3.3)
+ * stay frozen JS: code releases already published import them byte for byte, so they are never recompiled.
  */
 const COPIED = {
   'block-kit': [
-    'block-kit.js',
     'block-kit-1.js',
     'lit-html.js',
+    'lit-html.d.ts',
     'lit-html.LICENSE',
-    'foliwake.d.ts',
-    'index.d.ts',
     'assessment.d.ts',
     'assessment.js',
   ],
+};
+
+/** Files a package's build composes from tsc's output in dist/, after the copies. */
+const COMPOSED = {
+  'block-kit': (staging) => {
+    const kit = readFileSync(path.join(staging, 'block-kit.d.ts'), 'utf8');
+    const lit = readFileSync(path.join(staging, 'lit-html.d.ts'), 'utf8');
+    writeFileSync(path.join(staging, 'foliwake.d.ts'), standaloneDeclaration(kit, lit));
+  },
 };
 
 function copySources(name, staging) {
@@ -63,6 +77,7 @@ function build(name) {
     return status;
   }
   copySources(name, staging);
+  COMPOSED[name]?.(staging);
   if (existsSync(live)) rmSync(live, { recursive: true, force: true });
   renameSync(staging, live);
   return 0;
