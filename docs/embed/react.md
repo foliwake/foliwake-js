@@ -77,6 +77,10 @@ export async function proxies(request: Request): Promise<Response | null> {
 
 Set a Content-Security-Policy that fits with `foliwakeCsp` from `@foliwake/server/csp`.
 
+If you write your own code proxy instead, allow the release's `_foliwake/` folder
+besides `components/`, `scripts/` and `styles/`: the block-kit that blocks import lives there.
+`codeHandler` already does.
+
 ## In the browser
 
 ```tsx
@@ -106,6 +110,9 @@ export function Lesson({ path }: { path: string }) {
 
 With server rendering, render `<FoliwakePage>` on the server too:
 the body is HTML before any JavaScript, and blocks mount in the browser.
+
+Blocks can also come into a React app at build time, as components;
+[Write a block](/blocks/write-a-block#blocks-in-a-react-app-at-run-time-or-at-build-time) compares the two ways.
 
 The [`@foliwake/react` reference](/reference/packages/react) shows the host with saved answers,
 typed event handlers with `useFoliwakeEvents`, and status and error handling.

@@ -52,5 +52,34 @@ export default defineBlock('quiz', (fields, ctx) => {
 
 With `autoReady: false` a root gets `ready` only when the block sends it; the default is `true`.
 
+## `ctx.state`
+
+`ctx.state(initial)` returns `{ value }`. Replacing `value` re-renders every view and effect of the block, once per
+microtask however many changes. Setting a value equal to the current one (`Object.is`) does nothing, and so does
+any change after the block was disposed. Replace values, do not mutate them: `list.value = [...list.value, item]`.
+
+## `ctx.mount`: a view of another framework
+
+`ctx.mount(view, props, options?)` mounts a component of React, Preact, Vue, … into the block. The view is the
+site's small adapter: `view.render(element, props, { fail })` and `view.unmount(element)`. The kit makes the
+element (`<div data-island>`) and calls `render` again on every `update`.
+
+| Option | What |
+| --- | --- |
+| `replace` | hide the authored children while the view shows; they come back on failure and on dispose |
+| `into` | a field name or an element of the block to mount in (default: the root, after its children) |
+| `onReady(handle)` | called once the first render returned or its promise resolved |
+| `onError(error)` | called when a render fails |
+
+It returns `{ element, update(props), dispose(), fail(error) }`, and is disposed with the block.
+
+A failing render rolls back: one that throws, rejects, or calls `fail` later. The element goes, the authored HTML
+is shown again, `onError` is called and the block sends `error` with
+`{ code: 'BLOCK_MOUNT_FAILED', message, recoverable: true }`. After a failure or a dispose, `update` and `fail` do
+nothing. `unmount` runs exactly once, after any render still in progress has settled.
+
+`create-foliwake --react` writes such an adapter for React, `scripts/react-view.js`. It passes `fail` to React 19's
+`onUncaughtError`, so a render error after the first commit also rolls the block back.
+
 A new site with a working block: [`create-foliwake`](https://www.npmjs.com/package/create-foliwake). The checks
 a block must pass: [`@foliwake/site-check`](https://www.npmjs.com/package/@foliwake/site-check).

@@ -12,6 +12,8 @@
 | The not-found page | the path is outside `app.pages`, or the page is not published on that channel |
 | "The page body was refused: …" | the body, or your `transform`'s output, has something the check refuses; the message names it |
 | CSP errors in the console | the block code uses `eval`, inline `<script>` or `<style>`, or another origin |
+| Blocks fail to import `@foliwake/block-kit` | your own code proxy must serve the release's `_foliwake/` folder too |
+| Live pictures blocked by CSP | the site resizes images on a CDN: name it as `app.media` with `"transform": null` |
 | Pictures missing in preview | `authorizePreview` must say yes for the signed-in author |
 | A 404 for `components/<name>/<name>.css` | a block without a stylesheet; harmless. Render the `as: 'style'` hints of `page.preload` instead |
 | Blocks missing after a client navigation to another release | the browser lacks multiple import maps (Chrome 133+); a reload shows them |
