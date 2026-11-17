@@ -1,6 +1,7 @@
 # foliwake-js
 
 The open-source JavaScript and TypeScript SDK of Foliwake.
+Documentation: [sdk.foliwake.dev](https://sdk.foliwake.dev).
 
 Foliwake publishes a site's pages as plain, checked HTML.
 A site's blocks (small CSS and JavaScript modules that make parts of a page interactive) live in a Git repository.
