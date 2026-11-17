@@ -16,6 +16,7 @@
     ".": { "types": "./dist/index.d.ts", "default": "./dist/block-kit.js" },
     "./assessment": { "types": "./dist/assessment.d.ts", "default": "./dist/assessment.js" },
     "./block-kit.js": "./dist/block-kit.js",
+    "./block-kit.debug.js": "./dist/block-kit.debug.js",
     "./lit-html.js": "./dist/lit-html.js",
     "./lit-html.LICENSE": "./dist/lit-html.LICENSE",
     "./foliwake.d.ts": "./dist/foliwake.d.ts",
