@@ -9,7 +9,7 @@
 //   4. @foliwake/site-check over the planned files (validate.ts);
 //   5. the files written as one transaction: on any failure nothing of this run stays, and with --overwrite the
 //      original files are put back; then the files for editors (git-ignored: the JSON Schema of block
-//      definitions, the types of `foliwake`);
+//      definitions, the types of `@foliwake/block-kit`);
 //   6. the npm packages installed, when the project has some (Storybook) and that was asked;
 //   7. `git init` and the first commit (when asked; never inside another repository, and not when that cannot
 //      be determined).

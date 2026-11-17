@@ -44,8 +44,9 @@ export async function readPage(path: string, opts: ReadPageOptions = {}): Promis
 /**
  * Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React). Modules are
  * hinted as `preload as="script"` (the bytes, fetched in parallel), not `modulepreload`: a module preloaded
- * before the page's import map is in the document fails to resolve `foliwake` for good, and in a Next app the
- * hints reach <head> before the map (which renders with the page, and on a client navigation arrives later).
+ * before the page's import map is in the document fails to resolve the kit's specifier for good, and in a Next
+ * app the hints reach <head> before the map (which renders with the page, and on a client navigation arrives
+ * later).
  */
 export function emitPreloadHints(page: FoliwakePageData): void {
   for (const hint of page.preload) {
@@ -76,10 +77,10 @@ export interface FoliwakeServerPageProps {
 }
 
 /**
- * The import map of the page's code release (`foliwake` → its block-kit, scoped to the release's code path), as
- * an element to render before the page's blocks load; null for a page without a code release. Browsers honour a
- * map that arrives after the document's first module load (client navigation, a second release) only with
- * multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
+ * The import map of the page's code release (`@foliwake/block-kit` → its block-kit, scoped to the release's code
+ * path), as an element to render before the page's blocks load; null for a page without a code release.
+ * Browsers honour a map that arrives after the document's first module load (client navigation, a second
+ * release) only with multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
  */
 export function FoliwakeImportMap({ page, nonce }: { page: FoliwakePageData; nonce?: string }): ReactNode {
   const text = pageImportMap(page);

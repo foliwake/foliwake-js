@@ -17,7 +17,7 @@ that ask and grade (answers, verdicts, saved answers, `answer` and `complete` ev
 | --- | --- |
 | `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `MountReport`, `MountStatus`, `BlockInit`, `BlockMeta`, `BlockHandle`, `BlockHost`, `HostCore`, `HostReact`, `KnownShell`, `BlockEvents`, `BlockEventDetail`, `FoliwakeEvent` |
 | `@foliwake/blocks-contract/assessment` | `AssessmentHost`, `AssessmentHostMembers`, `AssessmentEvents`, `AssessmentMode`, `Answer`, `SavedAnswer`, `Verdict` |
-| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`@foliwake/block-kit`, and `foliwake` for one more minor version → its block-kit, scoped to its code path), shared by `@foliwake/server` and `@foliwake/client`; `KIT_SPECIFIER`, `KIT_SPECIFIERS`, `KIT_PATH` |
+| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`@foliwake/block-kit` → its block-kit, scoped to its code path), shared by `@foliwake/server` and `@foliwake/client`; `KIT_SPECIFIER`, `KIT_PATH` |
 | `@foliwake/blocks-contract/reserved` | `BLOCK_ATTRIBUTES`, `KNOWN_SHELLS`, `HOST_CONTEXT_KEY`: names of the contract as values |
 | `@foliwake/blocks-contract/page` | `PageEnvelope` (the origin's answer, the only thing an app caches), `FoliwakePageData` (the prepared page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex` |
 
@@ -185,8 +185,7 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
   accepted. (A blocks module declares its own major in `BLOCKS_CONTRACT`; `@foliwake/client` refuses another one
   with `BLOCKS_CONTRACT_UNSUPPORTED`.)
 - **The kit's specifier is `@foliwake/block-kit`**, the npm name of the kit, so its types need no path
-  mapping. The import map of a code release also maps the previous specifier `foliwake` to the same kit; that
-  key is **deprecated** and leaves the map in the next minor version.
+  mapping.
 - **Attributes** a loader and an app share (`BLOCK_ATTRIBUTES`): `data-component` on a block root (written by the
   engine), `data-component-status` (`loading` · `ready` · `error`) and `data-block-key` on a root, and
   `data-component-css` (the block's name) with `data-code-release` on a block's stylesheet link.
@@ -207,10 +206,11 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package
 (`node_modules/@foliwake/blocks-contract/CHANGELOG.md`).
 
-## Guides
+## See also
 
-- [Write a block](https://docs.foliwake.dev/guide/write-a-block)
-- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react)
+- [`@foliwake/block-kit`](https://www.npmjs.com/package/@foliwake/block-kit): `defineBlock` writes `init` for
+  you.
+- [`@foliwake/client`](https://www.npmjs.com/package/@foliwake/client): an app's side, with `createHost`.
 
 License: Apache-2.0.
 
@@ -287,7 +287,7 @@ interface CoreEventDetails
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit after setup when it did not (block-kit 1 does not). |
+| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit after setup when it did not (unless the block opted out with `defineBlock(…, { autoReady: false })`). |
 | `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
 
 #### `HostCore`
@@ -593,22 +593,6 @@ The specifier blocks import the block-kit with: the kit's npm name, so its types
 const KIT_SPECIFIER = "@foliwake/block-kit"
 ```
 
-#### `KIT_SPECIFIERS`
-
-Every specifier the import map of a code release resolves to its kit.
-
-```ts
-const KIT_SPECIFIERS: readonly string[]
-```
-
-#### `LEGACY_KIT_SPECIFIER`
-
-The previous specifier, mapped to the same kit for one more minor version. Deprecated: import `@foliwake/block-kit`; this key leaves the map in the next minor version.
-
-```ts
-const LEGACY_KIT_SPECIFIER = "foliwake"
-```
-
 ### `@foliwake/blocks-contract/page`
 
 **Interfaces**
@@ -643,7 +627,7 @@ interface FoliwakePageData
 | `path` | `string` |  |
 | `mode` | `string \| null` | The site's mode of the page (`PrepareOptions.mode`), or null. |
 | `html` | `string` | Prepared: checked, rewritten, transformed, checked again. |
-| `codeRelease` | `CodeReleaseId \| null` |  |
+| `codeRelease` | `CodeReleaseId` |  |
 | `htmlContract` | `string` |  |
 | `lang` | `string \| null` |  |
 | `blocks` | `string[]` | Distinct `data-component` names in the body, sorted (CSS preload). |
@@ -666,7 +650,7 @@ interface PageEnvelope
 | `channel` | `ChannelName` |  |
 | `path` | `string` |  |
 | `html` | `string` | The body as served. |
-| `codeRelease` | `CodeReleaseId \| null` | `X-Code-Release` (plain/2); null from a plain/1 origin → the body is shown static. |
+| `codeRelease` | `CodeReleaseId` | `X-Code-Release` (plain/2). |
 | `htmlContract` | `string` | `X-Html-Contract`. |
 | `lang` | `string \| null` | `Content-Language`. |
 | `pageId` | `string \| null` | `X-Page-Id`. |

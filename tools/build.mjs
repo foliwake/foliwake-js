@@ -36,12 +36,11 @@ function run(args) {
 
 /**
  * Files a package ships as written (browser modules and declarations that are not compiled): copied from src/ to
- * dist/ after tsc checked the package. block-kit-1.js (the kit of blocks contract 1) and lit-html.js (lit-html 3.3.3)
- * stay frozen JS: code releases already published import them byte for byte, so they are never recompiled.
+ * dist/ after tsc checked the package. lit-html.js (lit-html 3.3.3) stays vendored JS as written: it is never
+ * recompiled.
  */
 const COPIED = {
   'block-kit': [
-    'block-kit-1.js',
     'lit-html.js',
     'lit-html.d.ts',
     'lit-html.LICENSE',

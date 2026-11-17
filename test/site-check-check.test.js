@@ -14,7 +14,8 @@ after(() => Promise.all(dirs.map((dir) => rm(dir, { recursive: true, force: true
 
 const KEYS = ['code', 'severity', 'file', 'line', 'column', 'component', 'field', 'message', 'fix'];
 const NOTE = JSON.stringify({ fields: [{ name: 'text', type: 'text' }] });
-const KIT_IMPORT = "import { defineBlock } from 'foliwake';\nexport default defineBlock('note', () => {});\n";
+const KIT_IMPORT = "import { defineBlock } from '@foliwake/block-kit';\n"
+  + "export default defineBlock('note', () => {});\n";
 const BASE = {
   'scripts/components.js': 'export {};\n',
   'styles/styles.css': 'body { margin: 0; }\n',
@@ -109,7 +110,7 @@ describe('checkSiteCode: what a capture takes from a working folder', () => {
     assert.equal(folder.message, '"Foo" is not a block name, so this folder is never read as a block.');
   });
 
-  test('`import … from "foliwake"` in a script is accepted: the engine adds the kit', async () => {
+  test('`import … from "@foliwake/block-kit"` in a script is accepted: the engine adds the kit', async () => {
     const result = await checkSiteCode(await folderWith({ ...BASE, 'components/note/note.js': KIT_IMPORT }));
     assert.deepEqual(errorsOf(result), []);
   });
@@ -127,15 +128,14 @@ describe('checkCodeRelease: the engine files and the limits', () => {
     assert.equal(result.captured.some((file) => file.startsWith('_foliwake/')), false);
   });
 
-  test('the kit\'s specifiers (`@foliwake/block-kit`, `foliwake`) are accepted without the kit among the inputs', async () => {
-    for (const specifier of ['@foliwake/block-kit', 'foliwake']) {
-      const script = KIT_IMPORT.replace("'foliwake'", `'${specifier}'`);
-      const result = await checkCodeRelease(filesOf({ ...BASE, 'components/note/note.js': script }));
-      assert.deepEqual(errorsOf(result), [], specifier);
+  test('the kit\'s specifier `@foliwake/block-kit` is accepted without the kit among the inputs', async () => {
+    const result = await checkCodeRelease(filesOf({ ...BASE, 'components/note/note.js': KIT_IMPORT }));
+    assert.deepEqual(errorsOf(result), []);
+    for (const specifier of ['@foliwake/other', 'foliwake']) {
+      const other = KIT_IMPORT.replace("'@foliwake/block-kit'", `'${specifier}'`);
+      const refused = await checkCodeRelease(filesOf({ ...BASE, 'components/note/note.js': other }));
+      assert.deepEqual(withCode(refused, 'CODE_REFERENCE_NOT_RELATIVE').length, 1, specifier);
     }
-    const other = KIT_IMPORT.replace("'foliwake'", "'@foliwake/other'");
-    const refused = await checkCodeRelease(filesOf({ ...BASE, 'components/note/note.js': other }));
-    assert.deepEqual(withCode(refused, 'CODE_REFERENCE_NOT_RELATIVE').length, 1);
   });
 
   test('a file over 2 MiB is CODE_FILE_TOO_LARGE, a warning', async () => {

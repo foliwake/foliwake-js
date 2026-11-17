@@ -1,6 +1,6 @@
 // The import map of a page's code release in an app's document: blocks import the block-kit as the bare
-// specifier `foliwake`, which resolves to `<codeBase>_foliwake/block-kit.js` of their own release. The map is
-// scoped to the release's path (`/foliwake-code/<cd>/`), so pages of two releases resolve their own kits.
+// specifier `@foliwake/block-kit`, which resolves to `<codeBase>_foliwake/block-kit.js` of their own release.
+// The map is scoped to the release's path (`/foliwake-code/<cd>/`), so pages of two releases resolve their own kits.
 // `@foliwake/next` renders it with the page on the server (FoliwakeServerPage); `ensureImportMap` adds it in
 // the browser when it is not there yet (a fallback: a map added after the document's first module load is
 // honoured only by browsers with multiple import maps, Chrome 133+).

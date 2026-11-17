@@ -20,7 +20,7 @@ before(async () => {
     '/lessons/no-etag.plain.html': (() => { const p = plain(); delete p.headers.etag; return p; })(),
     '/index.plain.html': plain(),
     '/lessons/gz.plain.html': (() => { const p = plain(); const body = gzipSync(p.body); return { headers: { ...p.headers, 'content-encoding': 'gzip', 'content-length': String(body.length) }, body }; })(),
-    '/lessons/old.plain.html': { headers: { 'content-type': 'text/html', 'x-html-contract': '2' }, body: '<p>plain/1</p>' },
+    '/lessons/no-cd.plain.html': { headers: { 'content-type': 'text/html', 'x-html-contract': '2' }, body: '<p>x</p>' },
     '/lessons/bad-cd.plain.html': plain({ 'x-code-release': 'cd_XYZ' }),
     '/lessons/local.plain.html': plain({ 'x-code-release': 'local' }),
     '/lessons/json.plain.html': { headers: { 'content-type': 'application/json', 'x-html-contract': '2' }, body: '{}' },
@@ -30,13 +30,13 @@ before(async () => {
     '/lessons/broken.plain.html': { status: 503, headers: {} },
     '/lessons/moved.plain.html': { status: 302, headers: { location: 'https://elsewhere.example/' } },
     '/lessons/huge.plain.html': (req, res) => {
-      res.writeHead(200, { 'content-type': 'text/html', 'x-html-contract': '2' }); // chunked, no Content-Length
+      res.writeHead(200, { 'content-type': 'text/html', 'x-code-release': CD, 'x-html-contract': '2' }); // chunked
       const chunk = Buffer.alloc(64 * 1024, 0x61);
       let sent = 0;
       const write = () => { while (sent < 3 * 1024 * 1024) { sent += chunk.length; if (!res.write(chunk)) return res.once('drain', write); } res.end(); };
       res.on('error', () => {}); write();
     },
-    '/lessons/declared-huge.plain.html': (req, res) => { res.writeHead(200, { 'content-type': 'text/html', 'x-html-contract': '2', 'content-length': String(3 * 1024 * 1024) }); res.end(); },
+    '/lessons/declared-huge.plain.html': (req, res) => { res.writeHead(200, { 'content-type': 'text/html', 'x-code-release': CD, 'x-html-contract': '2', 'content-length': String(3 * 1024 * 1024) }); res.end(); },
   });
   config = parseFoliwakeConfig(configText({ live: stub.origin, preview: stub.origin, app: { media: { base: 'https://media.example.org', transform: 'cloudflare-images' } } }));
 });
@@ -96,8 +96,8 @@ describe('readEnvelope', () => {
     await assert.rejects(read('/lessons/moved'), (e) => kind('origin')(e) && e.status === 302);
   });
 
-  test('plain/1 (no X-Code-Release) is a static body; a malformed id or a remote "local" is refused', async () => {
-    assert.equal((await read('/lessons/old')).codeRelease, null);
+  test('X-Code-Release is required: missing or malformed is refused; "local" only from a loopback origin', async () => {
+    await assert.rejects(read('/lessons/no-cd'), (e) => kind('invalid')(e) && /without X-Code-Release/.test(e.message));
     await assert.rejects(read('/lessons/bad-cd'), kind('invalid'));
     assert.equal((await read('/lessons/local')).codeRelease, 'local'); // the stub is loopback
   });
@@ -188,10 +188,7 @@ describe('preparePage', () => {
     assert.equal(preparePage(config, envelope).identity, a.identity);
   });
 
-  test('a plain/1 body is prepared without blocks; exam mode is not available yet', async () => {
-    const page = preparePage(config, await read('/lessons/old'));
-    assert.equal(page.blocksUrl, null);
-    assert.equal(page.codeRelease, null);
+  test('exam mode is not available yet', async () => {
     const live = await read('/lessons/a');
     assert.throws(() => preparePage(config, live, { mode: 'exam' }), kind('not_allowed'));
   });

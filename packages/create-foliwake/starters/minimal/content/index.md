@@ -29,4 +29,4 @@ The box around this text is the block `note`. Its fields are defined in `compone
 
 ## When you're ready
 
-Check the code with `npx @foliwake/site-check`, push the repository to GitHub and connect it to your site in the Foliwake admin: every branch gets a preview. `README.md` has the rest, and the [Quickstart](https://docs.foliwake.dev/guide/quickstart) walks you through it.
+Check the code with `npx @foliwake/site-check`, push the repository to GitHub and connect it to your site in the Foliwake admin: every branch gets a preview. `README.md` has the rest.

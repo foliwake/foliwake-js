@@ -1,8 +1,8 @@
 // Files for editors in a new project, git-ignored and never committed (`foliwake dev` refreshes them):
 //  - `.foliwake/schemas/block-1.schema.json`, named by the `$schema` of each `components/<name>/<name>.json`,
 //    written from @foliwake/site-check, so it is the checker's own rule set;
-//  - `.foliwake/types/foliwake.d.ts`, the types of the module `foliwake` (jsconfig.json maps the specifier
-//    there), from @foliwake/block-kit. The types of each block (`.foliwake/types/blocks/`) come from the CLI.
+//  - `.foliwake/types/foliwake.d.ts`, the types of the module `@foliwake/block-kit` (jsconfig.json maps the
+//    specifier there), from @foliwake/block-kit. The types of each block (`.foliwake/types/blocks/`) come from the CLI.
 // Nothing is written through a symbolic link.
 import { lstat, mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -36,7 +36,7 @@ export function writeLocalSchema(projectRoot: string): Promise<string> {
   return writeEditorFile(projectRoot, LOCAL_SCHEMA_PATH, blockSchemaText());
 }
 
-/** Writes (or refreshes) the types of the module `foliwake`. */
+/** Writes (or refreshes) the types of the module `@foliwake/block-kit`. */
 export async function writeKitTypes(projectRoot: string): Promise<string> {
   const declaration = new URL(import.meta.resolve('@foliwake/block-kit/foliwake.d.ts'));
   return writeEditorFile(projectRoot, KIT_TYPES_PATH, await readFile(declaration, 'utf8'));

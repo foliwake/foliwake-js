@@ -6,7 +6,7 @@ const windows = process.platform === 'win32';
 const first = spawnSync('foliwake', ['blocks', 'render'], { stdio: 'inherit', shell: windows });
 if (first.error?.code === 'ENOENT') {
   // A shell alias is invisible here: the command must be on PATH.
-  console.error('The `foliwake` command was not found on PATH. If it is a shell alias, replace it with `npm link`\nin your Foliwake checkout (see the Quickstart: https://docs.foliwake.dev/guide/quickstart).');
+  console.error('The `foliwake` command was not found on PATH. `npm run stories` renders the block examples with\nthe Foliwake CLI, which is not public yet. If you have it as a shell alias, put it on PATH instead (`npm link`).');
   process.exit(1);
 }
 // Status 1: an example has errors (shown above, left out); anything else stops here.

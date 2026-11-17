@@ -14,8 +14,8 @@ export interface PageEnvelope {
   path: string;
   /** The body as served. */
   html: string;
-  /** `X-Code-Release` (plain/2); null from a plain/1 origin → the body is shown static. */
-  codeRelease: CodeReleaseId | null;
+  /** `X-Code-Release` (plain/2). */
+  codeRelease: CodeReleaseId;
   /** `X-Html-Contract`. */
   htmlContract: string;
   /** `Content-Language`. */
@@ -42,7 +42,7 @@ export interface FoliwakePageData {
   mode: string | null;
   /** Prepared: checked, rewritten, transformed, checked again. */
   html: string;
-  codeRelease: CodeReleaseId | null;
+  codeRelease: CodeReleaseId;
   htmlContract: string;
   lang: string | null;
   /** Distinct `data-component` names in the body, sorted (CSS preload). */

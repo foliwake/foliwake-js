@@ -15,7 +15,7 @@ const PAGES = {
   sync: page('sync', CDS.sync),
   // A body with a custom element whose connectedCallback runs page code during the body insertion.
   probe: page('probe', CDS.a, { html: '<h2>probe</h2><abort-probe></abort-probe><div data-component="quiz"><p>Q</p></div>' }),
-  plain1: page('plain1', null, { codeRelease: null, blocksUrl: null, codeBase: null }),
+  noentry: page('noentry', CDS.a, { blocksUrl: null, codeBase: null }),
   oneNewEtag: page('one', CDS.a, { identity: `demo|live|/one|"e2"|${CDS.a}|practice` }),
   // The same envelope prepared to another final body: the identity carries a digest of it.
   oneDigestA: page('one', CDS.a, { identity: `demo|live|/one|"e1"|${CDS.a}|practice|sha-aaa` }),

@@ -1,6 +1,6 @@
 // `foliwake.remote.json` version 2 (schema schemas/remote-2.schema.json):
 // which Foliwake site an app reads, with which credential NAMES, and the app's settings. One parser for the
-// engine CLI (`foliwake dev --remote`) and the app packages. Version 1 is no longer read.
+// engine CLI (`foliwake dev --remote`) and the app packages.
 //
 // No secrets: anything that looks like a stored secret refuses the file; credentials are variable names,
 // read on the server per origin request (./origin), never logged, never sent to a browser.
@@ -306,6 +306,10 @@ function parseApp(value: unknown, where: string): FoliwakeAppSettings {
   };
 }
 
+function unsupportedVersion(file: string, version: unknown): FoliwakeConfigError {
+  return new FoliwakeConfigError(`${file}: unsupported "version" ${JSON.stringify(version)}; it must be 2.`);
+}
+
 /** Parses the text of a version 2 config. Throws FoliwakeConfigError with a message that names the field. */
 export function parseFoliwakeConfig(text: string, opts: ParseOptions = {}): FoliwakeAppConfig {
   const file = opts.file ?? CONFIG_FILE;
@@ -318,10 +322,7 @@ export function parseFoliwakeConfig(text: string, opts: ParseOptions = {}): Foli
   if (!isObject(parsed)) throw new FoliwakeConfigError(`${file} must be a JSON object {"version": 2, "site": …, "live": …, "preview": …, "app": …}.`);
   refuseSecrets(parsed, '', file);
   onlyKeys(parsed, ['$schema', '$comment', 'version', 'site', 'live', 'preview', 'app'], file);
-  if (parsed.version === 1) {
-    throw new FoliwakeConfigError(`${file}: version 1 is no longer read. Rewrite it as version 2: add "version": 2 and "site": "<site name>" (docs: website/guide/embed-in-react.md, "The config file").`);
-  }
-  if (parsed.version !== 2) throw new FoliwakeConfigError(`${file}: "version" must be 2.`);
+  if (parsed.version !== 2) throw unsupportedVersion(file, parsed.version);
   if (typeof parsed.site !== 'string' || !SITE.test(parsed.site)) throw new FoliwakeConfigError(`${file} "site": the site name, [a-z0-9-], such as "my-site".`);
   const live = parsed.live === undefined ? null : parseEndpoint(parsed.live, `${file} "live"`, opts);
   const preview = parsed.preview === undefined ? null : parseEndpoint(parsed.preview, `${file} "preview"`, opts);

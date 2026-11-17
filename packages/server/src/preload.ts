@@ -6,12 +6,12 @@
 //  - `components/components.json` says which blocks have a .js and a .css;
 //  - each module's static relative imports are followed (`import … from "./x.js"`, `import "./x.js"`,
 //    `export … from "./x.js"`; dynamic import() is not followed), depth ≤ 4, at most 48 modules. The kit's
-//    specifiers (`@foliwake/block-kit`, and `foliwake` while it is mapped) are the release's block-kit (the
-//    page's import map maps them to `_foliwake/block-kit.js`).
+//    specifier (`@foliwake/block-kit`) is the release's block-kit (the page's import map maps it to
+//    `_foliwake/block-kit.js`).
 // A code release is immutable, so results are kept in memory per (channel, code release, file). Hints are an
 // optimisation: a failed read gives fewer hints, never an error. Every href is a same-origin proxy URL
 // (`<proxies.code>[/preview]/<cd>/<path>`) that the code proxy's allow-list accepts, so CSP 'self' covers it.
-import { KIT_PATH, KIT_SPECIFIERS } from '@foliwake/blocks-contract/import-map';
+import { KIT_PATH, KIT_SPECIFIER } from '@foliwake/blocks-contract/import-map';
 import type { FoliwakePageData, PreloadHint } from '@foliwake/blocks-contract/page';
 import { appOf, type FoliwakeAppConfig } from './config.js';
 import { CODE_ROOTS, CODE_SEGMENT } from './constants.js';
@@ -25,10 +25,9 @@ const MAX_DEPTH = 4;
 const FILE_LIMIT = 1024 * 1024;
 const CACHE_LIMIT = 2048;
 const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
-const KIT_ALTERNATIVES = KIT_SPECIFIERS.map(escapeRegExp).join('|');
 /** A static `import`/`export … from` of a relative module or of the kit. */
 const IMPORT_HEAD = '(?:^|[;\\s}])(?:import|export)\\s*(?:[\\w$*{}\\s,]*?\\s*from\\s*)?';
-const STATIC_IMPORT = new RegExp(`${IMPORT_HEAD}["'](\\.{1,2}\\/[^"'\\s]+|${KIT_ALTERNATIVES})["']`, 'g');
+const STATIC_IMPORT = new RegExp(`${IMPORT_HEAD}["'](\\.{1,2}\\/[^"'\\s]+|${escapeRegExp(KIT_SPECIFIER)})["']`, 'g');
 
 const files = new Map<string, Promise<string | null>>();
 
@@ -48,13 +47,13 @@ export function codePath(relative: string): string | null {
 
 /** Resolves `specifier` against the module at `from` (both inside the release), or null when it leaves it. */
 export function resolveInRelease(from: string, specifier: string): string | null {
-  if (KIT_SPECIFIERS.includes(specifier)) return KIT_PATH;
+  if (specifier === KIT_SPECIFIER) return KIT_PATH;
   const url = new URL(specifier, `https://release.invalid/${from}`);
   if (url.origin !== 'https://release.invalid' || url.search || url.hash) return null;
   return codePath(url.pathname.slice(1));
 }
 
-/** The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIERS). */
+/** The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIER). */
 export function staticImports(source: string): string[] {
   const out = new Set<string>();
   for (const match of source.matchAll(STATIC_IMPORT)) out.add(match[1]!);

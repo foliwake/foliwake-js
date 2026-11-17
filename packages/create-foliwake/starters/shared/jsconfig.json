@@ -7,8 +7,7 @@
     "checkJs": false,
     "noEmit": true,
     "paths": {
-      "@foliwake/block-kit": ["./.foliwake/types/foliwake.d.ts"],
-      "foliwake": ["./.foliwake/types/foliwake.d.ts"]
+      "@foliwake/block-kit": ["./.foliwake/types/foliwake.d.ts"]
     }
   },
   "include": ["components/**/*.js", "scripts/**/*.js", "templates/**/*.js", ".foliwake/types/**/*.d.ts"],

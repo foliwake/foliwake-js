@@ -110,17 +110,14 @@ test('create --storybook: files, next step, no install unless asked; the config 
   assert.equal(config.framework.name, '@storybook/html-vite');
   assert.deepEqual(config.stories, [{ directory: '../.foliwake/stories', files: '*.stories.js' }]);
   assert.match(readFileSync(path.join(target, '.storybook/preview.js'), 'utf8'), /import '\.\.\/styles\/styles\.css';/);
-  // Blocks import block-kit as `foliwake`: the configuration aliases the import to the copy in the stories folder.
+  // Blocks import `@foliwake/block-kit`: the configuration aliases the import to the copy in the stories folder.
   const kitCopy = path.join(stories, '_foliwake/block-kit.js');
   const vite = await config.viteFinal({ resolve: { alias: { '@app': '/app' } } });
   assert.deepEqual(vite.resolve.alias[0], { find: '@app', replacement: '/app' }, 'existing aliases kept');
-  const [kit, legacy] = vite.resolve.alias.slice(-2);
-  assert.equal('foliwake'.replace(kit.find, kit.replacement), kitCopy);
+  const kit = vite.resolve.alias.at(-1);
   assert.equal('@foliwake/block-kit'.replace(kit.find, kit.replacement), kitCopy);
-  assert.ok(!kit.find.test('foliwake-ui') && !kit.find.test('./foliwake'), 'only the bare specifier');
-  // Blocks still on the previous kit import ../../_foliwake/block-kit-1.js: mapped to the same folder.
-  const previous = '../../_foliwake/block-kit-1.js'.replace(legacy.find, legacy.replacement);
-  assert.equal(previous, path.join(path.dirname(kitCopy), 'block-kit-1.js'));
+  const others = ['foliwake', '@foliwake/block-kit-x', './@foliwake/block-kit'];
+  assert.ok(others.every((specifier) => !kit.find.test(specifier)), 'only the bare specifier');
   // /components is static only in a static build: in `storybook dev` it would shadow the block modules Vite transforms.
   assert.deepEqual(config.staticDirs([], { configType: 'PRODUCTION' }), [{ from: '../components', to: '/components' }]);
   assert.deepEqual(config.staticDirs([], { configType: 'DEVELOPMENT' }), []);

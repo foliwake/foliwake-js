@@ -24,21 +24,24 @@ export default {
   // would shadow the block modules and stylesheets that the stories import.
   staticDirs: (dirs = [], { configType } = {}) => (configType === 'PRODUCTION' ? [...dirs, { from: '../components', to: '/components' }] : dirs),
   core: { disableTelemetry: true },
-  // Blocks import block-kit as `@foliwake/block-kit` (or `foliwake`, its previous name; pages map both to their
-  // code release's kit), blocks not yet moved to it
-  // the previous kit as ../../_foliwake/block-kit-1.js; `foliwake blocks render` puts copies into the stories folder.
+  // Blocks import block-kit as `@foliwake/block-kit` (pages map it to their code release's kit);
+  // `foliwake blocks render` puts a copy of the kit into the stories folder.
   viteFinal: (config) => ({
     ...config,
     resolve: {
       ...config.resolve,
       alias: [
         ...aliases(config.resolve?.alias),
-        { find: /^(?:@foliwake\/block-kit|foliwake)$/, replacement: fileURLToPath(new URL(`../${STORIES}/_foliwake/block-kit.js`, import.meta.url)) },
-        { find: /^(?:\.\.\/)+_foliwake\//, replacement: fileURLToPath(new URL(`../${STORIES}/_foliwake/`, import.meta.url)) },
+        { find: /^@foliwake\/block-kit$/, replacement: kitCopy() },
       ],
     },
   }),
 };
+
+/** The copy of the kit that `foliwake blocks render` puts into the stories folder. */
+function kitCopy() {
+  return fileURLToPath(new URL(`../${STORIES}/_foliwake/block-kit.js`, import.meta.url));
+}
 
 function aliases(alias) {
   if (!alias) return [];
