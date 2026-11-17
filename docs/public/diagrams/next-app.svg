@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420" role="img" aria-labelledby="title desc">
+<title id="title">What you build: a Next app between the browser and Foliwake</title>
+<desc id="desc">The browser talks only to your Next app. On the server, with the credential, the app serves three routes: /pages/path reads path.plain.html from Foliwake live or preview and caches it, /foliwake-code proxies the page's code release with its blocks, and /foliwake-media proxies pictures.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="#64748b" stroke-width="1.5"/></marker>
+</defs>
+<rect width="760" height="420" rx="16" fill="#f8fafc"/>
+<g font-family="system-ui, sans-serif" text-anchor="middle">
+<text x="380" y="36" font-size="23" font-weight="700" fill="#0f172a">What you build</text>
+<text x="380" y="62" font-size="15" fill="#475569">Your Next app reads and proxies on its server, with the credential.</text>
+
+<!-- Browser -->
+<rect x="24" y="104" width="140" height="240" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+<text x="94" y="220" font-size="18" font-weight="650" fill="#0f172a">Browser</text>
+<text x="94" y="244" font-size="13" fill="#475569">your app's pages</text>
+
+<!-- Next app -->
+<rect x="190" y="80" width="380" height="288" rx="16" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="6 5"/>
+<text x="206" y="102" text-anchor="start" font-size="14" font-weight="650" fill="#334155">Your Next app (server)</text>
+
+<path d="M166 148 H206" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M166 228 H206" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M166 308 H206" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+<rect x="212" y="118" width="336" height="60" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+<text x="380" y="142" font-size="15" font-weight="650" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/pages/&lt;path&gt;</text>
+<text x="380" y="164" font-size="13" fill="#475569">reads <tspan font-family="ui-monospace, SFMono-Regular, Menlo, monospace">&lt;path&gt;.plain.html</tspan> (cached)</text>
+<rect x="212" y="198" width="336" height="60" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+<text x="380" y="222" font-size="15" font-weight="650" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/foliwake-code/…</text>
+<text x="380" y="244" font-size="13" fill="#475569">proxies the page's code release (blocks)</text>
+<rect x="212" y="278" width="336" height="60" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
+<text x="380" y="302" font-size="15" font-weight="650" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/foliwake-media/…</text>
+<text x="380" y="324" font-size="13" fill="#475569">proxies pictures</text>
+
+<path d="M550 148 H610" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M550 228 H610" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M550 308 H610" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
+
+<!-- Foliwake -->
+<rect x="616" y="104" width="120" height="240" rx="12" fill="#eef2ff" stroke="#818cf8"/>
+<text x="676" y="220" font-size="18" font-weight="650" fill="#0f172a">Foliwake</text>
+<text x="676" y="244" font-size="13" fill="#475569">live / preview</text>
+
+<text x="380" y="398" font-size="14" fill="#475569">The browser never talks to Foliwake, and no credential reaches it.</text>
+</g>
+</svg>
