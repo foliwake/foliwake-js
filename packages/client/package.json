@@ -6,7 +6,7 @@
   "type": "module",
   "sideEffects": false,
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/client" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/client",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/client",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "headless", "blocks", "browser", "dom", "client"],
   "engines": { "node": ">=22.22" },

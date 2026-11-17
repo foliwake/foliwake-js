@@ -7,7 +7,7 @@
   "sideEffects": false,
   "engines": { "node": ">=22.22" },
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/block-kit" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/block-kit",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/block-kit",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "blocks", "web-components", "lit-html", "types"],
   "publishConfig": { "access": "public", "provenance": true },

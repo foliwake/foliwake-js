@@ -1,3 +1,5 @@
-# The five published packages. The repository root is a private workspace that builds and tests them.
+# The eight published packages, and the documentation site (docs/, private, never published). The repository
+# root is a private workspace that builds and tests them.
 packages:
   - packages/*
+  - docs

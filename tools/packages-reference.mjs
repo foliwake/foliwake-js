@@ -2,8 +2,8 @@
 // Generates the API sections of the published packages' documentation from their type declarations:
 // `pnpm packages:reference`. For each app package (PACKAGES below) it writes the Markdown between the `<!-- api -->`
 // and `<!-- apistop -->` markers of packages/<name>/README.md. The README ships in the tarball; the
-// documentation site (docs.foliwake.dev/reference/packages/<name>) copies its hand-written part (between the
-// `<!-- usage -->` markers) and this API section from the installed package, so the README is the one source.
+// documentation site (docs/, sdk.foliwake.dev/reference/packages/<name>) copies the whole README with
+// docs/scripts/reference.mjs, so the README is the one source.
 // test/packages-reference.test.js fails when a README is out of date.
 //
 // Source: the built declarations (dist/*.d.ts, what a consumer gets) of every entry point in the package's

@@ -58,7 +58,7 @@ function assertNpmMetadata(name, m) {
   assert.equal(m.license, 'Apache-2.0', name);
   const url = 'git+https://github.com/foliwake/foliwake-js.git';
   assert.deepEqual(m.repository, { type: 'git', url, directory: `packages/${name}` });
-  assert.equal(m.homepage, `https://docs.foliwake.dev/reference/packages/${name}`);
+  assert.equal(m.homepage, `https://sdk.foliwake.dev/reference/packages/${name}`);
   assert.equal(m.bugs?.url, 'https://github.com/foliwake/foliwake-js/issues', name);
   assert.ok(m.keywords?.includes('foliwake'), `${name}: keywords`);
   assert.equal(m.engines?.node, '>=22.22', name);

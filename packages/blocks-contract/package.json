@@ -7,7 +7,7 @@
   "sideEffects": false,
   "engines": { "node": ">=22.22" },
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/blocks-contract" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/blocks-contract",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/blocks-contract",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "headless", "blocks", "types", "typescript", "contract"],
   "publishConfig": { "access": "public", "provenance": true },

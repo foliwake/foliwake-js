@@ -6,7 +6,7 @@
   "type": "module",
   "sideEffects": false,
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/next" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/next",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/next",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "headless", "blocks", "nextjs", "next", "react", "app-router"],
   "engines": { "node": ">=22.22" },

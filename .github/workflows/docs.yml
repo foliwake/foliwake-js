@@ -1,0 +1,64 @@
+name: Docs
+
+# The documentation site (docs/, VitePress) at sdk.foliwake.dev, on GitHub Pages.
+# Pull requests that touch it: build only (dead links fail the build). Pushes to main: build and deploy.
+# The reference pages are copied from packages/*/README.md, so a README change rebuilds the site too.
+# Owner setup (once): Settings → Pages → Source "GitHub Actions"; custom domain sdk.foliwake.dev
+# (docs/public/CNAME) with a DNS CNAME record sdk → foliwake.github.io; enforce HTTPS.
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', 'packages/*/README.md', 'tools/packages.mjs', '.github/workflows/docs.yml']
+  pull_request:
+    paths: ['docs/**', 'packages/*/README.md', 'tools/packages.mjs', '.github/workflows/docs.yml']
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install (the docs package only)
+        run: pnpm install --frozen-lockfile --filter docs
+      - name: Build
+        run: pnpm --filter docs build
+      - name: Upload the site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

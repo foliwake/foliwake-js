@@ -1,0 +1,17 @@
+{
+  "name": "docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Foliwake SDK documentation site (sdk.foliwake.dev), built with VitePress; never published.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "reference": "node scripts/reference.mjs",
+    "dev": "node scripts/reference.mjs && vitepress dev .",
+    "build": "node scripts/reference.mjs && vitepress build .",
+    "preview": "vitepress preview ."
+  },
+  "devDependencies": {
+    "vitepress": "1.6.4"
+  }
+}

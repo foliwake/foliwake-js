@@ -6,7 +6,7 @@
   "type": "module",
   "sideEffects": false,
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/react" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/react",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/react",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "headless", "blocks", "react", "components"],
   "engines": { "node": ">=22.22" },

@@ -7,7 +7,7 @@
   "sideEffects": false,
   "engines": { "node": ">=22.22" },
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/server" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/server",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/server",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "headless", "blocks", "server", "csp", "fetch"],
   "publishConfig": { "access": "public", "provenance": true },
