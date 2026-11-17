@@ -5,6 +5,16 @@ with them. While the version is 0.x, a minor release may break; breaking changes
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.3.1
+
+### Patch Changes
+
+- 2b0bb9f: The block kit's source is TypeScript (`src/block-kit.ts`): `dist/block-kit.js` is compiled from it (still one
+  readable module importing only `./lit-html.js`), and the kit's declarations (`index.d.ts`, the standalone
+  `foliwake.d.ts`) are generated from the same source instead of written by hand. Same API, same behaviour; the
+  declarations add `lit-html.d.ts` and `block-kit.d.ts` next to the browser files.
+- @foliwake/blocks-contract@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes

@@ -7,6 +7,10 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.3.1
+
+No changes in this release.
+
 ## 0.3.0
 
 ### Minor Changes
