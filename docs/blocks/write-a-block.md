@@ -290,6 +290,10 @@ in the block-kit reference: `mount`'s options, `onReady` and `onError`, and how 
 
 `html` and `nothing` come from lit-html.
 `html` writes the view without `innerHTML` or `eval`, and an update changes only what changed.
+The kit loads lit-html only when a block on the page first renders a view, so a page without views skips it.
+That first render paints once lit-html has loaded, and the block's `ready` waits for it:
+read the rendered elements after `ready`, not right after `ctx.render`.
+[When lit-html loads](/reference/packages/block-kit#when-lit-html-loads) has the details.
 
 The starter block `quiz` (`create-foliwake --template examples`) is a complete example:
 `ctx.list` turns each answer into a button, `ctx.state` remembers clicks,

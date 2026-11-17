@@ -52,6 +52,27 @@ export default defineBlock('quiz', (fields, ctx) => {
 
 With `autoReady: false` a root gets `ready` only when the block sends it; the default is `true`.
 
+## When lit-html loads
+
+`html` and `nothing` are lit-html's values, made by the kit itself: writing a template needs no lit-html.
+The kit imports `lit-html.js` (next to `block-kit.js`) the first time a block on the page renders a view:
+`ctx.render`, or a view returned to `ctx.list`. A page whose blocks never render one does not download it.
+
+While it loads, on the first render of a page:
+
+- the view function runs at once, so a view that throws still fails the setup;
+- the view paints once lit-html has loaded, with the latest state (changes meanwhile are not lost);
+- `init` returns at once for a synchronous setup, as before; `ready` (the kit's, or the block's own
+  `ctx.emit('ready')`) is sent once the block's views are on the page;
+- a block disposed meanwhile paints nothing and sends nothing.
+
+Read the rendered elements after `ready` (or in an event handler), not right after `ctx.render` in the setup.
+Once lit-html has loaded, every render paints at once.
+
+If `lit-html.js` cannot be loaded, or a first paint throws, the block sends `error` with
+`{ code: 'BLOCK_MOUNT_FAILED', message, recoverable: true }`: its authored HTML stays, and `ready` is still sent.
+The next render on the page tries the load again.
+
 ## `ctx.state`
 
 `ctx.state(initial)` returns `{ value }`. Replacing `value` re-renders every view and effect of the block, once per
