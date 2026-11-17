@@ -7,7 +7,7 @@
   "sideEffects": false,
   "engines": { "node": ">=22.22" },
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/site-check" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/site-check",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/site-check",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "blocks", "lint", "validator", "cli"],
   "publishConfig": { "access": "public", "provenance": true },

@@ -42,7 +42,7 @@ test('the check refuses a tarball set with a missing internal dependency', async
 
 const clean = () => [
   { path: 'package.json', text: '{}' },
-  { path: 'README.md', text: 'Docs: https://docs.foliwake.dev/reference/packages/server' },
+  { path: 'README.md', text: 'Docs: https://sdk.foliwake.dev/reference/packages/server, https://docs.foliwake.dev' },
   { path: 'CHANGELOG.md', text: '# Changelog' },
   { path: 'LICENSE', text: 'Apache License' },
   { path: 'dist/index.js', text: "if (host === '127.0.0.1') connect('https://foliwake.dev/schemas/x.json');" },

@@ -7,7 +7,7 @@
   "sideEffects": false,
   "engines": { "node": ">=22.22" },
   "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/create-foliwake" },
-  "homepage": "https://docs.foliwake.dev/reference/packages/create-foliwake",
+  "homepage": "https://sdk.foliwake.dev/reference/packages/create-foliwake",
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "blocks", "create", "starter", "scaffold"],
   "publishConfig": { "access": "public", "provenance": true },

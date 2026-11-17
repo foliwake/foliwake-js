@@ -34,9 +34,9 @@ const SECRET_TEXT = [
 /** Paths of a developer machine or a build host. */
 const LOCAL_PATHS = /(\/Users\/[\w.-]+\/|\/home\/[\w.-]+\/|\/private\/(var|tmp)\/|[A-Za-z]:\\\\?Users\\\\?)/;
 
-/** Host names of the Foliwake deployments; only the public documentation and the apex domain may appear. */
+/** Host names of the Foliwake deployments; only the public documentation sites and the apex domain may appear. */
 const FOLIWAKE_HOST = /\b(?:[a-z0-9-]+\.)+foliwake\.dev\b/gi;
-const PUBLIC_FOLIWAKE_HOSTS = new Set(['docs.foliwake.dev']);
+const PUBLIC_FOLIWAKE_HOSTS = new Set(['docs.foliwake.dev', 'sdk.foliwake.dev']);
 
 /** IPv4 literals; loopback, unspecified and the documentation ranges (RFC 5737) are allowed. */
 const IPV4 = /\b\d{1,3}(?:\.\d{1,3}){3}\b/g;
