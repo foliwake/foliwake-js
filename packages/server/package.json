@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Server toolkit for apps that show Foliwake pages: config v2, origin client, envelope read, page check and preparation, code/media proxy handlers, CSP. Web Request/Response, no framework.",
   "license": "Apache-2.0",
   "type": "module",

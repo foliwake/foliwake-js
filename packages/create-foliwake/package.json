@@ -1,6 +1,6 @@
 {
   "name": "create-foliwake",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Create a Foliwake site frontend: npm create foliwake@latest. Blocks, styles, local sample pages, checks and GitHub workflows, checked with @foliwake/site-check before anything is written.",
   "license": "Apache-2.0",
   "type": "module",
