@@ -27,7 +27,7 @@ browser ──▶ your Next app ──(server, with the credential)──▶ Fol
   curl -sI https://my-site.example.org/index.plain.html | grep -i -E 'x-code-release|x-html-contract'
   ```
 
-  Without `X-Code-Release: cd_…` the app shows pages without blocks.
+  Without `X-Code-Release: cd_…` the app refuses the page.
 - A blocks module in the site's code, for example `scripts/blocks.js`.
   It exports `BLOCKS_CONTRACT` and `mountBlocks(container, host)`;
   [`@foliwake/blocks-contract`](/reference/packages/blocks-contract#write-a-blocks-module) shows one.

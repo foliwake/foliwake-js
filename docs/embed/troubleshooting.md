@@ -4,7 +4,8 @@
 | --- | --- |
 | The build fails with a message about `foliwake.remote.json` | the named field; the file must be version 2 with `site`, and the proxy prefixes must not collide |
 | "… needs the password in the environment variable X" | set `X` in the environment of the app's server, not in the file |
-| Blocks: `static`, `NO_CODE_RELEASE` | the origin sends no `X-Code-Release` with `.plain.html` (an older origin) |
+| "The origin answered without X-Code-Release" | the origin is not a plain/2 Foliwake origin: every `.plain.html` must carry `X-Code-Release` |
+| Blocks: `static`, `NO_BLOCKS_ENTRY` | the config names no blocks module: set `app.blocks.entry` |
 | Blocks: `static`, `BLOCKS_CONTRACT_UNSUPPORTED` | the site's blocks module exports another `BLOCKS_CONTRACT.major` than `app.blocks.contract` |
 | Blocks: `static`, `BLOCKS_MODULE_FAILED` | `app.blocks.entry` is not in the code release, or it throws on import; open `/foliwake-code/<cd>/<entry>` |
 | `EVENT_PREFIX_MISMATCH` | the blocks module's `BLOCKS_CONTRACT.eventPrefix` differs from `app.blocks.eventPrefix`; the module's wins |
