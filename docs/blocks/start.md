@@ -74,4 +74,4 @@ Then:
 - a merge into `main` becomes a code release, and every page is rebuilt with it in the preview;
 - the release reaches live automatically when every page builds, or by **Release** in the admin.
 
-Next: [Write a block](/blocks/write-a-block).
+Next: build two blocks hands-on in the [tutorial](/blocks/tutorial), or read [Write a block](/blocks/write-a-block).

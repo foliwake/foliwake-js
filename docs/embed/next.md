@@ -68,6 +68,7 @@ It holds no secrets, only the **names** of the variables that hold them.
 | `app.blocks.entry` | the blocks module's path inside a code release; without it, pages stay static |
 | `app.blocks.contract` | `foliwake-blocks/2`; a module of another major is not mounted |
 | `app.blocks.eventPrefix` | the prefix you expect on block events (`demo:answer`) |
+| `app.media` | optional `{ "base", "transform" }`: a media host for live pictures (Step 3) |
 | `app.revalidate` | seconds before a cached page is refreshed (default 300) |
 
 `auth` is `{ "type": "basic", "username", "passwordEnv" }`, or `{ "type": "service-token", … }` for a delivery
@@ -100,6 +101,23 @@ font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-ac
 
 Blocks load from your own origin, so no Foliwake host appears in it.
 If your app builds its own headers, leave `csp` out and use `foliwakeCspHeader()` from the same module.
+
+`app.media.base`, when set, is added to `img-src` (its origin only).
+With `"transform": "cloudflare-images"`, live pictures are sent through Cloudflare Images on that host.
+
+**If the site resizes images on a CDN**, every live page body lists that CDN's addresses in `srcset`,
+and Foliwake leaves them as they are.
+Your policy must allow that origin, or the browser blocks those images and does not fall back to `src`.
+The policy is one header for every route, chosen before any page is read, so it cannot come from the page.
+Name the CDN in `foliwake.remote.json` instead:
+
+```json
+"media": { "base": "https://media.example.org", "transform": null }
+```
+
+`transform: null` only adds the origin to `img-src`; pictures without a CDN address still go through your media proxy.
+Preview bodies never need it. If you build the policy yourself, pass the same address as `mediaBase` to `foliwakeCsp()`
+of `@foliwake/server/csp`.
 
 ## Step 4: the code and media proxies
 
@@ -242,6 +260,10 @@ async function PreviewPage({ params }: { params: Params }) {
 Preview is read on every request, never cached.
 Its code and pictures go through the proxies, which ask `authorizePreview`.
 Use your app's real sign-in instead of the cookie check.
+
+With `cacheComponents` (partial prerendering) the status line is sent with the static shell.
+So a missing preview or page answers HTTP 200 with your not-found content and `noindex`;
+nothing of the body is sent.
 
 ## Step 8: run it
 

@@ -40,6 +40,7 @@ export default defineConfig({
         text: 'Write blocks',
         items: [
           { text: 'Start a site\'s code', link: '/blocks/start' },
+          { text: 'Tutorial', link: '/blocks/tutorial' },
           { text: 'Write a block', link: '/blocks/write-a-block' },
           { text: 'Check a site\'s code', link: '/blocks/site-check' },
         ],

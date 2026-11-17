@@ -35,6 +35,7 @@ The site owns the CSS and JavaScript.
 | `ui` | the block's own labels, UI language → key → text (see JavaScript below) |
 | `events` | the events the block sends besides `ready` and `error`, with the type of each detail property |
 | `index` | fields a build extension may index (for example for search) |
+| `description`, `keywords`, `group`, `icon`, `view`, `presets`, `editors` | for authoring tools (below) |
 | `$schema` | for your editor only; the platform ignores it |
 
 A definition that could bind the same content in two ways is refused.
@@ -55,8 +56,83 @@ Optional: `label`, `min` (default 1; 0 = optional) and `max` (default 1; `null` 
 
 - A field whose `max` is not 1 is wrapped once in `<div data-field="name">`; `fields` gives it as a list.
 - Field text may have bold, italic and inline code.
+- `{#id}` at the end of a heading gives it an `id`.
+- `list` and `choices` occur once (`max` is 1); `minItems` and `maxItems` count their items.
+  `minItems` defaults to 1 (2 for `choices`), `maxItems` to `null` (any number).
+- A `quote` value is its paragraphs as one text; `ctx.field(name).children` gives each paragraph.
 - `choices` also takes `ids` (`required`, `optional`, `forbidden`), `correct` per variant
-  (`exactly-one`, `at-least-one`, `any`) and `itemQuote` (a block quote allowed under an answer).
+  (`exactly-one`, `at-least-one`, `any`; `data-select` is `single` for `exactly-one`, else `multiple`)
+  and `itemQuote`.
+- `itemQuote: "why"` allows a block quote directly under an answer.
+  It is rendered inside the answer's `<li>` as `<blockquote data-field="why">`,
+  and the answer's value gets it as `why`: `{ id, text, correct, why }`.
+- In a `choices` value, `id` is `''` for an answer without `{#id}`.
+  `correct` is absent when the HTML has no `data-correct`, for example because an app removed it.
+
+### Keys for authoring tools
+
+A site's block definitions can also describe the blocks for the editors its authors use,
+so an editor's palette is not kept by hand a second time.
+Like `label`, none of these keys changes the HTML.
+`@foliwake/site-check` checks them.
+
+```json
+{
+  "label": { "en": "Quiz" },
+  "description": { "en": "A question with answers to choose from." },
+  "keywords": { "en": ["question", "test"] },
+  "group": "questions",
+  "icon": "quiz",
+  "view": { "kind": "question", "accent": "info" },
+  "presets": ["explained"],
+  "editors": { "my-editor": { "icon": "quiz-compact" } },
+  "fields": [
+    { "name": "question", "type": "heading", "level": 3, "role": "prompt",
+      "help": { "en": "Ask one thing." }, "placeholder": { "en": "Your question" } },
+    { "name": "options", "type": "choices", "role": "answers", "add_label": { "en": "Add an answer" },
+      "idValues": { "none": { "label": { "en": "None of them" }, "exclusive": true } } }
+  ]
+}
+```
+
+| Key | Where | What |
+| --- | --- | --- |
+| `description` | block | what the block is for: language → text (at most 4096 characters) |
+| `keywords` | block | words an editor finds it by: language → list (at most 32 words) |
+| `group` | block | its group in an editor's palette: one of the `groups` of `components/editor.json` |
+| `icon` | block | its icon: a name in the icons folder of `components/editor.json` |
+| `view` | block | `{ kind, accent }`: what it is and its accent, roles each editor maps to its own look |
+| `presets` | block | ids of examples in `<name>.example.md` (`{#id}`) that editors offer as ready-made content |
+| `editors.<target>` | block | `view` and `icon` for one editor only; nothing else |
+| `help`, `placeholder` | field, argument | a hint, and the text of an empty field: language → text |
+| `add_label` | field | the label of "add one more" |
+| `role` | field | `prompt`, `setup`, `answers`, `explanation`, `after`, `data` or `caption` |
+| `format` | field, argument | the name of a syntax an editor may know for the text; the platform does not read it |
+| `idValues` | `choices` | known answer ids: id → `{ label, icon, exclusive, alias }` |
+| `itemQuoteLabel` | `choices` with `itemQuote` | the label of the quote under an answer |
+
+- `view.kind` is `card`, `callout`, `question`, `media`, `list` or `plain`;
+  `view.accent` is `neutral`, `info`, `success`, `warning`, `danger` or `accent`.
+- In `idValues`, choosing an `exclusive` answer clears the others;
+  `alias` maps a variant of the block to the id the answer has there.
+- Lengths are counted in characters (Unicode code points).
+
+A preset that names no example is reported as `BLOCK_PRESET_UNKNOWN`;
+whether the example's content renders is checked only by the platform.
+
+The site-level part is the optional file `components/editor.json`, released with the code:
+
+```json
+{
+  "groups": [{ "id": "questions", "label": { "en": "Questions" }, "icon": "quiz" }],
+  "section": { "label": { "en": "Section" } },
+  "icons": "components/editor-icons"
+}
+```
+
+`groups` are the palette's groups in order, `section` labels a page section,
+and `icons` is the folder of the SVG icons the blocks name (under `components/`).
+A problem in the file, or a block `group` it does not list, is reported as `EDITOR_CONFIG_INVALID`.
 
 ### Editor support
 
@@ -101,7 +177,9 @@ import { defineBlock, html } from '@foliwake/block-kit';
 
 export default defineBlock('callout', ({ title = '' }, ctx) => {
   const hidden = ctx.state(false);
-  ctx.effect(() => ctx.attrs(ctx.root, { 'data-collapsed': hidden.value }));
+  ctx.effect(() => {
+    ctx.attrs(ctx.root, { 'data-collapsed': hidden.value });
+  });
   ctx.render(() => html`<button type="button" aria-expanded=${!hidden.value} @click=${() => {
     hidden.value = !hidden.value;
     ctx.emit('toggle', { hidden: hidden.value, title });
@@ -200,11 +278,15 @@ Install it as a dev dependency only for its types, or to serve the files yoursel
 | `on([target,] type, [selector,] handler)` | a listener that ends with the block; returns `off()` |
 | `emit(type, detail)` | a bubbling `<prefix>:<type>` event with `{ key, block, ...detail }` |
 | `t(key)` | a label: `host.labels[key]`, else the block's `ui` (UI language, its base, English), else the key |
-| `state(initial)` | `{ value }`; replacing `value` re-renders the block's views and effects once per microtask |
+| `state(initial)` | `{ value }`; replacing it re-renders the views and effects once per microtask |
 | `effect(fn)` | runs now and after every state change; may return a cleanup |
 | `render(view, { into? })` | renders an `html` view after the root's children, into a field or an element |
 | `list(name, fn)` | for each item of a `list` or `choices` field: `fn(item, value, index)`; a returned view goes into it |
 | `mount(view, props, options?)` | mounts a view of another framework: `{ render, unmount }`; returns `{ update, dispose, … }` |
+
+[`ctx.state`](/reference/packages/block-kit#ctx-state) and
+[`ctx.mount`](/reference/packages/block-kit#ctx-mount-a-view-of-another-framework) have their full rules
+in the block-kit reference: `mount`'s options, `onReady` and `onError`, and how a failing render rolls back.
 
 `html` and `nothing` come from lit-html.
 `html` writes the view without `innerHTML` or `eval`, and an update changes only what changed.
@@ -222,8 +304,21 @@ until then `fields` is a plain record.
 
 ## The host
 
-On a Foliwake page, the loader gives every block the page's host:
-`shell: 'foliwake'`, `lang`, `uiLang`, `theme`, `reducedMotion`, `channel`, `keyOf(root)` and `has(name)`.
+On a Foliwake page, the loader (`scripts/components.js`) gives every block the same frozen host:
+
+| Member | What |
+| --- | --- |
+| `contract` | `{ major: 2, minor: 0 }`, the blocks contract `foliwake-blocks/2` |
+| `shell` | `'foliwake'` |
+| `htmlContract` | the page's HTML contract, from `<html data-html-contract>` |
+| `channel` | `live` on live pages, else `preview` |
+| `env` | `local`, `preview` or `live`, from `<html data-env>` |
+| `lang`, `uiLang` | the page's language |
+| `theme`, `reducedMotion` | `light` or `dark`; whether the reader asks for less motion |
+| `signal` | an `AbortSignal` a Foliwake page never aborts |
+| `keyOf(root)` | the block's key, its `data-block-key` |
+| `has(name)` | true only for `signal` and `channel` |
+
 Inside an app, the same block gets the app's host instead, which may add `labels`, `mode`, `track`, `react`
 or an extension's members (for example `saved(key)` of the assessment extension).
 
@@ -234,6 +329,10 @@ Then one block works on Foliwake pages and inside every app.
 
 Blocks send the core types `ready` and `error`, the assessment extension's types
 (`select`, `check`, `answer`, `reset`, `complete`) when they ask and grade, and their own types.
+Every event's `detail` starts with `{ key, block }`.
+The assessment extension's `answer` adds `{ selected, refused?, correct, graded }`:
+the chosen option ids, optionally refused ones, `true`, `false` or `null` (not graded),
+and `local` (the block graded) or `host` (the app's `check` did); `complete` adds nothing.
 An app receives the core types and the types it names.
 
 A site with its own event prefix keeps it in one module:
@@ -255,6 +354,27 @@ Load it only when the host has no React of its own (`host.has('react')`), so an 
 With a build step in your own CI, write JSX and import React from your build's shared chunk.
 A code release accepts only relative imports and `@foliwake/block-kit`, never a bare `react`.
 
+`scripts/react-view.js` passes `fail` to React's `onUncaughtError`.
+When a React render fails, even after the first commit, the island goes, the authored HTML is shown again
+and the block sends `error`.
+
+### Blocks in a React app: at run time or at build time
+
+A React app can show a site's blocks in two ways. [Embed pages](/embed/next) covers the first.
+
+| | Runtime embedding | Build-time import |
+| --- | --- | --- |
+| The app shows | the page's HTML, blocks from its code release | the blocks' components, rendered with props |
+| Block changes ship | with a code release, without an app deploy | with an app build and deploy |
+| HTML without JavaScript | yes: blocks enhance the page's HTML | only what the app renders on the server |
+| React | the app's, when it passes `host.react`; else the blocks' own | one React, the app's |
+| Fits | content-heavy sites whose blocks change often | small apps with few blocks, tied to the app's UI |
+
+For a build-time import, keep the component a named export whose props are the block's fields,
+and build it from the site's repository into a package for the app.
+The block's `init` stays for Foliwake pages; the app renders `<Rating {...fields} />` itself.
+The starter block `poll` exports its component this way: `createPoll(createElement)` returns it.
+
 ## Examples
 
 `<name>.example.md` holds examples written like a page.
@@ -275,4 +395,4 @@ The title is optional.
 The platform renders them in the block catalog of the preview.
 `@foliwake/site-check` checks their file layout; only the platform renders them.
 
-Next: [Check a site's code](/blocks/site-check).
+Try it hands-on in the [tutorial](/blocks/tutorial). Next: [Check a site's code](/blocks/site-check).
