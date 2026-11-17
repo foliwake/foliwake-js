@@ -164,10 +164,12 @@ Changes per version, breaking ones marked: `CHANGELOG.md` in the package
   by `readPage` of `@foliwake/next` or `preloadHints` of `@foliwake/server`), which list only existing files.
 - React does not re-render the body element's children after the first render: the blocks own them.
 
-## Guides
+## See also
 
-- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react)
-- [Tutorial 1: blocks in HTML and React](https://docs.foliwake.dev/guide/tutorial-blocks)
+- [`@foliwake/next`](https://www.npmjs.com/package/@foliwake/next): the Next.js App Router adapter.
+- [`@foliwake/server`](https://www.npmjs.com/package/@foliwake/server): read and prepare the page on your
+  server.
+- [`@foliwake/client`](https://www.npmjs.com/package/@foliwake/client): the lifecycle this package wraps.
 
 License: Apache-2.0.
 

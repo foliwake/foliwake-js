@@ -197,17 +197,37 @@ async function LessonBody({ params }: { params: Params }) {
 }
 ```
 
-`<FoliwakeImportMap>` renders the page's import map: blocks import the engine's block-kit as `foliwake`, and
-the map points that name at the kit of the page's own code release, scoped to the release's code path
+`<FoliwakeImportMap>` renders the page's import map: blocks import the block kit as `@foliwake/block-kit`
+(the deprecated `foliwake` is mapped too until 0.5.0), and the map points that name at the kit of the page's
+own code release, scoped to the release's code path
 (`<FoliwakeServerPage>` renders it for you). `@foliwake/client` adds the same map when it is missing. A map
 that arrives after the document's first module load (a client navigation to a page of another code release)
 is honoured only by browsers with multiple import maps (Chrome 133+); module hints are therefore `preload
-as="script"`, never `modulepreload`, which would resolve `foliwake` before the map is there. With the CSP
+as="script"`, never `modulepreload`, which would resolve the kit's specifier before the map is there. With the CSP
 strategy `nonce`, pass the request's nonce to `<FoliwakeServerPage nonce>` / `<FoliwakeImportMap nonce>` and to
 `<FoliwakePage nonce>` (the map the client adds on a navigation).
 
 Unlike `<FoliwakeServerPage>`, `readPage` does not call `notFound()`: it throws `FoliwakePageError` (with
 `kind` `not_found`, `not_allowed`, `invalid`, …) for you to handle.
+
+### Write the cached read yourself
+
+If Next does not compile the packaged cache (an unusual setup), write the cached live read in your app and
+pass it to `<FoliwakeServerPage read={readLiveEnvelope}>`:
+
+```ts
+// lib/foliwake.ts
+import { cacheLife, cacheTag } from 'next/cache';
+import { foliwakeConfig, foliwakeTags, originClient, readEnvelope } from '@foliwake/next';
+
+export async function readLiveEnvelope(path: string) {
+  'use cache';
+  cacheLife({ stale: 300, revalidate: 300, expire: 86400 });
+  cacheTag(...foliwakeTags('live', path));
+  const config = foliwakeConfig();
+  return readEnvelope(config, originClient(), config.site, 'live', path);
+}
+```
 
 ## Compatibility
 
@@ -226,7 +246,7 @@ Changes per version, breaking ones marked: `CHANGELOG.md` in the package
 
 - `withFoliwake` adds `@foliwake/next` to `transpilePackages`: Next compiles `'use cache'` only in code it
   transpiles. If you do not use `withFoliwake`, add it yourself, or write the cached read in your app and pass
-  it as `read` (the guide shows how).
+  it as `read` (see "Write the cached read yourself" above).
 - Under partial prerendering the status line is sent with the static shell, so a not-found page answers HTTP
   200 with the not-found content.
 - The server modules import `server-only`, which throws when imported outside React Server Components. In unit
@@ -238,11 +258,12 @@ Changes per version, breaking ones marked: `CHANGELOG.md` in the package
   without reading `components.json`, so blocks without a stylesheet produce 404 links. See the
   `@foliwake/react` notes for the workaround with `page.preload`.
 
-## Guides
+## See also
 
-- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react): the whole
-  setup step by step, the config keys, caching and troubleshooting.
-- [Roll out frontend code](https://docs.foliwake.dev/guide/code-rollout)
+- [`@foliwake/server`](https://www.npmjs.com/package/@foliwake/server): every key of `foliwake.remote.json`,
+  the proxies and the body check.
+- [`@foliwake/react`](https://www.npmjs.com/package/@foliwake/react): `<FoliwakePage>`, the host and events.
+- [`@foliwake/client`](https://www.npmjs.com/package/@foliwake/client): the browser lifecycle under both.
 
 License: Apache-2.0.
 
@@ -260,7 +281,7 @@ License: Apache-2.0.
 
 #### `emitPreloadHints()`
 
-Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React). Modules are hinted as `preload as="script"` (the bytes, fetched in parallel), not `modulepreload`: a module preloaded before the page's import map is in the document fails to resolve `foliwake` for good, and in a Next app the hints reach &lt;head&gt; before the map (which renders with the page, and on a client navigation arrives later).
+Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React). Modules are hinted as `preload as="script"` (the bytes, fetched in parallel), not `modulepreload`: a module preloaded before the page's import map is in the document fails to resolve the kit's specifier for good, and in a Next app the hints reach &lt;head&gt; before the map (which renders with the page, and on a client navigation arrives later).
 
 ```ts
 function emitPreloadHints(page: FoliwakePageData): void
@@ -280,7 +301,7 @@ function foliwakeConfig(): FoliwakeAppConfig
 
 #### `FoliwakeImportMap()`
 
-The import map of the page's code release (`foliwake` → its block-kit, scoped to the release's code path), as an element to render before the page's blocks load; null for a page without a code release. Browsers honour a map that arrives after the document's first module load (client navigation, a second release) only with multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
+The import map of the page's code release (`@foliwake/block-kit` → its block-kit, scoped to the release's code path), as an element to render before the page's blocks load; null for a page without a code release. Browsers honour a map that arrives after the document's first module load (client navigation, a second release) only with multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
 
 ```ts
 function FoliwakeImportMap({ page, nonce }: {

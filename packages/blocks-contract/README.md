@@ -17,7 +17,7 @@ that ask and grade (answers, verdicts, saved answers, `answer` and `complete` ev
 | --- | --- |
 | `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `MountReport`, `MountStatus`, `BlockInit`, `BlockMeta`, `BlockHandle`, `BlockHost`, `HostCore`, `HostReact`, `KnownShell`, `BlockEvents`, `BlockEventDetail`, `FoliwakeEvent` |
 | `@foliwake/blocks-contract/assessment` | `AssessmentHost`, `AssessmentHostMembers`, `AssessmentEvents`, `AssessmentMode`, `Answer`, `SavedAnswer`, `Verdict` |
-| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`@foliwake/block-kit`, and `foliwake` for one more minor version → its block-kit, scoped to its code path), shared by `@foliwake/server` and `@foliwake/client`; `KIT_SPECIFIER`, `KIT_SPECIFIERS`, `KIT_PATH` |
+| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`@foliwake/block-kit`, and the deprecated `foliwake` until 0.5.0 → its block-kit, scoped to its code path), shared by `@foliwake/server` and `@foliwake/client`; `KIT_SPECIFIER`, `KIT_SPECIFIERS`, `KIT_PATH` |
 | `@foliwake/blocks-contract/reserved` | `BLOCK_ATTRIBUTES`, `KNOWN_SHELLS`, `HOST_CONTEXT_KEY`: names of the contract as values |
 | `@foliwake/blocks-contract/page` | `PageEnvelope` (the origin's answer, the only thing an app caches), `FoliwakePageData` (the prepared page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex` |
 
@@ -186,7 +186,7 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
   with `BLOCKS_CONTRACT_UNSUPPORTED`.)
 - **The kit's specifier is `@foliwake/block-kit`**, the npm name of the kit, so its types need no path
   mapping. The import map of a code release also maps the previous specifier `foliwake` to the same kit; that
-  key is **deprecated** and leaves the map in the next minor version.
+  key is **deprecated** and leaves the map in 0.5.0.
 - **Attributes** a loader and an app share (`BLOCK_ATTRIBUTES`): `data-component` on a block root (written by the
   engine), `data-component-status` (`loading` · `ready` · `error`) and `data-block-key` on a root, and
   `data-component-css` (the block's name) with `data-code-release` on a block's stylesheet link.
@@ -207,10 +207,11 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package
 (`node_modules/@foliwake/blocks-contract/CHANGELOG.md`).
 
-## Guides
+## See also
 
-- [Write a block](https://docs.foliwake.dev/guide/write-a-block)
-- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react)
+- [`@foliwake/block-kit`](https://www.npmjs.com/package/@foliwake/block-kit): `defineBlock` writes `init` for
+  you.
+- [`@foliwake/client`](https://www.npmjs.com/package/@foliwake/client): an app's side, with `createHost`.
 
 License: Apache-2.0.
 

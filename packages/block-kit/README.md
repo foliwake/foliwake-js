@@ -15,7 +15,7 @@ export default defineBlock('note', (fields, ctx) => {
 ```
 
 In a page, `@foliwake/block-kit` is mapped to the kit of the page's own code release (`_foliwake/block-kit.js`;
-the previous specifier `foliwake` is mapped too for one more minor version, deprecated): the
+the previous specifier `foliwake` is mapped too until 0.5.0, deprecated): the
 Foliwake engine adds this package's browser files to every code release, so a site needs no build step and no
 npm dependency to use it. Install the package for its types, or to serve the files yourself:
 
@@ -41,4 +41,5 @@ blocks contract): a loader refuses a block of another major. The loader always p
 without one (an editor, a test), a block falls back to the browser: its key from `data-block-key`, its labels
 from its own `ui`.
 
-The guide: [Write a block](https://docs.foliwake.dev/guide/write-a-block).
+A new site with a working block: [`create-foliwake`](https://www.npmjs.com/package/create-foliwake). The checks
+a block must pass: [`@foliwake/site-check`](https://www.npmjs.com/package/@foliwake/site-check).
