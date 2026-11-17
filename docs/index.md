@@ -19,7 +19,8 @@ hero:
       text: GitHub
       link: https://github.com/foliwake/foliwake-js
   image:
-    src: /hero.webp
+    light: /hero.webp
+    dark: /hero-dark.webp
     alt: Pages fly out of an open book and turn into interactive blocks
 
 features:
