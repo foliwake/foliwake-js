@@ -5,6 +5,46 @@ with them. While the version is 0.x, a minor release may break; breaking changes
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.5.0
+
+### Minor Changes
+
+- 702085e: `@foliwake/block-kit` loads the vendored `lit-html.js` only when a block renders a view (`ctx.render`, or a view
+  returned to `ctx.list`), with a dynamic `import()` next to the kit. A page whose blocks never render one no longer
+  downloads lit-html. Not breaking: the API and its types are unchanged; `html` stays synchronous and returns
+  lit-html's template result, and `nothing` is lit-html's.
+  
+  What changes on the first render of a page, while `lit-html.js` loads:
+  
+  - the view function runs at once (a view that throws still fails the setup), and the view paints once lit-html
+    has loaded, with the latest state; after that, every render paints at once, as before;
+  - `init` still returns at once for a synchronous setup; `ready` (the kit's or the block's own) is sent once the
+    block's views are on the page;
+  - a block disposed meanwhile paints nothing;
+  - a failed load, or a first paint that throws, sends the block's `error` with `BLOCK_MOUNT_FAILED`
+    (`recoverable: true`): the authored HTML stays, and `ready` is still sent. A later render tries the load again.
+  
+  `dist/block-kit.js` stays one module; its only import is now the dynamic one of `./lit-html.js`, so the preload
+  hints of `@foliwake/server` no longer list `lit-html.js`.
+- 405f967: `dist/block-kit.js`, the kit the engine copies into every code release (`_foliwake/block-kit.js`), is now minified:
+  7,985 → 3,373 bytes gzip (24,956 → 7,725 raw; brotli 6,829 → 3,022). A page that renders a block downloads the kit
+  and `lit-html.js` together: 11,189 → 6,577 bytes gzip. The exports, the behaviour and the dynamic import of
+  `./lit-html.js` (next to the kit) are unchanged; the browser tests run against the minified file.
+  
+  The readable module is kept as `dist/block-kit.debug.js` (new entry `@foliwake/block-kit/block-kit.debug.js`), for
+  reading and debugging: map `@foliwake/block-kit` to it in a local import map. It is not part of a code release. No
+  source map is shipped.
+
+### Patch Changes
+
+- 7a50995: README: the rules of `ctx.state` (an equal value or a change after dispose does nothing) and of `ctx.mount`
+  (its options, `onReady` and `onError`, and how a failing render rolls back with `BLOCK_MOUNT_FAILED`).
+  No API change.
+- fa06260: The `homepage` of every package is its page on the public SDK documentation site,
+  `https://sdk.foliwake.dev/reference/packages/<name>`. No API change.
+- Updated dependencies [fa06260]
+  - @foliwake/blocks-contract@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
