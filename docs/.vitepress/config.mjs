@@ -23,6 +23,8 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Concepts', link: '/concepts' },
+      { text: 'Write blocks', link: '/blocks/start' },
+      { text: 'Embed pages', link: '/embed/next' },
       { text: 'Reference', link: '/reference/' },
       { text: 'npm', link: 'https://www.npmjs.com/org/foliwake' },
     ],
@@ -32,6 +34,23 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/' },
           { text: 'Concepts', link: '/concepts' },
+        ],
+      },
+      {
+        text: 'Write blocks',
+        items: [
+          { text: 'Start a site\'s code', link: '/blocks/start' },
+          { text: 'Write a block', link: '/blocks/write-a-block' },
+          { text: 'Check a site\'s code', link: '/blocks/site-check' },
+        ],
+      },
+      {
+        text: 'Embed pages',
+        items: [
+          { text: 'Next.js', link: '/embed/next' },
+          { text: 'Another React app', link: '/embed/react' },
+          { text: 'Other frameworks, or none', link: '/embed/other-frameworks' },
+          { text: 'Troubleshooting', link: '/embed/troubleshooting' },
         ],
       },
       {

@@ -24,20 +24,20 @@ features:
     details: >-
       Create a site code repository with create-foliwake, write blocks with @foliwake/block-kit, and run the
       platform's own checks locally with @foliwake/site-check.
-    link: /reference/packages/block-kit
-    linkText: block-kit
+    link: /blocks/start
+    linkText: Start a site's code
   - title: I embed pages in React or Next.js
     details: >-
       Read pages on your server with @foliwake/next or @foliwake/server, and mount their blocks with
       @foliwake/react. The browser never talks to Foliwake.
-    link: /reference/packages/next
-    linkText: next
+    link: /embed/next
+    linkText: Embed in Next.js
   - title: I use another framework
     details: >-
       @foliwake/client mounts a prepared page in any DOM element: mount, update, dispose. Wrap it in a Vue,
       Svelte or custom element in a few lines.
-    link: /reference/packages/client
-    linkText: client
+    link: /embed/other-frameworks
+    linkText: Other frameworks
 ---
 
 ## What Foliwake is
@@ -67,10 +67,12 @@ cd my-site
 npx @foliwake/site-check
 ```
 
+Then follow [Start a site's code](/blocks/start) and [Write a block](/blocks/write-a-block).
+
 Next.js App Router apps:
 
 ```sh
 npm install @foliwake/next @foliwake/react @foliwake/server
 ```
 
-Then follow the minimal example in [`@foliwake/next`](/reference/packages/next).
+Then follow [Embed pages in a Next.js app](/embed/next).
