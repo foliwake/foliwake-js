@@ -19,7 +19,10 @@
 - The packages talk to a Foliwake origin over HTTP only. Tests that need a real Foliwake engine live in the
   engine repository and run there against the published packages; tests here use stub origins.
 - `@foliwake/block-kit`: the kit is written in TypeScript (`packages/block-kit/src/block-kit.ts`, its public
-  types included); tsc compiles it to `dist/block-kit.js`, one readable ES2023 module whose only import is the
-  vendored `./lit-html.js`, which the engine copies as it is into every code release. The declarations are
+  types included); tsc compiles it to one readable ES2023 module whose only import is the dynamic one of the
+  vendored `./lit-html.js`, kept as `dist/block-kit.debug.js`. `dist/block-kit.js`, the file the engine copies
+  as it is into every code release, is its minified copy (`tools/minify-kit.mjs`, Terser): the same exports and
+  behaviour, and the URL `./lit-html.js` as written; the browser tests run against it. No source map is shipped
+  (the tarball check refuses them); read or step through the debug copy instead. The declarations are
   generated (`block-kit.d.ts`, `index.d.ts`; the standalone `foliwake.d.ts` by `tools/block-kit-declaration.mjs`).
   `lit-html.js` is vendored JS, copied as written. `src/lit-html.d.ts` types the kit's import of lit-html.

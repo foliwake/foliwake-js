@@ -3,9 +3,10 @@
 // before it): `pnpm build`. Each package is compiled into dist.next/ and swapped in only when tsc succeeds,
 // so a failed build leaves the previous dist/ in place and never a partial one.
 //
-// @foliwake/block-kit's kit is compiled by tsc like the other sources: src/block-kit.ts becomes dist/block-kit.js, one
-// browser module whose only import is the vendored ./lit-html.js (the engine copies it as it is into every code
-// release). Its standalone declaration, dist/foliwake.d.ts, is composed from the generated one
+// @foliwake/block-kit's kit is compiled by tsc like the other sources: src/block-kit.ts becomes one readable browser
+// module whose only import is the dynamic one of the vendored ./lit-html.js, kept as dist/block-kit.debug.js. Its
+// minified copy (tools/minify-kit.mjs) is dist/block-kit.js, the file the engine copies as it is into every code
+// release. Its standalone declaration, dist/foliwake.d.ts, is composed from the generated one
 // (tools/block-kit-declaration.mjs).
 //
 // create-foliwake also gets the vendored React of its starters (vendor/react.js and its license), built with Vite
@@ -20,6 +21,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { standaloneDeclaration } from './block-kit-declaration.mjs';
+import { minifyKit } from './minify-kit.mjs';
 import { PUBLISH_ORDER } from './packages.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -49,12 +51,20 @@ const COPIED = {
   ],
 };
 
+/** block-kit.js as tsc wrote it becomes block-kit.debug.js; block-kit.js is its minified copy. */
+async function minifyBlockKit(staging) {
+  const readable = path.join(staging, 'block-kit.debug.js');
+  renameSync(path.join(staging, 'block-kit.js'), readable);
+  writeFileSync(path.join(staging, 'block-kit.js'), await minifyKit(readFileSync(readable, 'utf8')));
+}
+
 /** Files a package's build composes from tsc's output in dist/, after the copies. */
 const COMPOSED = {
-  'block-kit': (staging) => {
+  'block-kit': async (staging) => {
     const kit = readFileSync(path.join(staging, 'block-kit.d.ts'), 'utf8');
     const lit = readFileSync(path.join(staging, 'lit-html.d.ts'), 'utf8');
     writeFileSync(path.join(staging, 'foliwake.d.ts'), standaloneDeclaration(kit, lit));
+    await minifyBlockKit(staging);
   },
 };
 
@@ -64,7 +74,7 @@ function copySources(name, staging) {
     copyFileSync(path.join(ROOT, 'packages', name, 'src', file), path.join(staging, file));
 }
 
-function build(name) {
+async function build(name) {
   const dir = path.join(ROOT, 'packages', name);
   const staging = path.join(dir, 'dist.next');
   const live = path.join(dir, 'dist');
@@ -76,7 +86,7 @@ function build(name) {
     return status;
   }
   copySources(name, staging);
-  COMPOSED[name]?.(staging);
+  await COMPOSED[name]?.(staging);
   if (existsSync(live)) rmSync(live, { recursive: true, force: true });
   renameSync(staging, live);
   return 0;
@@ -107,7 +117,7 @@ function buildVendorReact() {
 
 const typecheck = process.argv.includes('--typecheck');
 for (const name of BUILD_ORDER) {
-  const status = build(name);
+  const status = await build(name);
   if (status !== 0) process.exit(status);
 }
 if (BUILD_ORDER.includes(VENDOR_PACKAGE)) {

@@ -3,10 +3,11 @@
 //   import { defineBlock, html } from '@foliwake/block-kit';
 //
 // The engine maps the specifier to `<code release>/_foliwake/block-kit.js` with an import map in every
-// page it composes, and adds this file (with the vendored lit-html next to it) to every code release, so a
+// page it composes, and adds that file (with the vendored lit-html next to it) to every code release, so a
 // release always runs the kit it was prepared and tested with. No build step, no other dependency.
-// The file is compiled by tsc from src/block-kit.ts of @foliwake/block-kit (one module, not minified): edit the
-// source, not the built file.
+// The file is compiled by tsc from src/block-kit.ts of @foliwake/block-kit: one readable module, kept as
+// dist/block-kit.debug.js; dist/block-kit.js, the file code releases ship, is its minified copy (same behaviour,
+// same exports). Edit the source, not the built files.
 //
 // `html` is lit-html's (lit-html.js, unchanged from lit-html 3.3.3):
 //   Copyright (c) 2017 Google LLC. All rights reserved.

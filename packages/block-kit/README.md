@@ -31,7 +31,8 @@ import type { AssessmentHost } from '@foliwake/block-kit/assessment';
 | --- | --- |
 | `@foliwake/block-kit` | `defineBlock`, `html`, `nothing`, `readFields`, `version`, `CONTRACT`; the kit's types (`BlockContext`, `ViewAdapter`/`ViewHandle` of `ctx.mount`, …) and the blocks contract's (`BlockHost`, `BlockEvents`, `MountHandle`, …; the contract's `BlockInit` as `ContractBlockInit`) |
 | `@foliwake/block-kit/assessment` | the types of the assessment extension of the blocks contract |
-| `@foliwake/block-kit/block-kit.js`, `/lit-html.js`, `/lit-html.LICENSE` | the browser files of a code release's `_foliwake/` (lit-html 3.3.3, BSD-3-Clause) |
+| `@foliwake/block-kit/block-kit.js`, `/lit-html.js`, `/lit-html.LICENSE` | the browser files of a code release's `_foliwake/` (lit-html 3.3.3, BSD-3-Clause); `block-kit.js` is minified |
+| `@foliwake/block-kit/block-kit.debug.js` | the same kit as one readable module, for reading and debugging; not part of a code release |
 | `@foliwake/block-kit/foliwake.d.ts` | the kit's types as one standalone file, for `.foliwake/types/foliwake.d.ts` of a site folder (jsconfig `paths`) |
 
 `defineBlock` returns the block's `init` with `init.block` (its name) and `init.contract` (`2`, the major of the

@@ -1,5 +1,6 @@
 // @foliwake/block-kit in a real browser (system Chrome through playwright-core): the module `@foliwake/block-kit`
-// (dist/block-kit.js with dist/lit-html.js), loaded through an import map as pages load it.
+// (dist/block-kit.js, the minified kit code releases ship, with dist/lit-html.js), loaded through an import map as
+// pages load it.
 // Covers defineBlock(name, setup) and its ctx: fields of every field type, on/emit and their end on dispose,
 // idempotent init, host.signal, the automatic `ready` and its opt-out, t() and its fallback chain, state batching,
 // render/update/dispose, list over the server list, effect, mount with its rollback (also with real React 19

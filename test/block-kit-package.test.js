@@ -2,7 +2,8 @@
 // types and the blocks contract's, from one import), the kit's types agree with the contract, the standalone
 // declaration needs no other package, the public names are those of 0.3.0, dist/ holds the frozen browser files as
 // written (no source map comment), and the kit compiled from src/block-kit.ts is one self-contained module, the
-// same bytes on every build.
+// same bytes on every build: dist/block-kit.debug.js as tsc wrote it (readable), dist/block-kit.js its minified
+// copy (what code releases ship), both with the same exports and no top-level side effect.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -15,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 import { standaloneDeclaration } from '../tools/block-kit-declaration.mjs';
+import { minifyKit } from '../tools/minify-kit.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PACKAGE = path.join(ROOT, 'packages/block-kit');
@@ -114,9 +116,19 @@ test('dist/ holds the vendored browser files as written; lit-html without its so
     assert.equal(read(`dist/${file}`), read(`src/${file}`), file);
   }
   assert.doesNotMatch(read('dist/lit-html.js'), /sourceMappingURL/);
+});
+
+test('dist/block-kit.debug.js is the readable module tsc compiled; dist/block-kit.js is minified', () => {
+  const readable = read('dist/block-kit.debug.js');
   const litImport = /^ {4}litHtmlLoading \?\?= import\('\.\/lit-html\.js'\)\.then\(/m;
-  assert.match(read('dist/block-kit.js'), litImport, 'lit-html.js is imported on the first render');
-  assert.match(read('dist/block-kit.js'), /^export function readFields\(root\) \{$/m);
+  assert.match(readable, litImport, 'lit-html.js is imported on the first render');
+  assert.match(readable, /^export function readFields\(root\) \{$/m);
+  const header = /^\/\/ The file is compiled by tsc from src\/block-kit\.ts of @foliwake\/block-kit: one readable/m;
+  assert.match(readable, header, 'the readable header stays');
+  const minified = read('dist/block-kit.js');
+  assert.ok(minified.includes('import("./lit-html.js")'), 'the URL of lit-html.js is kept as written');
+  assert.ok(minified.length * 2 < readable.length, 'block-kit.js is minified');
+  assert.match(minified, /^\/\/ Minified; the readable module is block-kit\.debug\.js/m);
 });
 
 /** The names each declaration entry exports, sorted (read with the compiler, as a consumer sees them). */
@@ -151,20 +163,56 @@ function staticImportsOf(text) {
   return declarations.filter((s) => s.moduleSpecifier).map((s) => s.moduleSpecifier.text);
 }
 
-test('dist/block-kit.js is one module: its only import is the dynamic one of ./lit-html.js; '
-  + 'the header and lit-html notice stay', () => {
-  const kit = read('dist/block-kit.js');
-  const { importedFiles } = ts.preProcessFile(kit, true, true);
-  assert.deepEqual(importedFiles.map((file) => file.fileName), ['./lit-html.js']);
-  assert.deepEqual(staticImportsOf(kit), [], 'no static import: lit-html.js loads on the first render only');
-  assert.equal(kit.match(/\bimport\(/g).length, 1, 'one dynamic import');
-  assert.match(kit, /^\/\/ Foliwake block-kit \(https:\/\/docs\.foliwake\.dev\/guide\/write-a-block\)/);
-  assert.match(kit, /^\/\/ {3}Copyright \(c\) 2017 Google LLC\. All rights reserved\.$/m);
-  assert.doesNotMatch(kit, /sourceMappingURL/);
+for (const file of ['dist/block-kit.js', 'dist/block-kit.debug.js']) {
+  test(`${file} is one module: its only import is the dynamic one of ./lit-html.js; `
+    + 'the header and lit-html notice stay', () => {
+    const kit = read(file);
+    const { importedFiles } = ts.preProcessFile(kit, true, true);
+    assert.deepEqual(importedFiles.map((imported) => imported.fileName), ['./lit-html.js']);
+    assert.deepEqual(staticImportsOf(kit), [], 'no static import: lit-html.js loads on the first render only');
+    assert.equal(kit.match(/\bimport\(/g).length, 1, 'one dynamic import');
+    assert.match(kit, /^\/\/ Foliwake block-kit \(https:\/\/docs\.foliwake\.dev\/guide\/write-a-block\)/);
+    assert.match(kit, /^\/\/ {3}Copyright \(c\) 2017 Google LLC\. All rights reserved\.$/m);
+    assert.doesNotMatch(kit, /sourceMappingURL/);
+  });
+}
+
+/** The global names a callback adds to `globalThis`. */
+async function globalsAddedBy(callback) {
+  const before = new Set(Reflect.ownKeys(globalThis));
+  const result = await callback();
+  return { result, added: Reflect.ownKeys(globalThis).filter((key) => !before.has(key)) };
+}
+
+/** The values of a loaded kit that do not depend on a page: its exports, version, contract and an `html` result. */
+function kitShape(kit) {
+  const template = kit.html`<p>${1}</p>`;
+  return {
+    exports: Object.keys(kit).map((name) => [name, typeof kit[name]]),
+    version: kit.version,
+    contract: kit.CONTRACT,
+    nothing: kit.nothing,
+    template: { ...template, strings: [...template.strings] },
+  };
+}
+
+test('dist/block-kit.js and dist/block-kit.debug.js export the same names and values; '
+  + 'loading them changes no global', async () => {
+  const { result, added } = await globalsAddedBy(() => Promise.all([
+    import(path.join(PACKAGE, 'dist/block-kit.js')),
+    import(path.join(PACKAGE, 'dist/block-kit.debug.js')),
+  ]));
+  const [minified, readable] = result;
+  assert.deepEqual(added, [], 'no top-level side effect');
+  assert.deepEqual(kitShape(minified), kitShape(readable));
+  assert.deepEqual(Object.keys(minified), ['CONTRACT', 'defineBlock', 'html', 'nothing', 'readFields', 'version']);
 });
 
-/** The kit compiled from the source into a fresh folder: block-kit.js and the standalone declaration. */
-function compileKit() {
+/**
+ * The kit compiled from the source into a fresh folder: the readable module (block-kit.debug.js), its minified copy
+ * (block-kit.js) and the standalone declaration.
+ */
+async function compileKit() {
   const out = mkdtempSync(path.join(os.tmpdir(), 'block-kit-build-'));
   try {
     const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
@@ -172,17 +220,20 @@ function compileKit() {
     assert.equal(result.status, 0, String(result.stdout));
     const declaration = readFileSync(path.join(out, 'block-kit.d.ts'), 'utf8');
     const litHtml = read('src/lit-html.d.ts');
-    return { kit: readFileSync(path.join(out, 'block-kit.js')), foliwake: standaloneDeclaration(declaration, litHtml) };
+    const readable = readFileSync(path.join(out, 'block-kit.js'), 'utf8');
+    return { readable, kit: await minifyKit(readable), foliwake: standaloneDeclaration(declaration, litHtml) };
   } finally {
     rmSync(out, { recursive: true, force: true });
   }
 }
 
-test('the build is deterministic: two compiles give the same bytes, those of dist/', () => {
-  const first = compileKit();
-  const second = compileKit();
-  assert.ok(first.kit.equals(second.kit), 'block-kit.js differs between two builds');
+test('the build is deterministic: two compiles give the same bytes, those of dist/', async () => {
+  const first = await compileKit();
+  const second = await compileKit();
+  assert.equal(first.readable, second.readable, 'block-kit.debug.js differs between two builds');
+  assert.equal(first.kit, second.kit, 'block-kit.js differs between two builds');
   assert.equal(first.foliwake, second.foliwake);
-  assert.ok(first.kit.equals(readFileSync(path.join(PACKAGE, 'dist/block-kit.js'))), 'dist/block-kit.js is stale');
+  assert.equal(first.readable, read('dist/block-kit.debug.js'), 'dist/block-kit.debug.js is stale');
+  assert.equal(first.kit, read('dist/block-kit.js'), 'dist/block-kit.js is stale');
   assert.equal(first.foliwake, read('dist/foliwake.d.ts'));
 });
