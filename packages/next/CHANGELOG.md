@@ -7,6 +7,17 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.5.0
+
+### Patch Changes
+
+- fa06260: The `homepage` of every package is its page on the public SDK documentation site,
+  `https://sdk.foliwake.dev/reference/packages/<name>`. No API change.
+- Updated dependencies [fa06260]
+  - @foliwake/blocks-contract@0.5.0
+  - @foliwake/react@0.5.0
+  - @foliwake/server@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes
