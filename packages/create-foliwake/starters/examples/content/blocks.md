@@ -24,7 +24,7 @@ A note needs only text; the title is optional.
 ### Publish a change
 
 - Edit a page or a block.
-- Check it locally with `foliwake dev`.
+- Check it locally with `npx @foliwake/site-check`.
 - Push a branch: the branch preview shows it.
 - Merge into main: the preview is rebuilt, and you release it in the admin.
 

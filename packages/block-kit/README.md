@@ -52,4 +52,5 @@ export default defineBlock('quiz', (fields, ctx) => {
 
 With `autoReady: false` a root gets `ready` only when the block sends it; the default is `true`.
 
-The guide: [Write a block](https://docs.foliwake.dev/guide/write-a-block).
+A new site with a working block: [`create-foliwake`](https://www.npmjs.com/package/create-foliwake). The checks
+a block must pass: [`@foliwake/site-check`](https://www.npmjs.com/package/@foliwake/site-check).

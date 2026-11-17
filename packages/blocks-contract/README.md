@@ -206,10 +206,11 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package
 (`node_modules/@foliwake/blocks-contract/CHANGELOG.md`).
 
-## Guides
+## See also
 
-- [Write a block](https://docs.foliwake.dev/guide/write-a-block)
-- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react)
+- [`@foliwake/block-kit`](https://www.npmjs.com/package/@foliwake/block-kit): `defineBlock` writes `init` for
+  you.
+- [`@foliwake/client`](https://www.npmjs.com/package/@foliwake/client): an app's side, with `createHost`.
 
 License: Apache-2.0.
 

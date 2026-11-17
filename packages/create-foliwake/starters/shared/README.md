@@ -30,7 +30,7 @@ node --test "tests/*.test.mjs"
 
 ### With the Foliwake CLI
 
-The Foliwake CLI (with the Docker image or Foliwake Cloud) adds a local preview and the page checks:
+The Foliwake CLI is not public yet. Where you have it, it adds a local preview and the page checks:
 
 ```bash
 foliwake dev --watch

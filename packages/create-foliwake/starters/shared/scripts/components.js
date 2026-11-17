@@ -1,4 +1,4 @@
-// Component loader (content-components.md §8.3, HTML contract 1).
+// Component loader (HTML contract 2, blocks contract foliwake-blocks/2).
 //
 // Finds every [data-component] root, loads only the assets that
 // components/components.json declares, calls each module's default

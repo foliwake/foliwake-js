@@ -23,7 +23,7 @@ Storybook's packages, Git). Without a terminal, or with `--no-interactive`, it u
 | `--template minimal\|examples` | `minimal`: one page, one block; `examples`: two pages, three blocks, one with JavaScript |
 | `--site <id>` | the site id on your Foliwake server, if you know it (used in the README and local configuration) |
 | `--react` / `--no-react` | React and ReactDOM vendored in `scripts/vendor/` (shipped with this package; nothing is downloaded) and a React example block |
-| `--storybook` / `--no-storybook` | Storybook for the blocks; `npm run stories` needs the Foliwake CLI |
+| `--storybook` / `--no-storybook` | Storybook for the blocks; `npm run stories` needs the Foliwake CLI, which is not public yet |
 | `--install` / `--no-install` | install the npm packages (only Storybook has any) with the package manager that ran create |
 | `--git` / `--no-git` | a Git repository (branch `main`) and a first commit with your own Git identity |
 | `--overwrite` \| `--keep-existing` | the folder is not empty: remove its files (`.git` is kept), or add the project next to them |
@@ -50,9 +50,13 @@ Exit status: `0` created; `1` a step failed (the project stays; what to do is pr
 Without anything installed: `npx @foliwake/site-check` checks the code (the "Frontend checks" workflow runs it,
 pinned to the version this package was released with), and `node --test "tests/*.test.mjs"` runs the quick
 tests. Push the repository to GitHub and connect it to your site in the Foliwake admin: every branch gets a
-preview. The Foliwake CLI adds a local preview (`foliwake dev --watch`) and the page checks. For editors, create
-writes the types of `@foliwake/block-kit` and the JSON Schema of block definitions into
-`.foliwake/` (git-ignored); the types of each block come from the CLI. The project's `README.md` has the details.
+preview. For editors, create writes the types of `@foliwake/block-kit` and the JSON Schema of block definitions
+into `.foliwake/` (git-ignored). The project's `README.md` has the details.
+
+The Foliwake CLI is not public yet. Without it you do not get a local preview (`foliwake dev`), the local block
+catalog (`/_dev/blocks`), `npm run stories` (Storybook renders the block examples with the CLI), the page checks
+(`foliwake page check`) or the types of each block's own fields (`.foliwake/types/blocks/`). The branch preview
+on the platform shows pages and block examples instead.
 
 ## API
 

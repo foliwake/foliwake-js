@@ -7,8 +7,9 @@ import path from 'node:path';
 export const CDS = { a: `cd_${'a1'.repeat(16)}`, b: `cd_${'b2'.repeat(16)}`, slow: `cd_${'c3'.repeat(16)}`, major3: `cd_${'d4'.repeat(16)}`, sync: `cd_${'e5'.repeat(16)}` };
 
 // A foliwake-blocks/2 module: adds one button per root, emits `demo:answer` with host.saved(), counts mounts,
-// records the host's shell and the release of the block-kit it imported as `@foliwake/block-kit` (the import map
-// resolves it to its own release), and adds the block's stylesheet to <head> unless a link for it is there already.
+// records the host's shell and the release of the block-kit it imported as `@foliwake/block-kit` (the page's
+// import map resolves it to its own release), and adds the block's stylesheet to <head> unless a link for it is
+// there already.
 export const blocksModule = (cd, major = 2, { syncEvent = false } = {}) => `
 import { release as kitRelease } from '@foliwake/block-kit';
 window.__log ??= [];
