@@ -4,6 +4,9 @@
 // idempotent init, host.signal, the automatic `ready` and its opt-out, t() and its fallback chain, state batching,
 // render/update/dispose, list over the server list, effect, mount with its rollback (also with real React 19
 // through the starters' React view), a scaffolded block through the starter loader, and readFields(root).
+// lit-html.js is loaded lazily, on the first render of a page: a page whose blocks never render does not request
+// it, `ready` waits for the first paint, a dispose while it loads paints nothing, and a failed load or paint
+// sends BLOCK_MOUNT_FAILED.
 // Ported from the engine's block-kit browser tests, with the same assertions.
 //
 // Fixtures (fixtures/block-kit/engine-html.json): the engine's HTML for these blocks (HTML contract 2),
@@ -49,15 +52,19 @@ after(async () => {
   await server?.close();
 });
 
-/** A static server: each path answers what the test set for it; everything else is a 404. */
+/**
+ * A static server: each path answers what the test set for it; everything else is a 404. A held path answers
+ * once released.
+ */
 async function startServer() {
   const routes = new Map();
-  const httpServer = http.createServer((req, res) => {
+  const httpServer = http.createServer(async (req, res) => {
     const route = routes.get(new URL(req.url, 'http://x').pathname);
     if (!route) {
       res.writeHead(404);
       return res.end();
     }
+    await route.held;
     res.writeHead(200, { 'content-type': route.type, 'cache-control': 'no-store' });
     res.end(route.body);
   });
@@ -69,6 +76,14 @@ async function startServer() {
       routes.set(pathname, { body: text, type });
       return `${origin}${pathname}`;
     },
+    /** Holds the answer of `pathname` (already set) until the returned function is called. */
+    hold(pathname) {
+      const route = routes.get(pathname);
+      let release;
+      route.held = new Promise((resolve) => (release = resolve));
+      return release;
+    },
+    remove: (pathname) => routes.delete(pathname),
     reset: () => routes.clear(),
     close: () => new Promise((resolve) => httpServer.close(resolve)),
   };
@@ -77,7 +92,26 @@ async function startServer() {
 async function newPage() {
   const opened = await openPage(browser);
   contexts.push(opened.context);
+  opened.page.requests = opened.requests;
   return opened.page;
+}
+
+/** The paths of the page's requests for `/_foliwake/lit-html.js`. */
+const litHtmlRequests = (page) => page.requests.filter((url) => new URL(url).pathname === '/_foliwake/lit-html.js');
+
+/**
+ * Loads lit-html.js into the kit, as an earlier render on the page does: a detached block renders once and is
+ * disposed after its `ready`. From then on every render paints at once.
+ */
+async function warmLitHtml(page) {
+  await page.evaluate(async () => {
+    const { defineBlock, html } = window.kit;
+    const root = document.createElement('div');
+    const ready = new Promise((resolve) => root.addEventListener('block:ready', resolve, { once: true }));
+    const handle = defineBlock('warm', (fields, c) => c.render(() => html`<i></i>`))(root);
+    await ready;
+    handle.dispose();
+  });
 }
 
 /** The import map of a page: the kit under `@foliwake/block-kit`. */
@@ -290,6 +324,7 @@ test('t(): host.labels, then ui of the UI language, its base language, English, 
 test('state: changes are batched per microtask into one render; '
   + 'equal values and changes after dispose render nothing', async () => {
   const page = await open();
+  await warmLitHtml(page); // lit-html loaded: every render, the first included, paints at once
   const out = await page.evaluate(async () => {
     const { defineBlock, html } = window.kit;
     const root = document.querySelector('[data-component="all"]');
@@ -345,6 +380,7 @@ test('state: changes are batched per microtask into one render; '
 test('render: into the root after its children, into a field, update(); one view per element; '
   + 'list over the server list', async () => {
   const page = await open();
+  await warmLitHtml(page); // lit-html loaded: every render, the first included, paints at once
   const out = await page.evaluate(async () => {
     const { defineBlock, html, nothing } = window.kit;
     const root = document.querySelector('[data-component="all"]');
@@ -398,6 +434,175 @@ test('render: into the root after its children, into a field, update(); one view
   assert.equal(out.calls, 4, 'each item once on setup and once on the change');
   assert.match(out.twice, /already has a view/);
   assert.equal(out.update, 'function');
+});
+
+test('lazy lit-html: blocks that never render do not request lit-html.js; '
+  + 'html and nothing are lit-html\'s own values without it', async () => {
+  const page = await open();
+  const out = await page.evaluate(async () => {
+    const { defineBlock, html, nothing } = window.kit;
+    const [one, two] = document.querySelectorAll('[data-component="all"]');
+    const count = [];
+    defineBlock('all', (fields, c) => {
+      const clicks = c.state(0);
+      c.effect(() => c.attrs(c.root, { 'data-clicks': clicks.value }));
+      c.on('click', () => (clicks.value += 1));
+    })(one);
+    await defineBlock('all', async (fields, c) => {
+      c.emit('ready', { restored: false });
+    })(two);
+    one.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    count.push(one.getAttribute('data-clicks'));
+    const made = html`<p>${1}</p>`;
+    return { count, events: window.events.length, made: made.values, nothing: nothing === Symbol.for('lit-nothing') };
+  });
+  assert.deepEqual(out, { count: ['1'], events: 2, made: [1], nothing: true });
+  assert.deepEqual(litHtmlRequests(page), [], 'no block rendered: lit-html.js is never requested');
+  const same = await page.evaluate(async () => {
+    const lit = await import('/_foliwake/lit-html.js');
+    const ours = window.kit.html`<b>${'x'}</b>`;
+    const theirs = lit.html`<b>${'x'}</b>`;
+    const keys = (value) => Object.keys(value).sort();
+    return { keys: [keys(ours), keys(theirs)], type: [ours._$litType$, theirs._$litType$], nothing: lit.nothing };
+  });
+  assert.deepEqual(same.keys[0], same.keys[1], 'the template result has lit-html\'s shape');
+  assert.deepEqual(same.type, [1, 1]);
+});
+
+test('lazy lit-html: the first render paints once lit-html.js loads (requested once), with the latest state; '
+  + 'ready waits for it; renders after the load paint at once', async () => {
+  const page = await open();
+  const release = server.hold('/_foliwake/lit-html.js');
+  const before = await page.evaluate(() => {
+    const { defineBlock, html } = window.kit;
+    const [one, two] = document.querySelectorAll('[data-component="all"]');
+    one.setAttribute('data-block-key', 'one');
+    two.setAttribute('data-block-key', 'two');
+    window.ready = new Promise((resolve) => document.addEventListener('block:ready', resolve));
+    const inner = (n) => html`<b>${n}</b>`;
+    const handle = defineBlock('all', (fields, c) => {
+      const count = c.state(0);
+      window.count = count;
+      c.render(() => html`<p class="view">${inner(count.value)}</p>`);
+      c.list('options', (item, option) => html`<button type="button">${option.text}</button>`);
+    })(one);
+    defineBlock('all', (fields, c) => {
+      c.render(() => html`<p class="view">two</p>`);
+      c.emit('ready', { restored: true });
+    }, { autoReady: false })(two);
+    window.count.value = 2;
+    return { sync: typeof handle.dispose, painted: document.querySelectorAll('.view').length };
+  });
+  assert.deepEqual(before, { sync: 'function', painted: 0 }, 'init stays synchronous; nothing paints yet');
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)));
+  assert.deepEqual(await page.evaluate(() => window.events), [], 'no ready before the views are on the page');
+  release();
+  const after = await page.evaluate(async () => {
+    await window.ready;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const [one, two] = document.querySelectorAll('[data-component="all"]');
+    const late = document.createElement('div');
+    late.setAttribute('data-block-key', 'late');
+    one.append(late);
+    window.kit.defineBlock('all', (fields, c) => c.render(() => window.kit.html`<i class="late">now</i>`))(late);
+    return {
+      one: one.querySelector('.view').innerHTML.replace(/<!--[^>]*-->/g, ''),
+      buttons: [...one.querySelectorAll('[data-field="options"] button')].map((b) => b.textContent),
+      two: two.querySelector('.view').textContent,
+      late: late.querySelector('.late')?.textContent,
+      events: window.events.map(([type, detail]) => [type, detail.key, detail.restored]),
+    };
+  });
+  assert.deepEqual(after, {
+    one: '<b>2</b>',
+    buttons: ['Left', 'Right'],
+    two: 'two',
+    late: 'now',
+    events: [['ready', 'one', undefined], ['ready', 'two', true], ['ready', 'late', undefined]],
+  });
+  assert.equal(litHtmlRequests(page).length, 1, 'lit-html.js is requested once for the page');
+});
+
+test('lazy lit-html: a block disposed while lit-html.js loads never paints, sends nothing, '
+  + 'and its HTML is as it was', async () => {
+  const page = await open();
+  const release = server.hold('/_foliwake/lit-html.js');
+  const authored = await page.evaluate(() => {
+    const { defineBlock, html } = window.kit;
+    const root = document.querySelector('[data-component="all"]');
+    const authoredHtml = root.innerHTML;
+    defineBlock('all', (fields, c) => {
+      c.render(() => html`<p class="view">x</p>`);
+      c.list('options', () => html`<button type="button">b</button>`);
+    })(root).dispose();
+    return authoredHtml;
+  });
+  release();
+  const out = await page.evaluate(async () => {
+    const { defineBlock, html } = window.kit;
+    const probe = document.createElement('div');
+    const ready = new Promise((resolve) => probe.addEventListener('block:ready', resolve));
+    defineBlock('probe', (fields, c) => c.render(() => html`<i></i>`))(probe);
+    await ready; // lit-html loaded: the disposed block's paints would have run before this
+    return { html: document.querySelector('[data-component="all"]').innerHTML, events: window.events };
+  });
+  assert.equal(out.html, authored, 'no view and no lit-html marker in the disposed block');
+  assert.deepEqual(out.events, []);
+});
+
+test('lazy lit-html: a view that throws fails the setup as before; a failed load or paint sends '
+  + 'BLOCK_MOUNT_FAILED, keeps the authored HTML, still sends ready; a later render loads again', async () => {
+  const page = await open();
+  server.remove('/_foliwake/lit-html.js');
+  const thrown = await page.evaluate(async () => {
+    const { defineBlock, html } = window.kit;
+    const [one, two] = document.querySelectorAll('[data-component="all"]');
+    one.setAttribute('data-block-key', 'one');
+    let message;
+    try {
+      defineBlock('all', (fields, c) => c.render(() => {
+        throw new Error('view failed');
+      }))(two);
+    } catch (error) {
+      message = error.message;
+    }
+    const ready = new Promise((resolve) => one.addEventListener('block:ready', resolve));
+    defineBlock('all', (fields, c) => c.render(() => html`<p class="view">x</p>`))(one);
+    await ready;
+    return { message, views: document.querySelectorAll('.view').length };
+  });
+  assert.deepEqual(thrown, { message: 'view failed', views: 0 });
+  const failed = await page.evaluate(() => window.events.map(([type, detail]) => [type, detail.key, detail.code]));
+  assert.deepEqual(failed, [['error', 'one', 'BLOCK_MOUNT_FAILED'], ['ready', 'one', undefined]]);
+  server.set('/_foliwake/lit-html.js', lit);
+  const retried = await page.evaluate(async () => {
+    const { defineBlock, html } = window.kit;
+    window.events.length = 0;
+    const root = document.createElement('div');
+    root.setAttribute('data-block-key', 'three');
+    document.querySelector('main').append(root);
+    const ready = new Promise((resolve) => root.addEventListener('block:ready', resolve));
+    defineBlock('all', (fields, c) => {
+      c.render(() => html(['<p class="broken">no raw strings</p>'])); // not a template literal: lit-html refuses it
+      c.render(() => html`<p class="view">fine</p>`, { into: c.root.appendChild(document.createElement('div')) });
+    })(root);
+    await ready;
+    const thrownView = document.querySelectorAll('[data-component="all"]')[1];
+    return {
+      views: [...root.querySelectorAll('.view')].map((el) => el.textContent),
+      broken: root.querySelectorAll('.broken').length,
+      failedView: thrownView.querySelectorAll('.view').length,
+      events: window.events.map(([type, detail]) => [type, detail.key, detail.code, detail.recoverable]),
+    };
+  });
+  assert.deepEqual(retried, {
+    views: ['fine'],
+    broken: 0,
+    failedView: 0,
+    events: [['error', 'three', 'BLOCK_MOUNT_FAILED', true], ['ready', 'three', undefined, undefined]],
+  });
+  assert.equal(litHtmlRequests(page).length, 2, 'the failed import is forgotten: the next render loads again');
 });
 
 test('mount: renders through the adapter, replace hides the authored HTML until dispose, '

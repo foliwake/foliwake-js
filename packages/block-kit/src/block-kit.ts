@@ -26,10 +26,24 @@
 //   CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 //   OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 //   SUCH DAMAGE.
-import { html, nothing, render as renderTemplate } from './lit-html.js';
+//
+// lit-html.js is not imported up front: the kit imports it (next to this file) on the first render of a page, so a
+// page whose blocks never render a view does not download it. `html` and `nothing` below are lit-html's own values,
+// made without it.
+
+/** lit-html's `html` tag: a template rendered by `ctx.render`, without eval. */
+export function html(strings: TemplateStringsArray, ...values: unknown[]): TemplateResult {
+  // lit-html 3's template result, the object its own `html` returns: `_$litType$` 1 is an HTML template.
+  const result = { ['_$litType$']: 1, strings, values };
+  return result;
+}
+
+/** Renders nothing (lit-html's `nothing`). */
+export const nothing: unique symbol = Symbol.for('lit-nothing');
+
+// Types only, erased from block-kit.js (as the file's first statement, the import would take the header with it).
 import type { TemplateResult } from './lit-html.js';
 
-export { html, nothing };
 export type { TemplateResult };
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -170,7 +184,10 @@ export interface BlockContext<Name extends string> {
   state<T>(initial: T): State<T>;
   /** Runs now and after every state change (for server nodes); may return a cleanup. */
   effect(fn: () => void | (() => void)): void;
-  /** Renders `view()` into the root (after its children), a field or an element; returns the update. */
+  /**
+   * Renders `view()` into the root (after its children), a field or an element; returns the update. `view()` runs
+   * now; the first render of a page paints once lit-html.js has loaded, every later one at once.
+   */
   render(view: () => View, options?: { into?: string | Element }): () => void;
   /** For each item of a list or choices field: `fn(item, value, index)`; a returned view is rendered into the item. */
   list<K extends keyof Fields<Name> & string>(name: K, fn: ListItem<Fields<Name>[K]>): HTMLElement[];
@@ -212,9 +229,15 @@ interface Instance {
   handle: Disposable | Promise<Disposable> | null;
   /** Set when an async setup rejected: the rejection wins over the dispose it causes. */
   failed?: boolean;
+  /** First paints of views made while lit-html.js was loading, in the order the views were made. */
+  paints: Array<() => void>;
+  /** Settles once those paints ran (or failed); `ready` waits for it. Null when nothing waits. */
+  painting: Promise<void> | null;
   live(): boolean;
   later(fn: () => void): void;
   emit(type: string, detail?: Record<string, unknown>): boolean;
+  /** Dispatches `<prefix>:<type>` now (`emit` holds `ready` back while views wait for lit-html). */
+  dispatch(type: string, detail: Record<string, unknown>): boolean;
   schedule(): void;
   flush(): void;
   dispose(): void;
@@ -259,6 +282,28 @@ export const CONTRACT = 2;
 const NAME = /^[a-z][a-z0-9-]{0,31}$/;
 const ROOT: unique symbol = Symbol.for('foliwake.block-kit.root');
 let instances = 0;
+
+/** What the kit uses of lit-html.js. */
+type LitHtml = typeof import('./lit-html.js');
+
+/** lit-html.js once loaded: views render synchronously from then on. */
+let litHtml: LitHtml | null = null;
+let litHtmlLoading: Promise<LitHtml> | null = null;
+
+/**
+ * Imports lit-html.js once per page, relative to this file (the release's `_foliwake/lit-html.js`). A failed import
+ * is forgotten, so a later render tries again.
+ */
+function loadLitHtml(): Promise<LitHtml> {
+  litHtmlLoading ??= import('./lit-html.js').then(
+    (module) => (litHtml = module),
+    (error: unknown) => {
+      litHtmlLoading = null;
+      throw error;
+    },
+  );
+  return litHtmlLoading;
+}
 
 const textOf = (el: Element) => el.textContent.replace(/\s+/g, ' ').trim();
 const number = (img: Element | null, name: string) => (img?.hasAttribute(name) ? Number(img.getAttribute(name)) : null);
@@ -361,6 +406,8 @@ function createInstance(root: Element, name: string, prefix: string): Instance {
     scheduled: false,
     readySent: false,
     handle: null,
+    paints: [],
+    painting: null,
     live: () => !controller.signal.aborted,
     later(fn) {
       if (instance.live()) instance.cleanups.push(fn);
@@ -368,9 +415,17 @@ function createInstance(root: Element, name: string, prefix: string): Instance {
     },
     emit(type, detail = {}) {
       if (!instance.live()) return false;
+      if (type !== 'ready') return instance.dispatch(type, detail);
+      instance.readySent = true;
+      // `ready` means the block's views are on the page: sent once those waiting for lit-html have painted.
+      if (!instance.painting) return instance.dispatch(type, detail);
+      void instance.painting.then(() => instance.dispatch(type, detail));
+      return true;
+    },
+    dispatch(type, detail) {
+      if (!instance.live()) return false;
       const event = type.includes(':') ? type : `${prefix}:${type}`;
       const block = { key: root.getAttribute('data-block-key') ?? '', block: name };
-      if (type === 'ready') instance.readySent = true;
       const full = type === 'ready' ? { contract: CONTRACT, ...detail } : detail;
       const eventInit = { bubbles: true, cancelable: true, detail: { ...block, ...full } };
       return root.dispatchEvent(new CustomEvent(event, eventInit));
@@ -406,6 +461,43 @@ function createInstance(root: Element, name: string, prefix: string): Instance {
   return instance;
 }
 
+/** Reports a view that could not paint: the block's `error` event (BLOCK_MOUNT_FAILED); its authored HTML stays. */
+function reportPaintFailure(instance: Instance, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  instance.dispatch('error', { code: 'BLOCK_MOUNT_FAILED', message, recoverable: true });
+}
+
+/** Runs the first paints that waited for lit-html, each guarded: one that throws is reported, the others run. */
+function runPaints(instance: Instance) {
+  for (const paint of instance.paints.splice(0)) {
+    if (!instance.live()) return;
+    try {
+      paint();
+    } catch (error) {
+      reportPaintFailure(instance, error);
+    }
+  }
+}
+
+/**
+ * Paints `paint` once lit-html.js has loaded (the first render of a page): after a dispose it never runs. A failed
+ * load is reported once for the block.
+ */
+function paintLater(instance: Instance, paint: () => void) {
+  instance.paints.push(paint);
+  if (instance.painting) return;
+  const loaded = () => {
+    instance.painting = null;
+    runPaints(instance);
+  };
+  const failed = (error: unknown) => {
+    instance.painting = null;
+    instance.paints.length = 0;
+    reportPaintFailure(instance, error);
+  };
+  instance.painting = loadLitHtml().then(loaded, failed);
+}
+
 /** A container for `render` and `mount`: a field (by name), an element, or the root. */
 function targetOf(root: HTMLElement, into: string | Element | undefined): HTMLElement {
   if (into === undefined) return root;
@@ -438,16 +530,28 @@ function createContext(
   const rendered = new WeakSet<HTMLElement>();
   const id = instances++;
   // A view of `template()` in `container`, re-rendered on every state change; `first` is its first result
-  // when the caller already has it.
+  // when the caller already has it. `template()` always runs now; before lit-html.js has loaded, the view keeps
+  // its latest result and paints it once lit-html arrives.
   const view = (container: HTMLElement, template: () => View, first = template()) => {
     if (rendered.has(container)) throw new Error('render: this element already has a view of the block');
     rendered.add(container);
+    let latest = first;
+    let painted = false;
+    const paint = () => {
+      painted = true;
+      litHtml!.render(latest, container);
+    };
     const update = () => {
-      if (instance.live()) renderTemplate(template(), container);
+      if (!instance.live()) return;
+      latest = template();
+      if (painted) paint();
     };
     instance.views.push({ update });
-    renderTemplate(first, container);
-    instance.later(() => renderTemplate(nothing, container));
+    if (litHtml) paint();
+    else paintLater(instance, paint);
+    instance.later(() => {
+      if (painted) litHtml!.render(nothing, container);
+    });
     return update;
   };
   const ctx: BlockContext<string> = {
@@ -627,7 +731,8 @@ function mountView<Props>(
  * The block `name` (its folder, `data-component`): `setup(fields, ctx)` runs once per root and may return a
  * cleanup function or `{dispose}`, or a promise of either. The result is the block's `init(root, host, meta)`
  * for the loader, idempotent per root; `host.signal` aborting disposes it. After a setup that did not send
- * `ready`, the kit sends it.
+ * `ready`, the kit sends it. `ready` (the kit's or the block's) waits for the block's views that wait for
+ * lit-html.js (the first render of a page): it is sent once they are on the page.
  *
  * Options: `prefix`, the prefix of the block's events (default `block`); `autoReady`, whether the kit sends
  * `ready` after a setup that did not (default `true`). With `autoReady: false` a root gets `ready` only when the

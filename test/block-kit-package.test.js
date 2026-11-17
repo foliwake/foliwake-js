@@ -114,8 +114,8 @@ test('dist/ holds the vendored browser files as written; lit-html without its so
     assert.equal(read(`dist/${file}`), read(`src/${file}`), file);
   }
   assert.doesNotMatch(read('dist/lit-html.js'), /sourceMappingURL/);
-  const litImport = /^import \{ html, nothing, render as renderTemplate \} from '\.\/lit-html\.js';$/m;
-  assert.match(read('dist/block-kit.js'), litImport);
+  const litImport = /^ {4}litHtmlLoading \?\?= import\('\.\/lit-html\.js'\)\.then\(/m;
+  assert.match(read('dist/block-kit.js'), litImport, 'lit-html.js is imported on the first render');
   assert.match(read('dist/block-kit.js'), /^export function readFields\(root\) \{$/m);
 });
 
@@ -144,10 +144,20 @@ test('the declarations export the names of 0.3.0 (hand-written then, generated f
   assert.deepEqual(exportedNames(entries), snapshot);
 });
 
-test('dist/block-kit.js is one module: its only import is ./lit-html.js; the header and lit-html notice stay', () => {
+/** The specifiers of a module's static imports and re-exports (`import … from`, `export … from`). */
+function staticImportsOf(text) {
+  const file = ts.createSourceFile('block-kit.js', text, ts.ScriptTarget.Latest, true);
+  const declarations = file.statements.filter((s) => ts.isImportDeclaration(s) || ts.isExportDeclaration(s));
+  return declarations.filter((s) => s.moduleSpecifier).map((s) => s.moduleSpecifier.text);
+}
+
+test('dist/block-kit.js is one module: its only import is the dynamic one of ./lit-html.js; '
+  + 'the header and lit-html notice stay', () => {
   const kit = read('dist/block-kit.js');
   const { importedFiles } = ts.preProcessFile(kit, true, true);
   assert.deepEqual(importedFiles.map((file) => file.fileName), ['./lit-html.js']);
+  assert.deepEqual(staticImportsOf(kit), [], 'no static import: lit-html.js loads on the first render only');
+  assert.equal(kit.match(/\bimport\(/g).length, 1, 'one dynamic import');
   assert.match(kit, /^\/\/ Foliwake block-kit \(https:\/\/docs\.foliwake\.dev\/guide\/write-a-block\)/);
   assert.match(kit, /^\/\/ {3}Copyright \(c\) 2017 Google LLC\. All rights reserved\.$/m);
   assert.doesNotMatch(kit, /sourceMappingURL/);

@@ -1,5 +1,6 @@
 // @foliwake/server/preload: modulepreload / preload hints for a page with a question and a dsl block.
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, test } from 'node:test';
 import { parseFoliwakeConfig } from '@foliwake/server/config';
 import { createOriginClient } from '@foliwake/server/origin';
@@ -22,6 +23,7 @@ before(async () => {
     [`/code/${CD}/components/question/question.js`]: js(`import{defineBlock,html}from"@foliwake/block-kit";import x from"lodash";export default defineBlock("question",()=>{})`),
     [`/code/${CD}/components/dsl/dsl.js`]: js(`import{j as t}from"../../scripts/react-vendor-1a2b.js";import"https://evil.example/x.js";import"../../../outside.js";export default 1`),
     [`/code/${CD}/scripts/react-vendor-1a2b.js`]: js('export const j=1;'),
+    // An older kit, which imported lit-html.js statically (the current one imports it on the first render).
     [`/code/${CD}/_foliwake/block-kit.js`]: js('import{html}from"./lit-html.js";export const defineBlock=1;'),
     [`/code/${CD}/_foliwake/lit-html.js`]: js('export const html=1;'),
   });
@@ -37,6 +39,12 @@ test('static imports: minified and spaced forms, not dynamic import()', () => {
   assert.deepEqual(staticImports(`import{a}from"./a.js";import b from '../b.js';import"./c.js";export*from"./d.js";import('./lazy.js');const s="x";`), ['./a.js', '../b.js', './c.js', './d.js']);
   const bare = `import { defineBlock } from '@foliwake/block-kit';import x from "lodash";import y from "foliwake";`;
   assert.deepEqual(staticImports(bare), ['@foliwake/block-kit'], 'the bare kit specifier, no other bare one');
+});
+
+test('the kit of @foliwake/block-kit imports lit-html.js on the first render: it is not hinted', () => {
+  const kit = readFileSync(new URL('../packages/block-kit/dist/block-kit.js', import.meta.url), 'utf8');
+  const relative = staticImports(kit).filter((specifier) => specifier.startsWith('.'));
+  assert.deepEqual(relative, [], 'no static relative import: a page whose blocks never render skips lit-html.js');
 });
 
 test('question + dsl: entry, its imports, the blocks on the page, block-kit with its lit-html, '
