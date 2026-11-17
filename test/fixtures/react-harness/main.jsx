@@ -13,7 +13,6 @@ const page = (name, cd, extra = {}) => ({
 });
 const PAGES = {
   one: page('one', CDS.a), two: page('two', CDS.a), other: page('other', CDS.b), slow: page('slow', CDS.slow), major3: page('major3', CDS.major3),
-  plain1: page('plain1', null, { codeRelease: null, blocksUrl: null, codeBase: null }),
   oneNewEtag: page('one', CDS.a, { identity: `demo|live|/one|"e2"|${CDS.a}|practice` }),
 };
 window.__events = []; window.__status = []; window.__errors = []; window.__log ??= [];

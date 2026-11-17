@@ -21,8 +21,8 @@ export const REQUIRED_FILES: readonly string[] = Object.freeze(['scripts/compone
 /** The folder of the engine's own files in a code release (the block kit). */
 export const ENGINE_PREFIX = '_foliwake';
 
-/** The engine's files that every code release holds under ENGINE_PREFIX (the previous kit only when named). */
-export const ENGINE_RELEASE_FILES: readonly string[] = Object.freeze(['block-kit.js', 'lit-html.js', 'block-kit-1.js']);
+/** The engine's files that every code release holds under ENGINE_PREFIX. */
+export const ENGINE_RELEASE_FILES: readonly string[] = Object.freeze(['block-kit.js', 'lit-html.js']);
 
 /** Release-root files the engine generates from the site code; a site never writes them. */
 export const GENERATED_FILES: readonly string[] = Object.freeze([

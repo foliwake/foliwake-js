@@ -28,8 +28,8 @@ import { importBlocksModule } from './load.js';
  */
 export type FoliwakePageStatus = 'mounting' | 'ready' | 'partial' | 'static' | 'error';
 /**
- * What `onError` receives. Codes: `NO_CODE_RELEASE`, `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`,
- * `BLOCKS_MODULE_FAILED`, `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
+ * What `onError` receives. Codes: `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`, `BLOCKS_MODULE_FAILED`,
+ * `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
  */
 export interface FoliwakePageError {
   code: string;
@@ -134,7 +134,7 @@ export function pageIdentity(page: FoliwakePageData): string {
 
 /** The stylesheets of the body's blocks in its code release (for an adapter that renders them with the body). */
 export function pageStylesheets(page: FoliwakePageData): { name: string; href: string; codeRelease: string }[] {
-  if (!page.codeBase || !page.codeRelease) return [];
+  if (!page.codeBase) return [];
   const { codeBase, codeRelease } = page;
   return page.blocks.map((name) => ({ name, href: `${codeBase}components/${name}/${name}.css`, codeRelease }));
 }
@@ -295,7 +295,7 @@ function start<Ext extends object, Events extends CoreEventDetails>(container: H
   // the count's release when the last mount of the release goes).
   const holdCss = (addLinks: boolean) =>
     own(() => {
-      if (cssHeld || !page.codeRelease) return null;
+      if (cssHeld) return null;
       cssHeld = true;
       const release = acquireCss(container.ownerDocument, page.codeRelease);
       if (addLinks) appendStylesheets(container.ownerDocument, page);
@@ -317,11 +317,11 @@ function start<Ext extends object, Events extends CoreEventDetails>(container: H
 
   const custom = latest().blocks;
   const load = custom ?? (page.blocksUrl ? () => importBlocksModule(page.blocksUrl!) : null);
-  // Blocks import the block-kit as `foliwake`: the page's import map (rendered by the server, else added here).
+  // Blocks import the block-kit as `@foliwake/block-kit`: the page's import map
+  // (rendered by the server, else added here).
   if (load && !custom) ensureImportMap(container.ownerDocument, page, latest().nonce);
   if (!load) {
-    if (page.codeRelease === null) fail('NO_CODE_RELEASE', 'The origin named no code release for this body (plain/1); it is shown without blocks.');
-    else fail('NO_BLOCKS_ENTRY', 'No blocks module is configured (app.blocks.entry); the body is shown without blocks.');
+    fail('NO_BLOCKS_ENTRY', 'No blocks module is configured (app.blocks.entry); the body is shown without blocks.');
     return session;
   }
   status('mounting');

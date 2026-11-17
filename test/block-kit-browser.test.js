@@ -1,11 +1,10 @@
-// @foliwake/block-kit in a real browser (system Chrome through playwright-core): the module `foliwake`
+// @foliwake/block-kit in a real browser (system Chrome through playwright-core): the module `@foliwake/block-kit`
 // (dist/block-kit.js with dist/lit-html.js), loaded through an import map as pages load it.
 // Covers defineBlock(name, setup) and its ctx: fields of every field type, on/emit and their end on dispose,
 // idempotent init, host.signal, the automatic `ready`, t() and its fallback chain, state batching,
 // render/update/dispose, list over the server list, effect, mount with its rollback (also with real React 19
 // through the starters' React view), a scaffolded block through the starter loader, and readFields(root).
-// Ported from the engine's block-kit browser tests, with the same assertions; plus a smoke test of the legacy
-// kit, dist/block-kit-1.js.
+// Ported from the engine's block-kit browser tests, with the same assertions.
 //
 // Fixtures (fixtures/block-kit/engine-html.json): the engine's HTML for these blocks (HTML contract 2),
 // produced once by the engine's content generator (buildSite with the site-blocks pack of the `all` block,
@@ -32,13 +31,11 @@ const body = FIXTURE.all.body;
 let server;
 let browser;
 let kit;
-let legacyKit;
 let lit;
 const contexts = [];
 
 before(async () => {
   kit = await readFile(path.join(DIST, 'block-kit.js'), 'utf8');
-  legacyKit = await readFile(path.join(DIST, 'block-kit-1.js'), 'utf8');
   lit = await readFile(path.join(DIST, 'lit-html.js'), 'utf8');
   server = await startServer();
   browser = await launchBrowser();
@@ -83,10 +80,9 @@ async function newPage() {
   return opened.page;
 }
 
-/** The import map of a page: the kit under `@foliwake/block-kit` and its previous specifier `foliwake`. */
+/** The import map of a page: the kit under `@foliwake/block-kit`. */
 const IMPORT_MAP =
-  '<script type="importmap">' +
-  '{"imports":{"@foliwake/block-kit":"/_foliwake/block-kit.js","foliwake":"/_foliwake/block-kit.js"}}</script>';
+  '<script type="importmap">{"imports":{"@foliwake/block-kit":"/_foliwake/block-kit.js"}}</script>';
 
 /** A page with the generated body, the kit at /_foliwake/ and the import map (no loader). */
 async function open(extra = {}) {
@@ -852,68 +848,12 @@ test('a block from `blocks new --js` on the dev page, through the import map and
   assert.ok(consoleErrors.some((text) => text.includes('LOADER_BLOCK_NAME_MISMATCH')), consoleErrors.join('\n'));
 });
 
-test('legacy block-kit-1.js: fields, field, on with a selector, emit with key and block, '
-  + 'idempotent init, dispose ends listeners and events', async () => {
-  const page = await open({ '/_foliwake/block-kit-1.js': legacyKit });
-  const out = await page.evaluate(async () => {
-    const legacy = await import('/_foliwake/block-kit-1.js');
-    const { defineBlock, emit, field, fields, on } = legacy;
-    const root = document.querySelector('[data-component="all"]');
-    root.setAttribute('data-block-key', 'b1');
-    const clicks = [];
-    const sent = [];
-    root.addEventListener('quiz:pick', (e) => sent.push(e.detail));
-    const init = defineBlock((el, host) => {
-      on(el, 'click', 'li', (event, match) => clicks.push(match.dataset.optionId ?? match.textContent.trim()));
-      on(document, 'x-ping', () => clicks.push('ping'));
-      return () => clicks.push(`cleanup ${host.name}`);
-    }, { prefix: 'quiz' });
-    const a = init(root, { name: 'host' });
-    const b = init(root, { name: 'other' });
-    root.querySelector('[data-option-id="a2"]').click();
-    document.dispatchEvent(new Event('x-ping'));
-    const sentBefore = emit(root, 'pick', { n: 1 });
-    a.dispose();
-    root.querySelector('[data-option-id="a1"]').click();
-    document.dispatchEvent(new Event('x-ping'));
-    const sentAfter = emit(root, 'pick', { n: 2 });
-    return {
-      version: legacy.version,
-      read: fields(root),
-      html: fields(root, { html: true }).title,
-      field: field(root, 'options')?.getAttribute('data-select'),
-      same: a === b,
-      clicks,
-      sentBefore,
-      sentAfter,
-      sent,
-    };
-  });
-  assert.equal(out.version, '1.0.0');
-  assert.deepEqual(Object.keys(out.read), ['title', 'intro', 'steps', 'options', 'quote', 'notes', 'picture']);
-  assert.equal(out.read.title, 'A bold title');
-  assert.deepEqual(out.read.options, [
-    { id: 'a1', text: 'Left', correct: false, why: 'Not this way.' },
-    { id: 'a2', text: 'Right', correct: true },
-  ]);
-  assert.deepEqual(out.read.notes, ['Note one.']);
-  assert.equal(out.read.picture.alt, 'A road');
-  assert.equal(out.html, 'A <strong>bold</strong> title');
-  assert.equal(out.field, 'single');
-  assert.equal(out.same, true, 'init is idempotent per root');
-  assert.deepEqual(out.clicks, ['a2', 'ping', 'cleanup host']);
-  assert.equal(out.sentBefore, true);
-  assert.equal(out.sentAfter, false, 'nothing is sent after dispose');
-  assert.deepEqual(out.sent, [{ key: 'b1', block: 'all', n: 1 }]);
-});
-
-test('specifiers: `@foliwake/block-kit` and the previous `foliwake` are one module; '
-  + 'init declares contract 2', async () => {
+test('the specifier `@foliwake/block-kit` is the kit module; init declares contract 2', async () => {
   const page = await open();
   const result = await page.evaluate(async () => {
-    const legacy = await import('foliwake');
+    const imported = await import('@foliwake/block-kit');
     const init = window.kit.defineBlock('probe', () => {});
-    return { same: legacy === window.kit, contract: init.contract, block: init.block, kit: window.kit.CONTRACT };
+    return { same: imported === window.kit, contract: init.contract, block: init.block, kit: window.kit.CONTRACT };
   });
   assert.deepEqual(result, { same: true, contract: 2, block: 'probe', kit: 2 });
 });

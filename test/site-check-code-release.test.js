@@ -142,34 +142,35 @@ describe('the reference scan of scripts and stylesheets', () => {
   });
 });
 
-describe('the bare `foliwake` import', () => {
+describe('the bare `@foliwake/block-kit` import', () => {
+  const KIT_LINE = "import { defineBlock } from '@foliwake/block-kit';\n";
   const withScript = (path, source) => checkCodeRelease(release({ [path]: source }));
 
-  test('`foliwake` is the only bare import, and only in scripts', async () => {
-    const kit = "import { defineBlock } from 'foliwake';\nexport default defineBlock('note', () => {});\n";
+  test('`@foliwake/block-kit` is the only bare import, and only in scripts', async () => {
+    const kit = KIT_LINE + "export default defineBlock('note', () => {});\n";
     assert.deepEqual(errorsOf(await withScript('components/note/note.js', kit)), []);
     const lodash = "import x from 'lodash';\nexport default function init() {}\n";
     const bare = await withScript('components/note/note.js', lodash);
     assert.match(errorText(bare), /"lodash" is not relative/);
-    const css = await withScript('components/note/note.css', "@import 'foliwake';\n");
-    assert.match(errorText(css), /"foliwake" is not relative/, 'only scripts may name the kit');
+    const css = await withScript('components/note/note.css', "@import '@foliwake/block-kit';\n");
+    assert.match(errorText(css), /"@foliwake\/block-kit" is not relative/, 'only scripts may name the kit');
   });
 
   test('the block name is left to the loader: no static guess refuses a release', async () => {
     const accepted = [
-      "import { defineBlock } from 'foliwake';\nexport default defineBlock('notes', () => {});\n",
-      "import { defineBlock } from 'foliwake';\n" +
+      KIT_LINE + "export default defineBlock('notes', () => {});\n",
+      KIT_LINE +
         "const help = \"Example: \\\nexport default defineBlock('quiz', () => {})\";\n" +
         "const init = defineBlock('note', () => help);\nexport default init;\n",
-      "import { defineBlock } from 'foliwake';\n// example: defineBlock('quiz', …)\n" +
+      KIT_LINE + "// example: defineBlock('quiz', …)\n" +
         "export default defineBlock('note', () => {});\n",
-      "import { defineBlock } from 'foliwake';\n/*\nexport default defineBlock('quiz', () => {});\n*/\n" +
+      KIT_LINE + "/*\nexport default defineBlock('quiz', () => {});\n*/\n" +
         "export default defineBlock('note', () => {});\n",
-      "import { defineBlock } from 'foliwake';\nconst doc = `\nexport default defineBlock('quiz', () => {});\n`;\n" +
+      KIT_LINE + "const doc = `\nexport default defineBlock('quiz', () => {});\n`;\n" +
         "export default defineBlock('note', () => doc);\n",
-      "import { defineBlock } from 'foliwake';\nconst help = \"defineBlock('quiz', …)\";\n" +
+      KIT_LINE + "const help = \"defineBlock('quiz', …)\";\n" +
         "export default defineBlock('note', () => help);\n",
-      "import { defineBlock } from 'foliwake';\nconst init = defineBlock('quiz', () => {});\nexport default init;\n",
+      KIT_LINE + "const init = defineBlock('quiz', () => {});\nexport default init;\n",
       "/*\nexport default defineBlock('quiz', () => {});\n*/\nexport default function init() {}\n",
     ];
     for (const source of accepted) {

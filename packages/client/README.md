@@ -148,12 +148,12 @@ class FoliwakePageElement extends HTMLElement {
 customElements.define('foliwake-page', FoliwakePageElement);
 ```
 
-### The import map of `foliwake`
+### The import map of `@foliwake/block-kit`
 
-Blocks import the engine's block-kit by the bare specifier `foliwake`. Before it imports a page's blocks module,
-`mountFoliwakePage` makes sure the document has the import map of the page's code release (scoped to its code
-path, so pages of two releases resolve their own kits): a map the server rendered (`@foliwake/next`) is used,
-else one is added to `<head>`. `pageImportMap(page)` gives the map's text for your own server rendering
+Blocks import the engine's block-kit by the bare specifier `@foliwake/block-kit`. Before it imports a page's
+blocks module, `mountFoliwakePage` makes sure the document has the import map of the page's code release
+(scoped to its code path, so pages of two releases resolve their own kits): a map the server rendered
+(`@foliwake/next`) is used, else one is added to `<head>`. `pageImportMap(page)` gives the map's text for your own server rendering
 (`<script type="importmap" data-foliwake-code="${page.codeBase}">`).
 
 ```ts
@@ -463,7 +463,7 @@ interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events
 
 #### `FoliwakePageError`
 
-What `onError` receives. Codes: `NO_CODE_RELEASE`, `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`, `BLOCKS_MODULE_FAILED`, `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
+What `onError` receives. Codes: `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`, `BLOCKS_MODULE_FAILED`, `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
 
 ```ts
 interface FoliwakePageError

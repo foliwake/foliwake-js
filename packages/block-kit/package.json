@@ -1,7 +1,7 @@
 {
   "name": "@foliwake/block-kit",
   "version": "0.3.0",
-  "description": "The block kit of Foliwake site blocks, the module `foliwake` (defineBlock, html, readFields), with its types and the blocks contract's: one package for block authors. The browser files the engine adds to every code release.",
+  "description": "The block kit of Foliwake site blocks, the module `@foliwake/block-kit` (defineBlock, html, readFields), with its types and the blocks contract's: one package for block authors. The browser files the engine adds to every code release.",
   "license": "Apache-2.0",
   "type": "module",
   "sideEffects": false,
@@ -16,7 +16,6 @@
     ".": { "types": "./dist/index.d.ts", "default": "./dist/block-kit.js" },
     "./assessment": { "types": "./dist/assessment.d.ts", "default": "./dist/assessment.js" },
     "./block-kit.js": "./dist/block-kit.js",
-    "./block-kit-1.js": "./dist/block-kit-1.js",
     "./lit-html.js": "./dist/lit-html.js",
     "./lit-html.LICENSE": "./dist/lit-html.LICENSE",
     "./foliwake.d.ts": "./dist/foliwake.d.ts",

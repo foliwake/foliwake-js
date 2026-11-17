@@ -35,15 +35,15 @@ function header(response: Response, name: string, pattern: RegExp, required = fa
   return value;
 }
 
-function codeReleaseOf(response: Response, client: OriginClient, channel: ChannelName): CodeReleaseId | null {
+const NO_CODE_RELEASE = 'The origin answered without X-Code-Release: it is not a plain/2 Foliwake origin.';
+
+function codeReleaseOf(response: Response, client: OriginClient, channel: ChannelName): CodeReleaseId {
   const value = response.headers.get('x-code-release');
-  if (value === null) return null; // plain/1 origin: the body is shown static
+  if (value === null) throw new FoliwakePageError('invalid', NO_CODE_RELEASE);
   if (CODE_ID_PATTERN.test(value)) return value as CodeReleaseId;
   if (value === 'local' && isLoopbackName(new URL(client.originOf(channel)).hostname)) return 'local';
   throw new FoliwakePageError('invalid', 'The origin answered an invalid X-Code-Release.');
 }
-
-let warnedPlain1 = false;
 
 /**
  * Reads `<path>.plain.html` from the channel's origin. Primitive inputs only, no callbacks and no signal
@@ -102,10 +102,6 @@ export async function readEnvelope(config: FoliwakeAppConfig, client: OriginClie
     throw new FoliwakePageError('invalid', 'The body is not UTF-8.');
   }
   checkBody(html, path); // an invalid body is refused before anything caches it
-  if (codeRelease === null && !warnedPlain1) {
-    warnedPlain1 = true;
-    console.warn(`[foliwake] the ${channel} site sends no X-Code-Release (plain/1): bodies are shown without blocks.`);
-  }
   return { site, channel, path, html, codeRelease, htmlContract, lang, pageId, etag: etag && etag.length <= 200 ? etag : null, generation };
 }
 
@@ -138,12 +134,22 @@ function rewrite(nodes: HtmlNode[], config: FoliwakeAppConfig, channel: ChannelN
   }
 }
 
-/** The same-origin URL of the blocks module, or null (no entry, no code release, or `local` from a remote origin). */
-export function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeRelease: CodeReleaseId | null): { base: string; url: string } | null {
+/** The same-origin URL of the blocks module, or null when the config names no blocks entry. */
+export function blocksUrlOf(
+  config: FoliwakeAppConfig,
+  channel: ChannelName,
+  codeRelease: CodeReleaseId,
+): { base: string; url: string } | null {
   const app = appOf(config);
-  if (!app.blocks.entry || !codeRelease) return null;
+  if (!app.blocks.entry) return null;
   const base = `${app.proxies.code}${channel === 'preview' ? '/preview' : ''}/${codeRelease}/`;
   return { base, url: `${base}${app.blocks.entry}` };
+}
+
+/** The React key of a prepared page: see `FoliwakePageData.identity`. */
+function identityOf(envelope: PageEnvelope, mode: string | null, digest: string): string {
+  const { site, channel, path, etag, codeRelease } = envelope;
+  return [site, channel, path, etag ?? '', codeRelease, mode ?? '', digest].join('|');
 }
 
 /**
@@ -173,7 +179,7 @@ export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, o
     .digest('base64url')
     .slice(0, 22);
   return {
-    identity: [envelope.site, envelope.channel, envelope.path, envelope.etag ?? '', envelope.codeRelease ?? '', mode ?? '', digest].join('|'),
+    identity: identityOf(envelope, mode, digest),
     site: envelope.site,
     channel: envelope.channel,
     path: envelope.path,

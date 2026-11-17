@@ -38,8 +38,7 @@ const withApp = (app) => ({ ...base(), app: { ...base().app, ...app } });
 
 // [description, config, expected error pattern]; the schema must refuse the same ones.
 const REFUSED = [
-  ['version 1', { version: 1, preview: { url: 'https://p.example' } }, /version 1 is no longer read/],
-  ['version 3', { ...base(), version: 3 }, /"version" must be 2/],
+  ['version 3', { ...base(), version: 3 }, /unsupported "version" 3; it must be 2/],
   ['no site', { ...base(), site: undefined }, /"site"/],
   ['bad site', { ...base(), site: 'Acme' }, /"site"/],
   ['no channel', { version: 2, site: 'x', app: base().app }, /at least one of "live" and "preview"/],
@@ -82,7 +81,6 @@ const REFUSED = [
 ];
 // Refused by the TypeScript parser only (the schema cannot express these): checked separately.
 const PARSER_ONLY = new Set([
-  'version 1',
   'stored secret',
   'stored private key',
   'password env is a system variable',

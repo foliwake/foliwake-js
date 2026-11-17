@@ -197,14 +197,14 @@ async function LessonBody({ params }: { params: Params }) {
 }
 ```
 
-`<FoliwakeImportMap>` renders the page's import map: blocks import the engine's block-kit as `foliwake`, and
-the map points that name at the kit of the page's own code release, scoped to the release's code path
-(`<FoliwakeServerPage>` renders it for you). `@foliwake/client` adds the same map when it is missing. A map
-that arrives after the document's first module load (a client navigation to a page of another code release)
-is honoured only by browsers with multiple import maps (Chrome 133+); module hints are therefore `preload
-as="script"`, never `modulepreload`, which would resolve `foliwake` before the map is there. With the CSP
-strategy `nonce`, pass the request's nonce to `<FoliwakeServerPage nonce>` / `<FoliwakeImportMap nonce>` and to
-`<FoliwakePage nonce>` (the map the client adds on a navigation).
+`<FoliwakeImportMap>` renders the page's import map: blocks import the engine's block-kit as
+`@foliwake/block-kit`, and the map points that name at the kit of the page's own code release, scoped to the
+release's code path (`<FoliwakeServerPage>` renders it for you). `@foliwake/client` adds the same map when it is
+missing. A map that arrives after the document's first module load (a client navigation to a page of another
+code release) is honoured only by browsers with multiple import maps (Chrome 133+); module hints are therefore
+`preload as="script"`, never `modulepreload`, which would resolve `@foliwake/block-kit` before the map is there.
+With the CSP strategy `nonce`, pass the request's nonce to `<FoliwakeServerPage nonce>` /
+`<FoliwakeImportMap nonce>` and to `<FoliwakePage nonce>` (the map the client adds on a navigation).
 
 Unlike `<FoliwakeServerPage>`, `readPage` does not call `notFound()`: it throws `FoliwakePageError` (with
 `kind` `not_found`, `not_allowed`, `invalid`, …) for you to handle.
@@ -216,7 +216,7 @@ Unlike `<FoliwakeServerPage>`, `readPage` does not call `notFound()`: it throws 
 | Next.js | 16.2 or newer, below 17 (peer `>=16.2.0 <17`; tested with 16.2.12), App Router with `cacheComponents: true` |
 | React | 19.2 or newer (tested with 19.3.0) |
 | Node.js | 22.22 or newer |
-| Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); an older origin gives pages without blocks |
+| Foliwake origin | plain/2: `X-Code-Release` with every `.plain.html` (a body without it is refused) |
 | Config | `foliwake.remote.json` version 2 |
 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package
@@ -260,7 +260,7 @@ License: Apache-2.0.
 
 #### `emitPreloadHints()`
 
-Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React). Modules are hinted as `preload as="script"` (the bytes, fetched in parallel), not `modulepreload`: a module preloaded before the page's import map is in the document fails to resolve `foliwake` for good, and in a Next app the hints reach &lt;head&gt; before the map (which renders with the page, and on a client navigation arrives later).
+Emits the page's hints into the document head (React DOM resource APIs; deduplicated by React). Modules are hinted as `preload as="script"` (the bytes, fetched in parallel), not `modulepreload`: a module preloaded before the page's import map is in the document fails to resolve `@foliwake/block-kit` for good, and in a Next app the hints reach &lt;head&gt; before the map (which renders with the page, and on a client navigation arrives later).
 
 ```ts
 function emitPreloadHints(page: FoliwakePageData): void
@@ -280,7 +280,7 @@ function foliwakeConfig(): FoliwakeAppConfig
 
 #### `FoliwakeImportMap()`
 
-The import map of the page's code release (`foliwake` → its block-kit, scoped to the release's code path), as an element to render before the page's blocks load; null for a page without a code release. Browsers honour a map that arrives after the document's first module load (client navigation, a second release) only with multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
+The import map of the page's code release (`@foliwake/block-kit` → its block-kit, scoped to the release's code path), as an element to render before the page's blocks load; null for a page without a code release. Browsers honour a map that arrives after the document's first module load (client navigation, a second release) only with multiple import maps (Chrome 133+); `@foliwake/client` adds the same map when it is missing.
 
 ```ts
 function FoliwakeImportMap({ page, nonce }: {

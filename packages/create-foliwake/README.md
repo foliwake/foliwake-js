@@ -51,7 +51,7 @@ Without anything installed: `npx @foliwake/site-check` checks the code (the "Fro
 pinned to the version this package was released with), and `node --test "tests/*.test.mjs"` runs the quick
 tests. Push the repository to GitHub and connect it to your site in the Foliwake admin: every branch gets a
 preview. The Foliwake CLI adds a local preview (`foliwake dev --watch`) and the page checks. For editors, create
-writes the types of `foliwake` (from `@foliwake/block-kit`) and the JSON Schema of block definitions into
+writes the types of `@foliwake/block-kit` and the JSON Schema of block definitions into
 `.foliwake/` (git-ignored); the types of each block come from the CLI. The project's `README.md` has the details.
 
 ## API

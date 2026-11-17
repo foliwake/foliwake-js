@@ -2,7 +2,6 @@
 //
 //   import { defineBlock, html } from '@foliwake/block-kit';
 //
-// (`foliwake`, the previous specifier, is still mapped for one minor version.)
 // The engine maps the specifier to `<code release>/_foliwake/block-kit.js` with an import map in every
 // page it composes, and adds this file (with the vendored lit-html next to it) to every code release, so a
 // release always runs the kit it was prepared and tested with. No build step, no other dependency.

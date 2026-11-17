@@ -39,10 +39,9 @@ async function open() {
 const buttons = (page, n) => page.waitForFunction((count) => document.querySelectorAll('button.fw').length === count, n);
 const mounts = (s) => s.log.filter(([k]) => k === 'mount');
 
-/** The import map of a release: the kit under its specifier and, for one more minor, under `foliwake`. */
+/** The import map of a release: the kit under its specifier. */
 function kitMap(cd) {
-  const kit = `/foliwake-code/${cd}/_foliwake/block-kit.js`;
-  return { '@foliwake/block-kit': kit, foliwake: kit };
+  return { '@foliwake/block-kit': `/foliwake-code/${cd}/_foliwake/block-kit.js` };
 }
 
 describe('@foliwake/client without a framework', () => {
@@ -67,7 +66,7 @@ describe('@foliwake/client without a framework', () => {
     assert.deepEqual(s.events, [['v2', 'answer', 'k1', { selected: ['a'], correct: true }]], 'latest onEvent and latest saved()');
     assert.equal(mounts(s).length, 1, 'update() without a new identity does not remount');
     assert.equal(mounts(s)[0][4], 'harness');
-    assert.equal(mounts(s)[0][5], CDS.a, 'the module\'s `foliwake` is its own release\'s kit (the import map the client added)');
+    assert.equal(mounts(s)[0][5], CDS.a, 'the module\'s kit is its own release\'s (the import map the client added)');
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('script[type="importmap"]')].map((m) => [m.dataset.foliwakeCode, JSON.parse(m.textContent)])), [
       [`/foliwake-code/${CDS.a}/`, { scopes: { [`/foliwake-code/${CDS.a}/`]: kitMap(CDS.a) } }],
     ]);
@@ -95,7 +94,8 @@ describe('@foliwake/client without a framework', () => {
     await page.close();
   });
 
-  test('two code releases in one document: each module resolves `foliwake` to its own release (scoped maps, one per release)', async () => {
+  test('two code releases in one document: each module resolves the kit to its own release '
+    + '(scoped maps, one per release)', async () => {
     const { page, h, state } = await open();
     await h('mount', 'm1', 'one');
     await page.waitForFunction(() => window.__log.filter(([k]) => k === 'mount').length === 1);
@@ -360,15 +360,18 @@ describe('@foliwake/client without a framework', () => {
     await page.close();
   });
 
-  test('contract major mismatch and plain/1 bodies stay static with an error code; requireBlocks makes it error', async () => {
+  test('contract major mismatch and a body without blocks entry stay static with an error code; '
+    + 'requireBlocks makes it error', async () => {
     const { page, h, state } = await open();
     await h('mount', 'major3', 'major3');
-    await h('mount', 'p1', 'plain1');
-    await h('mount', 'req', 'plain1', { requireBlocks: true });
+    await h('mount', 'n1', 'noentry');
+    await h('mount', 'req', 'noentry', { requireBlocks: true });
     await page.waitForFunction(() => window.__errors.length >= 3);
     const s = await state();
-    assert.deepEqual(s.errors.sort(), [['major3', 'BLOCKS_CONTRACT_UNSUPPORTED'], ['plain1', 'NO_CODE_RELEASE'], ['plain1', 'NO_CODE_RELEASE']]);
-    assert.deepEqual(s.status.filter(([, x]) => x !== 'mounting').map(([n, x]) => `${n} ${x}`).sort(), ['major3 static', 'plain1 error', 'plain1 static']);
+    const noEntry = ['noentry', 'NO_BLOCKS_ENTRY'];
+    assert.deepEqual(s.errors.sort(), [['major3', 'BLOCKS_CONTRACT_UNSUPPORTED'], noEntry, noEntry]);
+    const settled = s.status.filter(([, x]) => x !== 'mounting').map(([n, x]) => `${n} ${x}`).sort();
+    assert.deepEqual(settled, ['major3 static', 'noentry error', 'noentry static']);
     assert.equal(await page.locator('button.fw').count(), 0);
     assert.equal(await page.locator('[data-foliwake-body] h2').count(), 3, 'the authored body is shown');
     await page.close();

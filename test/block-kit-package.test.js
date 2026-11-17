@@ -109,8 +109,8 @@ test('the standalone declaration (for `.foliwake/types/foliwake.d.ts`) imports n
   assert.deepEqual(compile(dir, { 'foliwake.d.ts': declaration, 'use.ts': user }), []);
 });
 
-test('dist/ holds the frozen browser files as written; lit-html without its source map comment', () => {
-  for (const file of ['block-kit-1.js', 'lit-html.js', 'lit-html.LICENSE']) {
+test('dist/ holds the vendored browser files as written; lit-html without its source map comment', () => {
+  for (const file of ['lit-html.js', 'lit-html.LICENSE']) {
     assert.equal(read(`dist/${file}`), read(`src/${file}`), file);
   }
   assert.doesNotMatch(read('dist/lit-html.js'), /sourceMappingURL/);

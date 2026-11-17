@@ -172,8 +172,8 @@ export const settingsForBrowser = clientSettings(config);
 | | |
 | --- | --- |
 | Node.js | 22.22 or newer (Web `fetch`, `Request`, `Response`, streams) |
-| Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); a plain/1 origin gives bodies without blocks |
-| Config | `foliwake.remote.json` version 2 (version 1 files are refused) |
+| Foliwake origin | plain/2: `X-Code-Release` with every `.plain.html` (a body without it is refused) |
+| Config | `foliwake.remote.json` version 2 |
 | Blocks contract | `foliwake-blocks/2` |
 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package
@@ -557,10 +557,10 @@ interface OriginRequestOptions
 
 #### `blocksUrlOf()`
 
-The same-origin URL of the blocks module, or null (no entry, no code release, or `local` from a remote origin).
+The same-origin URL of the blocks module, or null when the config names no blocks entry.
 
 ```ts
-function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeRelease: CodeReleaseId | null): {
+function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeRelease: CodeReleaseId): {
     base: string;
     url: string;
 } | null
@@ -981,7 +981,7 @@ function resolveInRelease(from: string, specifier: string): string | null
 
 #### `staticImports()`
 
-The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIERS).
+The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIER).
 
 ```ts
 function staticImports(source: string): string[]
