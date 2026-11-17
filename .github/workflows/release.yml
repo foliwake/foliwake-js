@@ -9,7 +9,7 @@ name: Release
 #    hygiene with FOLIWAKE_PRIVATE_NAMES, checksums, the owner's approval in `packages-publish`, provenance,
 #    dist-tag `next` for a release candidate). A tag pushed with the workflow token starts no other workflow,
 #    so nothing is published twice.
-# Release candidates: `pnpm changeset pre enter rc` in a pull request (README.md, "Releasing").
+# Release candidates: `pnpm changeset pre enter rc` in a pull request (RELEASING.md).
 
 on:
   push:

@@ -1,7 +1,7 @@
 name: Publish
 
 # Publishes the packages on npm (npmjs.com, public, with provenance) from a release tag v<version> on main,
-# after the owner approves the `publish` job (README.md, "Releasing"). Agents never tag or publish.
+# after the owner approves the `publish` job (RELEASING.md). Agents never tag or publish.
 # Runs on the push of a tag, on a manual dispatch, and as a reusable workflow: release.yml calls it with the tag
 # it made when a "Version packages" pull request was merged (one publish path for both).
 #
@@ -115,7 +115,7 @@ jobs:
       (github.event_name != 'workflow_dispatch' || inputs.dry-run == false)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Owner setup (once, README.md "Releasing"): environment `packages-publish` with the owner as required
+    # Owner setup (once, RELEASING.md): environment `packages-publish` with the owner as required
     # reviewer and the deployment rules tag `v*` and branch `main` (release.yml calls this from main); the secret
     # NPM_TOKEN (environment secret preferred).
     environment: packages-publish
