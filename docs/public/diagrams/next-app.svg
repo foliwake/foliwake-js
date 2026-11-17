@@ -1,46 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="488" viewBox="0 0 760 488" role="img" aria-labelledby="title desc">
 <title id="title">What you build: a Next app between the browser and Foliwake</title>
 <desc id="desc">The browser talks only to your Next app. On the server, with the credential, the app serves three routes: /pages/path reads path.plain.html from Foliwake live or preview and caches it, /foliwake-code proxies the page's code release with its blocks, and /foliwake-media proxies pictures.</desc>
 <defs>
-<marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6" fill="none" stroke="#64748b" stroke-width="1.5"/></marker>
+<linearGradient id="canvas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfcfd"/><stop offset="1" stop-color="#f2f5f8"/></linearGradient>
+<linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-slate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f8fa"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#effcf9"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-violet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f3ff"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaeb"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<radialGradient id="glow-teal"><stop offset="0" stop-color="#5eead4" stop-opacity="0.28"/><stop offset="1" stop-color="#5eead4" stop-opacity="0"/></radialGradient>
+<radialGradient id="glow-violet"><stop offset="0" stop-color="#c4b5fd" stop-opacity="0.26"/><stop offset="1" stop-color="#c4b5fd" stop-opacity="0"/></radialGradient>
+<radialGradient id="glow-amber"><stop offset="0" stop-color="#fcd34d" stop-opacity="0.18"/><stop offset="1" stop-color="#fcd34d" stop-opacity="0"/></radialGradient>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.08"/></filter>
+<marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1.2L8.6 5L1 8.8z" fill="#94a3b8" stroke="#94a3b8" stroke-width="1" stroke-linejoin="round"/></marker>
 </defs>
-<rect width="760" height="420" rx="16" fill="#f8fafc"/>
-<g font-family="system-ui, sans-serif" text-anchor="middle">
-<text x="380" y="36" font-size="23" font-weight="700" fill="#0f172a">What you build</text>
-<text x="380" y="62" font-size="15" fill="#475569">Your Next app reads and proxies on its server, with the credential.</text>
-
-<!-- Browser -->
-<rect x="24" y="104" width="140" height="240" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
-<text x="94" y="220" font-size="18" font-weight="650" fill="#0f172a">Browser</text>
-<text x="94" y="244" font-size="13" fill="#475569">your app's pages</text>
-
-<!-- Next app -->
-<rect x="190" y="80" width="380" height="288" rx="16" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="6 5"/>
-<text x="206" y="102" text-anchor="start" font-size="14" font-weight="650" fill="#334155">Your Next app (server)</text>
-
-<path d="M166 148 H206" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M166 228 H206" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M166 308 H206" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
-
-<rect x="212" y="118" width="336" height="60" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
-<text x="380" y="142" font-size="15" font-weight="650" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/pages/&lt;path&gt;</text>
-<text x="380" y="164" font-size="13" fill="#475569">reads <tspan font-family="ui-monospace, SFMono-Regular, Menlo, monospace">&lt;path&gt;.plain.html</tspan> (cached)</text>
-<rect x="212" y="198" width="336" height="60" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
-<text x="380" y="222" font-size="15" font-weight="650" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/foliwake-code/…</text>
-<text x="380" y="244" font-size="13" fill="#475569">proxies the page's code release (blocks)</text>
-<rect x="212" y="278" width="336" height="60" rx="12" fill="#ffffff" stroke="#cbd5e1"/>
-<text x="380" y="302" font-size="15" font-weight="650" fill="#0f172a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/foliwake-media/…</text>
-<text x="380" y="324" font-size="13" fill="#475569">proxies pictures</text>
-
-<path d="M550 148 H610" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M550 228 H610" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M550 308 H610" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)"/>
-
-<!-- Foliwake -->
-<rect x="616" y="104" width="120" height="240" rx="12" fill="#eef2ff" stroke="#818cf8"/>
-<text x="676" y="220" font-size="18" font-weight="650" fill="#0f172a">Foliwake</text>
-<text x="676" y="244" font-size="13" fill="#475569">live / preview</text>
-
-<text x="380" y="398" font-size="14" fill="#475569">The browser never talks to Foliwake, and no credential reaches it.</text>
-</g>
+<rect width="760" height="488" rx="20" fill="url(#canvas)"/>
+<ellipse cx="91.2" cy="0" rx="342" ry="268.4" fill="url(#glow-teal)"/>
+<ellipse cx="699.2" cy="439.2" rx="342" ry="292.8" fill="url(#glow-violet)"/>
+<ellipse cx="570" cy="0" rx="228" ry="170.8" fill="url(#glow-amber)"/>
+<rect x=".5" y=".5" width="759" height="487" rx="19.5" fill="none" stroke="#0f172a" stroke-opacity="0.07"/>
+<text x="32" y="48" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="22" font-weight="700" fill="#0f172a" text-anchor="start">What you build</text>
+<text x="32" y="74" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="400" fill="#475569" text-anchor="start">Your Next app reads and proxies on its server, with the credential.</text>
+<rect x="200" y="104" width="368" height="312" rx="18" fill="#ffffff" fill-opacity="0.6" stroke="#2dd4bf" stroke-opacity=".45"/>
+<rect x="212" y="116" width="172" height="24" rx="12" fill="#d5f5ef"/>
+<path transform="translate(220 121) scale(0.583)" d="M5 4h14a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM5 13h14a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zM8 7.5h.01M8 16.5h.01" fill="none" stroke="#0f766e" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="240" y="132.5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12" font-weight="600" fill="#0f766e" text-anchor="start" letter-spacing=".02em">Your Next app (server)</text>
+<path d="M160 188 L216 188" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M160 276 L216 276" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M160 364 L216 364" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M552 188 L608 188" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M552 276 L608 276" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M552 364 L608 364" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<g><rect x="32" y="136" width="128" height="256" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="76" y="218.5" width="40" height="40" rx="12" fill="#eef2f6"/><path transform="translate(84.4 226.9) scale(0.9670000000000001)" d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5zM3 9h18M6.5 6.5h.01M9 6.5h.01" fill="none" stroke="#475569" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="96" y="283.3" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" font-weight="650" fill="#0f172a" text-anchor="middle">Browser</text>
+<text x="96" y="304.6" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="middle">your app's pages</text></g>
+<g><rect x="216" y="152" width="336" height="72" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="230" y="160.5" width="28" height="28" rx="8.4" fill="#d5f5ef"/><path transform="translate(235.9 166.4) scale(0.677)" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4" fill="none" stroke="#0f766e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="268" y="179.3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="650" fill="#0f172a" text-anchor="start">/pages/&lt;path&gt;</text>
+<text x="232" y="210.6" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">reads <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.2">&lt;path&gt;.plain.html</tspan> (cached)</text></g>
+<g><rect x="216" y="240" width="336" height="72" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="230" y="248.5" width="28" height="28" rx="8.4" fill="#d5f5ef"/><path transform="translate(235.9 254.4) scale(0.677)" d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5" fill="none" stroke="#0f766e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="268" y="267.3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="650" fill="#0f172a" text-anchor="start">/foliwake-code/…</text>
+<text x="232" y="298.6" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">proxies the page's code release (blocks)</text></g>
+<g><rect x="216" y="328" width="336" height="72" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="230" y="336.5" width="28" height="28" rx="8.4" fill="#d5f5ef"/><path transform="translate(235.9 342.4) scale(0.677)" d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM9 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM20 15l-4.5-4.5L6 20" fill="none" stroke="#0f766e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="268" y="355.3" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="650" fill="#0f172a" text-anchor="start">/foliwake-media/…</text>
+<text x="232" y="386.6" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">proxies pictures</text></g>
+<g><rect x="608" y="136" width="120" height="256" rx="14" fill="url(#tint-violet)" stroke="#a78bfa" stroke-opacity=".55" filter="url(#shadow)"/>
+<rect x="648" y="218.5" width="40" height="40" rx="12" fill="#ede9fe"/><path transform="translate(656.4 226.9) scale(0.9670000000000001)" d="M7 18.5a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.9 8.6 4.5 4.5 0 0 1 17.5 18.5z" fill="none" stroke="#6d28d9" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="668" y="283.3" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="15" font-weight="650" fill="#0f172a" text-anchor="middle">Foliwake</text>
+<text x="668" y="304.6" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="middle">live / preview</text></g>
+<path transform="translate(156.5 443) scale(0.667)" d="M6 11h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#64748b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="178.5" y="456" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14" font-weight="400" fill="#475569" text-anchor="start">The browser never talks to Foliwake, and no credential reaches it.</text>
 </svg>

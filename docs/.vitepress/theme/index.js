@@ -1,9 +1,10 @@
 // The default VitePress theme, plus the styles of the home page hero art
-// and full-screen zoom for the diagrams.
+// the <Diagram> component and full-screen zoom for the diagrams.
 import DefaultTheme from 'vitepress/theme';
 import { useRoute } from 'vitepress';
 import mediumZoom from 'medium-zoom';
 import { nextTick, onMounted, watch } from 'vue';
+import Diagram from './Diagram.vue';
 import './custom.css';
 
 // Images in the article body open full screen on click (a diagram can be too small to read inline).
@@ -19,6 +20,9 @@ function attachZoom() {
 
 export default {
   extends: DefaultTheme,
+  enhanceApp({ app }) {
+    app.component('Diagram', Diagram);
+  },
   setup() {
     const route = useRoute();
     onMounted(attachZoom);

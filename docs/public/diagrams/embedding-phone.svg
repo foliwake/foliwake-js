@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="1528" viewBox="0 0 360 1528" role="img" aria-labelledby="title desc">
+<title id="title">Embedding: envelope, prepare, mount</title>
+<desc id="desc">The browser opens /pages/x in your app. Your app's server reads /x.plain.html from the Foliwake origin with the credential and caches what it answered as the envelope. On every request preparePage checks and rewrites the body and returns FoliwakePageData. The browser renders the body with FoliwakePage, imports the blocks module through your app's code proxy, which fetches the immutable code release from the origin, and calls mountBlocks; blocks send events to your app.</desc>
+<defs>
+<linearGradient id="canvas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfcfd"/><stop offset="1" stop-color="#f2f5f8"/></linearGradient>
+<linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-slate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f8fa"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#effcf9"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-violet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f3ff"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaeb"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<radialGradient id="glow-teal"><stop offset="0" stop-color="#5eead4" stop-opacity="0.28"/><stop offset="1" stop-color="#5eead4" stop-opacity="0"/></radialGradient>
+<radialGradient id="glow-violet"><stop offset="0" stop-color="#c4b5fd" stop-opacity="0.26"/><stop offset="1" stop-color="#c4b5fd" stop-opacity="0"/></radialGradient>
+<radialGradient id="glow-amber"><stop offset="0" stop-color="#fcd34d" stop-opacity="0.18"/><stop offset="1" stop-color="#fcd34d" stop-opacity="0"/></radialGradient>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.08"/></filter>
+<marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1.2L8.6 5L1 8.8z" fill="#94a3b8" stroke="#94a3b8" stroke-width="1" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="360" height="1528" rx="20" fill="url(#canvas)"/>
+<ellipse cx="43.2" cy="0" rx="162" ry="286" fill="url(#glow-teal)"/>
+<ellipse cx="331.2" cy="1375.2" rx="162" ry="312" fill="url(#glow-violet)"/>
+<ellipse cx="270" cy="0" rx="108" ry="182" fill="url(#glow-amber)"/>
+<rect x=".5" y=".5" width="359" height="1527" rx="19.5" fill="none" stroke="#0f172a" stroke-opacity="0.07"/>
+<text x="20" y="40" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="19" font-weight="700" fill="#0f172a" text-anchor="start">Envelope, prepare, mount</text>
+<text x="20" y="66" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">Cache what the origin answered; prepare</text>
+<text x="20" y="84" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">it on every request; mount blocks in</text>
+<text x="20" y="102" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">the browser.</text>
+<path d="M192 224 L192 264" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M228 376 L228 440" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M40 320 L32 320 Q24 320 24 328 L24 616 Q24 624 32 624 L40 624" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M192 688 L192 728" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M192 824 L192 864" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M192 976 L192 1016" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M228 1112 L228 1176" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M40 920 L32 920 Q24 920 24 928 L24 1352 Q24 1360 32 1360 L40 1360" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<g><rect x="40" y="128" width="304" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="54" y="140" width="24" height="24" rx="7.2" fill="#eef2f6"/><path transform="translate(59 145) scale(0.58)" d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5zM3 9h18M6.5 6.5h.01M9 6.5h.01" fill="none" stroke="#475569" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="86" y="156.5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#475569" text-anchor="start" letter-spacing=".04em">Browser</text>
+<text x="54" y="186.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Open a page</text>
+<text x="54" y="207.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="start">/pages/x</text></g>
+<g><rect x="40" y="264" width="304" height="112" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="54" y="274.8" width="24" height="24" rx="7.2" fill="#d5f5ef"/><path transform="translate(59 279.8) scale(0.58)" d="M4 6h16a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1zM3.5 7l8.5 6 8.5-6" fill="none" stroke="#0f766e" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="86" y="291.3" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#0f766e" text-anchor="start" letter-spacing=".04em">Your app's server</text>
+<text x="54" y="321.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Envelope (cached)</text>
+<text x="54" y="341.9" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="start">body, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.8">X-Code-Release</tspan>,</text>
+<text x="54" y="360.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="start">language, ETag</text></g>
+<g><rect x="112" y="440" width="232" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="126" y="452" width="24" height="24" rx="7.2" fill="#ede9fe"/><path transform="translate(131 457) scale(0.58)" d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4" fill="none" stroke="#6d28d9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="158" y="468.5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#6d28d9" text-anchor="start" letter-spacing=".04em">Foliwake origin</text>
+<text x="126" y="498.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Page</text>
+<text x="126" y="519.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="start">/x.plain.html</text></g>
+<g><rect x="40" y="560" width="304" height="128" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="54" y="569.5" width="24" height="24" rx="7.2" fill="#d5f5ef"/><path transform="translate(59 574.5) scale(0.58)" d="M4 20L15 9M13 7l4 4M18 3v3M16.5 4.5h3M7 4v2M6 5h2M19.5 14v3M18 15.5h3" fill="none" stroke="#0f766e" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="86" y="586" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#0f766e" text-anchor="start" letter-spacing=".04em">Your app's server</text>
+<text x="54" y="615.9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" font-weight="650" fill="#0f172a" text-anchor="start">preparePage</text>
+<text x="54" y="636.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="start">check, rewrite, transform,</text>
+<text x="54" y="655.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="start">check again, per request</text>
+<text x="54" y="673.7" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="start">→ FoliwakePageData</text></g>
+<g><rect x="40" y="728" width="304" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="54" y="740" width="24" height="24" rx="7.2" fill="#eef2f6"/><path transform="translate(59 745) scale(0.58)" d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zM4 9h16M10 9v11" fill="none" stroke="#475569" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="86" y="756.5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#475569" text-anchor="start" letter-spacing=".04em">Browser</text>
+<text x="54" y="786.4" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" font-weight="650" fill="#0f172a" text-anchor="start">&lt;FoliwakePage page&gt;</text>
+<text x="54" y="807.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="start">renders the body first</text></g>
+<g><rect x="40" y="864" width="304" height="112" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="54" y="874.8" width="24" height="24" rx="7.2" fill="#eef2f6"/><path transform="translate(59 879.8) scale(0.58)" d="M12 4v11M7 10.5l5 5 5-5M5 20h14" fill="none" stroke="#475569" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="86" y="891.3" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#475569" text-anchor="start" letter-spacing=".04em">Browser</text>
+<text x="54" y="921.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Import the blocks module</text>
+<text x="54" y="941.9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="start">/foliwake-code/cd_A/</text>
+<text x="54" y="960.4" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="start">scripts/blocks.js</text></g>
+<g><rect x="40" y="1016" width="304" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="54" y="1028" width="24" height="24" rx="7.2" fill="#d5f5ef"/><path transform="translate(59 1033) scale(0.58)" d="M4 8h15M15.5 4.5L19 8l-3.5 3.5M20 16H5M8.5 12.5L5 16l3.5 3.5" fill="none" stroke="#0f766e" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="86" y="1044.5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#0f766e" text-anchor="start" letter-spacing=".04em">Your app's server</text>
+<text x="54" y="1074.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Code proxy</text>
+<text x="54" y="1095.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="start">/foliwake-code</text></g>
+<g><rect x="112" y="1176" width="232" height="112" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="126" y="1186.8" width="24" height="24" rx="7.2" fill="#ede9fe"/><path transform="translate(131 1191.8) scale(0.58)" d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9M8 5.25l8 4.5" fill="none" stroke="#6d28d9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="158" y="1203.3" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#6d28d9" text-anchor="start" letter-spacing=".04em">Foliwake origin</text>
+<text x="126" y="1233.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Code release</text>
+<text x="126" y="1253.9" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="start">cd_A</text>
+<text x="126" y="1272.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#64748b" text-anchor="start">immutable</text></g>
+<g><rect x="40" y="1312" width="304" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="54" y="1324" width="24" height="24" rx="7.2" fill="#eef2f6"/><path transform="translate(59 1329) scale(0.58)" d="M4 10h6v10H5a1 1 0 0 1-1-1zM10 14h10v5a1 1 0 0 1-1 1h-9M14 4h5a1 1 0 0 1 1 1v5h-6z" fill="none" stroke="#475569" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="86" y="1340.5" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11" font-weight="600" fill="#475569" text-anchor="start" letter-spacing=".04em">Browser</text>
+<text x="54" y="1370.4" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.5" font-weight="650" fill="#0f172a" text-anchor="start">mountBlocks(container, host)</text>
+<text x="54" y="1391.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="start">blocks send events to your app</text></g>
+<rect x="156.4" y="396.3" width="143.3" height="23.5" rx="11" fill="#ffffff" stroke="#0f172a" stroke-opacity="0.1"/>
+<path transform="translate(164.4 401.5) scale(0.542)" d="M14.5 4a5.5 5.5 0 1 1-4.2 9.05L4 19.5V16h2.5v-2.5H9l1.3-1.3A5.5 5.5 0 0 1 14.5 4zM16 7.5h.01" fill="none" stroke="#b45309" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="236" y="412" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" font-weight="500" fill="#b45309" text-anchor="middle">with the credential</text>
+<rect x="204.6" y="1132.3" width="46.8" height="23.5" rx="11" fill="#ffffff" stroke="#0f172a" stroke-opacity="0.1"/>
+<text x="228" y="1148" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" font-weight="500" fill="#475569" text-anchor="middle">proxy</text>
+<path transform="translate(55.4 1456) scale(0.625)" d="M6 11h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1zM8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#64748b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="77.4" y="1468" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">The browser never talks to the origin:</text>
+<text x="77.4" y="1487" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">no credential reaches it, and your</text>
+<text x="77.4" y="1506" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">CSP stays <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12.2">script-src 'self'</tspan>.</text>
+</svg>

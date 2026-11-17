@@ -5,7 +5,7 @@ Read it once; the guides and the reference assume it.
 
 ## Who does what
 
-![Authors write Markdown pages and block authors make Git commits; the Foliwake platform turns them into page HTML and code releases. On your side, the app developer uses the SDK: @foliwake/server or /next on the server reads, prepares and proxies; @foliwake/client or /react in the browser mounts blocks.](/diagrams/who-does-what.svg)
+<Diagram name="who-does-what" alt="Authors write Markdown pages and block authors make Git commits; the Foliwake platform turns them into page HTML and code releases. On your side, the app developer uses the SDK: @foliwake/server or /next on the server reads, prepares and proxies; @foliwake/client or /react in the browser mounts blocks." />
 
 The **platform** renders pages, captures code releases and serves both.
 It is not part of this SDK.
@@ -97,7 +97,7 @@ So:
 
 ## Content and code are released separately
 
-![A commit pushed to a branch gives a branch preview. A commit merged to main goes through site-check, becomes code release cd_N, the preview is rebuilt with it, and the release (auto or manual) takes it live.](/diagrams/release-flow.svg)
+<Diagram name="release-flow" alt="A commit pushed to a branch gives a branch preview. A commit merged to main goes through site-check, becomes code release cd_N, the preview is rebuilt with it, and the release (auto or manual) takes it live." />
 
 Publishing pages keeps the live code.
 New code reaches live only through the preview, where every page is rebuilt with it first.
@@ -136,7 +136,7 @@ A difference is reported as `EVENT_PREFIX_MISMATCH`.
 
 ## Embedding: envelope, prepare, mount
 
-![The browser opens /pages/x in your app; your server reads /x.plain.html from the origin with the credential and caches the envelope; preparePage runs per request and returns FoliwakePageData; the browser renders the body, imports the blocks module through your code proxy (the release is immutable), mounts blocks and receives their events.](/diagrams/embedding.svg)
+<Diagram name="embedding" alt="The browser opens /pages/x in your app; your server reads /x.plain.html from the origin with the credential and caches the envelope; preparePage runs per request and returns FoliwakePageData; the browser renders the body, imports the blocks module through your code proxy (the release is immutable), mounts blocks and receives their events." />
 
 1. **Envelope.** Your server reads `<path>.plain.html` with the credential.
    What the origin answered (body, `X-Code-Release`, language, ETag) is the envelope.

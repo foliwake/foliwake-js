@@ -20,17 +20,24 @@
   }
 }
 
-/* Diagrams: light cards (docs/public/diagrams). Images in the article body open full screen on click
-   (medium-zoom, theme/index.js). */
+/* Images in the article body open full screen on click (medium-zoom, theme/index.js). */
 .vp-doc img {
   cursor: zoom-in;
 }
 
-/* Dark theme: the light diagram card sits on the dark page like the hero art, slightly dimmed. */
-.dark .vp-doc img[src*='/diagrams/'] {
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
-  filter: brightness(0.92);
+/* Diagrams (theme/Diagram.vue): each has a light and a dark version; only the one for the theme is shown. */
+.vp-doc .diagram {
+  margin: 24px 0;
+}
+
+.vp-doc .diagram img {
+  display: block;
+  margin: 0 auto;
+}
+
+.dark .diagram-light,
+html:not(.dark) .diagram-dark {
+  display: none;
 }
 
 .medium-zoom-overlay {
