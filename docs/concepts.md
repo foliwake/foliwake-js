@@ -100,9 +100,6 @@ So:
 - a block always runs with the kit it was released and tested with;
 - two pages of different releases in one app do not interfere (the map is scoped to each release's path).
 
-The map also has the old specifier `foliwake`.
-It is deprecated and leaves the map in 0.5.0; import `@foliwake/block-kit`.
-
 ## Content and code are released separately
 
 ```text
