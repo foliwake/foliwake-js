@@ -464,7 +464,7 @@ interface FoliwakeMountOptions<Ext extends object = Record<never, never>, Events
 
 #### `FoliwakePageError`
 
-What `onError` receives. Codes: `NO_CODE_RELEASE`, `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`, `BLOCKS_MODULE_FAILED`, `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
+What `onError` receives. Codes: `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`, `BLOCKS_MODULE_FAILED`, `BLOCKS_MOUNT_FAILED`, `BLOCKS_READY_FAILED`, `EVENT_PREFIX_MISMATCH`, `HOOK_FAILED`.
 
 ```ts
 interface FoliwakePageError

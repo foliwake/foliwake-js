@@ -1,24 +1,16 @@
 // The names the blocks contract reserves as values (attributes, shells, the host's context key) and the import
-// map of a code release: the kit under `@foliwake/block-kit` and, for one more minor version, under `foliwake`.
+// map of a code release: the kit under `@foliwake/block-kit`.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import {
-  KIT_PATH,
-  KIT_SPECIFIER,
-  KIT_SPECIFIERS,
-  LEGACY_KIT_SPECIFIER,
-  pageImportMap,
-} from '@foliwake/blocks-contract/import-map';
+import { KIT_PATH, KIT_SPECIFIER, pageImportMap } from '@foliwake/blocks-contract/import-map';
 import { BLOCK_ATTRIBUTES, HOST_CONTEXT_KEY, KNOWN_SHELLS } from '@foliwake/blocks-contract/reserved';
 
-test('the import map maps both kit specifiers to the release kit, in a scope of the release', () => {
+test('the import map maps the kit specifier to the release kit, in a scope of the release', () => {
   assert.equal(KIT_SPECIFIER, '@foliwake/block-kit');
-  assert.equal(LEGACY_KIT_SPECIFIER, 'foliwake');
-  assert.deepEqual(KIT_SPECIFIERS, ['@foliwake/block-kit', 'foliwake']);
   const base = '/foliwake-code/cd_1/';
   const kit = `${base}${KIT_PATH}`;
-  const map = { scopes: { [base]: { '@foliwake/block-kit': kit, foliwake: kit } } };
+  const map = { scopes: { [base]: { '@foliwake/block-kit': kit } } };
   assert.deepEqual(JSON.parse(pageImportMap({ codeBase: base })), map);
   assert.equal(pageImportMap({ codeBase: null }), null);
   assert.doesNotMatch(pageImportMap({ codeBase: '/a</script>/' }), /</);

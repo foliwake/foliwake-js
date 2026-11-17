@@ -2,7 +2,6 @@
 //
 //   import { defineBlock, html } from '@foliwake/block-kit';
 //
-// (`foliwake`, the previous specifier, is still mapped for one minor version.)
 // The engine maps the specifier to `<code release>/_foliwake/block-kit.js` with an import map in every
 // page it composes, and adds this file (with the vendored lit-html next to it) to every code release, so a
 // release always runs the kit it was prepared and tested with. No build step, no other dependency.
@@ -628,18 +627,24 @@ function mountView<Props>(
  * The block `name` (its folder, `data-component`): `setup(fields, ctx)` runs once per root and may return a
  * cleanup function or `{dispose}`, or a promise of either. The result is the block's `init(root, host, meta)`
  * for the loader, idempotent per root; `host.signal` aborting disposes it. After a setup that did not send
- * `ready`, the kit sends it. Option `prefix`: the prefix of the block's events (default `block`).
+ * `ready`, the kit sends it.
+ *
+ * Options: `prefix`, the prefix of the block's events (default `block`); `autoReady`, whether the kit sends
+ * `ready` after a setup that did not (default `true`). With `autoReady: false` a root gets `ready` only when the
+ * block sends it (`ctx.emit('ready', …)`), so a setup that cannot run (an unknown form, a missing host member)
+ * leaves the root without `ready`.
  */
 export function defineBlock<Name extends string>(
   name: Name,
   setup: (fields: Fields<Name>, ctx: BlockContext<Name>) => SetupResult | Promise<SetupResult>,
-  options: { prefix?: string } = {},
+  options: { prefix?: string; autoReady?: boolean } = {},
 ): BlockInit {
   if (typeof name !== 'string' || !NAME.test(name)) {
     throw new TypeError(`defineBlock: "${name}" is not a block name ([a-z][a-z0-9-], at most 32)`);
   }
   if (typeof setup !== 'function') throw new TypeError('defineBlock: setup must be a function (fields, ctx) => …');
   const prefix = options.prefix ?? 'block';
+  const autoReady = options.autoReady ?? true;
   function init(root: KitRoot, host?: HostMembers, meta?: BlockMeta): Disposable | Promise<Disposable> {
     const known = root[ROOT];
     if (known?.handle) return known.handle;
@@ -655,7 +660,7 @@ export function defineBlock<Name extends string>(
     const adopt = (out: SetupResult) => {
       if (typeof out === 'function') instance.later(out);
       else if (typeof out?.dispose === 'function') instance.later(() => out.dispose());
-      if (instance.live() && !instance.readySent) instance.emit('ready', {});
+      if (autoReady && instance.live() && !instance.readySent) instance.emit('ready', {});
       return handle;
     };
     const failed = () => {

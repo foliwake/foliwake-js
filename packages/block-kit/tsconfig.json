@@ -1,5 +1,5 @@
 {
-  "//": "The kit (src/block-kit.ts) compiles to one browser module, dist/block-kit.js, importing only the vendored ./lit-html.js: no bundler, tsc emits each source file as it is. block-kit-1.js and lit-html.js are frozen JS, copied as written (tools/build.mjs).",
+  "//": "The kit (src/block-kit.ts) compiles to one browser module, dist/block-kit.js, importing only the vendored ./lit-html.js: no bundler, tsc emits each source file as it is. lit-html.js is vendored JS, copied as written (tools/build.mjs).",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2023",

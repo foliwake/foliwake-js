@@ -129,7 +129,7 @@ if (has('@foliwake/site-check')) {
   const { parseAccessConfig } = await import('@foliwake/site-check/formats/access');
   const bytes = (text) => new TextEncoder().encode(text);
   const files = new Map([
-    ['scripts/components.js', bytes("import 'foliwake';")],
+    ['scripts/components.js', bytes("import '@foliwake/block-kit';")],
     ['styles/styles.css', bytes('')],
     ['components/note/note.json', bytes('{"fields": [{"name": "text", "type": "text"}]}')],
     ['components/note/note.css', bytes('')],

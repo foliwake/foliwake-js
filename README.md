@@ -11,7 +11,7 @@ release; and what a site developer uses to create and check the site's code repo
 | [`@foliwake/client`](packages/client/README.md) | framework-free browser client: `mountFoliwakePage`, `createHost`, `subscribeBlockEvents`; the base of every adapter |
 | [`@foliwake/react`](packages/react/README.md) | `<FoliwakePage>`, `useFoliwakeEvents`, `FoliwakeProvider`: a thin, SSR-safe wrapper of `@foliwake/client` |
 | [`@foliwake/next`](packages/next/README.md) | Next.js App Router adapter: `withFoliwake`, cached envelope read, `<FoliwakeServerPage>`, preview pages, code and media route handlers, CSP header |
-| [`@foliwake/block-kit`](packages/block-kit/README.md) | the module `foliwake` site blocks import (`defineBlock`, `html`), its types and the blocks contract's; the browser files of a code release |
+| [`@foliwake/block-kit`](packages/block-kit/README.md) | the module site blocks import (`defineBlock`, `html`), its types and the blocks contract's; the browser files of a code release |
 | [`@foliwake/site-check`](packages/site-check/README.md) | the checks the platform runs on a site's code repository, as a library and the CLI `npx @foliwake/site-check` |
 | [`create-foliwake`](packages/create-foliwake/README.md) | `npm create foliwake@latest`: a new site code repository from the starters, checked with `@foliwake/site-check` |
 
@@ -37,7 +37,7 @@ Each package's README has what it is for, a minimal example, task examples, comp
 
 | Packages | Origin (`.plain.html`) | Blocks contract | Config | Next | React | Browser (`@foliwake/client`) |
 |---|---|---|---|---|---|---|
-| 0.3.x | plain/2 (`X-Code-Release`); plain/1 → static body | `foliwake-blocks/2` | `foliwake.remote.json` v2 | 16.2.x with `cacheComponents` (tested 16.2.12) | 19.2+ (tested 19.3.0) | ES2022 + dynamic `import()` (tested: Chrome) |
+| 0.4.x | plain/2 (`X-Code-Release` required) | `foliwake-blocks/2` | `foliwake.remote.json` v2 | 16.2.x with `cacheComponents` (tested 16.2.12) | 19.2+ (tested 19.3.0) | ES2022 + dynamic `import()` (tested: Chrome) |
 
 Node.js 22.22 or newer. The packages share one version and are released together while 0.x; a minor may
 break before 1.0 (each `CHANGELOG.md` marks it **BREAKING**). Each app package's `package.json` carries

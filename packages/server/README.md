@@ -558,10 +558,10 @@ interface OriginRequestOptions
 
 #### `blocksUrlOf()`
 
-The same-origin URL of the blocks module, or null (no entry, no code release, or `local` from a remote origin).
+The same-origin URL of the blocks module, or null when the config names no blocks entry.
 
 ```ts
-function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeRelease: CodeReleaseId | null): {
+function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeRelease: CodeReleaseId): {
     base: string;
     url: string;
 } | null
@@ -982,7 +982,7 @@ function resolveInRelease(from: string, specifier: string): string | null
 
 #### `staticImports()`
 
-The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIERS).
+The relative static import specifiers of an ES module's text, and the kit's (KIT_SPECIFIER).
 
 ```ts
 function staticImports(source: string): string[]

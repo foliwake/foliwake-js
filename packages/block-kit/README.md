@@ -39,5 +39,18 @@ blocks contract): a loader refuses a block of another major. The loader always p
 without one (an editor, a test), a block falls back to the browser: its key from `data-block-key`, its labels
 from its own `ui`.
 
+After a setup that did not send `ready`, the kit sends `<prefix>:ready` (`{ key, block, contract: 2 }`).
+A block that decides itself when it is ready opts out with `autoReady: false`:
+
+```js
+export default defineBlock('quiz', (fields, ctx) => {
+  if (!knownForm(fields)) return; // no ready: the root stays unready
+  ctx.render(() => html`…`);
+  ctx.emit('ready', { required: true, restored: false });
+}, { prefix: 'quiz', autoReady: false });
+```
+
+With `autoReady: false` a root gets `ready` only when the block sends it; the default is `true`.
+
 A new site with a working block: [`create-foliwake`](https://www.npmjs.com/package/create-foliwake). The checks
 a block must pass: [`@foliwake/site-check`](https://www.npmjs.com/package/@foliwake/site-check).

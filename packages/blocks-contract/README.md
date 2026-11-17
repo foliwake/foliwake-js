@@ -287,7 +287,7 @@ interface CoreEventDetails
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit after setup when it did not (block-kit 1 does not). |
+| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit after setup when it did not (unless the block opted out with `defineBlock(…, { autoReady: false })`). |
 | `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
 
 #### `HostCore`
@@ -593,22 +593,6 @@ The specifier blocks import the block-kit with: the kit's npm name, so its types
 const KIT_SPECIFIER = "@foliwake/block-kit"
 ```
 
-#### `KIT_SPECIFIERS`
-
-Every specifier the import map of a code release resolves to its kit.
-
-```ts
-const KIT_SPECIFIERS: readonly string[]
-```
-
-#### `LEGACY_KIT_SPECIFIER`
-
-The previous specifier, mapped to the same kit for one more minor version. Deprecated: import `@foliwake/block-kit`; this key leaves the map in the next minor version.
-
-```ts
-const LEGACY_KIT_SPECIFIER = "foliwake"
-```
-
 ### `@foliwake/blocks-contract/page`
 
 **Interfaces**
@@ -643,7 +627,7 @@ interface FoliwakePageData
 | `path` | `string` |  |
 | `mode` | `string \| null` | The site's mode of the page (`PrepareOptions.mode`), or null. |
 | `html` | `string` | Prepared: checked, rewritten, transformed, checked again. |
-| `codeRelease` | `CodeReleaseId \| null` |  |
+| `codeRelease` | `CodeReleaseId` |  |
 | `htmlContract` | `string` |  |
 | `lang` | `string \| null` |  |
 | `blocks` | `string[]` | Distinct `data-component` names in the body, sorted (CSS preload). |
@@ -666,7 +650,7 @@ interface PageEnvelope
 | `channel` | `ChannelName` |  |
 | `path` | `string` |  |
 | `html` | `string` | The body as served. |
-| `codeRelease` | `CodeReleaseId \| null` | `X-Code-Release` (plain/2); null from a plain/1 origin → the body is shown static. |
+| `codeRelease` | `CodeReleaseId` | `X-Code-Release` (plain/2). |
 | `htmlContract` | `string` | `X-Html-Contract`. |
 | `lang` | `string \| null` | `Content-Language`. |
 | `pageId` | `string \| null` | `X-Page-Id`. |

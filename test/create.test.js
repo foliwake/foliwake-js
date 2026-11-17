@@ -33,7 +33,7 @@ const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const MINIMAL_FILES = [
   '.foliwake/schemas/block-1.schema.json', // for editors (`$schema`), git-ignored: not committed
-  '.foliwake/types/foliwake.d.ts', // the types of `foliwake` for editors (jsconfig.json), git-ignored
+  '.foliwake/types/foliwake.d.ts', // the types of `@foliwake/block-kit` for editors (jsconfig.json), git-ignored
   '.github/actions/foliwake-request/action.yml',
   '.github/scripts/foliwake-report.py',
   '.github/workflows/branch-preview.yml',

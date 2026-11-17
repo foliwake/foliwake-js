@@ -19,7 +19,7 @@ before(async () => {
     [`/code/${CD}/scripts/blocks.js`]: js(`import{emit as e}from"./block-kit.js";import { BLOCKS_CONTRACT } from './host.js';export{x}from"./host.js";const later=()=>import("./lazy.js");`),
     [`/code/${CD}/scripts/block-kit.js`]: js('export const emit=1;'),
     [`/code/${CD}/scripts/host.js`]: js('import"./block-kit.js";export const BLOCKS_CONTRACT={};'),
-    [`/code/${CD}/components/question/question.js`]: js(`import{defineBlock,html}from"foliwake";import x from"lodash";export default defineBlock("question",()=>{})`),
+    [`/code/${CD}/components/question/question.js`]: js(`import{defineBlock,html}from"@foliwake/block-kit";import x from"lodash";export default defineBlock("question",()=>{})`),
     [`/code/${CD}/components/dsl/dsl.js`]: js(`import{j as t}from"../../scripts/react-vendor-1a2b.js";import"https://evil.example/x.js";import"../../../outside.js";export default 1`),
     [`/code/${CD}/scripts/react-vendor-1a2b.js`]: js('export const j=1;'),
     [`/code/${CD}/_foliwake/block-kit.js`]: js('import{html}from"./lit-html.js";export const defineBlock=1;'),
@@ -35,10 +35,12 @@ const pageOf = async (channel = 'live') => preparePage(config, await readEnvelop
 
 test('static imports: minified and spaced forms, not dynamic import()', () => {
   assert.deepEqual(staticImports(`import{a}from"./a.js";import b from '../b.js';import"./c.js";export*from"./d.js";import('./lazy.js');const s="x";`), ['./a.js', '../b.js', './c.js', './d.js']);
-  assert.deepEqual(staticImports(`import { defineBlock } from 'foliwake';import x from "lodash";import y from "foliwake-ui";`), ['foliwake'], 'the bare kit specifier, no other bare one');
+  const bare = `import { defineBlock } from '@foliwake/block-kit';import x from "lodash";import y from "foliwake";`;
+  assert.deepEqual(staticImports(bare), ['@foliwake/block-kit'], 'the bare kit specifier, no other bare one');
 });
 
-test('question + dsl: entry, its imports, the blocks on the page, block-kit (bare `foliwake`) with its lit-html, the React chunk, and their CSS', async () => {
+test('question + dsl: entry, its imports, the blocks on the page, block-kit with its lit-html, '
+  + 'the React chunk, and their CSS', async () => {
   const hints = await preloadHints(config, client, await pageOf());
   const base = `/foliwake-code/${CD}/`;
   assert.deepEqual(hints.filter((h) => h.rel === 'modulepreload').map((h) => h.href.slice(base.length)).sort(), [
@@ -69,7 +71,7 @@ test('the code release is read once (immutable), preview through its own prefix'
 
 test('no code release, or an unreadable descriptor: fewer hints, never an error', async () => {
   const page = await pageOf();
-  assert.deepEqual(await preloadHints(config, client, { ...page, codeBase: null, codeRelease: null, blocksUrl: null }), []);
+  assert.deepEqual(await preloadHints(config, client, { ...page, codeBase: null, blocksUrl: null }), []);
   const broken = createOriginClient(config, { DEMO_LIVE_PASSWORD: 'l' }, { fetch: async () => { throw new Error('down'); } });
   assert.deepEqual(await preloadHints(config, broken, page), [{ rel: 'modulepreload', href: `/foliwake-code/${CD}/scripts/blocks.js` }]);
 });

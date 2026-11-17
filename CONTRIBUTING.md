@@ -22,5 +22,4 @@
   types included); tsc compiles it to `dist/block-kit.js`, one readable ES2023 module whose only import is the
   vendored `./lit-html.js`, which the engine copies as it is into every code release. The declarations are
   generated (`block-kit.d.ts`, `index.d.ts`; the standalone `foliwake.d.ts` by `tools/block-kit-declaration.mjs`).
-  `block-kit-1.js` (the kit of blocks contract 1) and `lit-html.js` stay frozen JS, copied as written: code
-  releases already published import them byte for byte. `src/lit-html.d.ts` types the kit's import of lit-html.
+  `lit-html.js` is vendored JS, copied as written. `src/lit-html.d.ts` types the kit's import of lit-html.
