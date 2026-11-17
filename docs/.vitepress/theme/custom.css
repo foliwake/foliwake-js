@@ -1,0 +1,30 @@
+/* Home page hero art: a wide picture instead of the default square logo. */
+
+/* The default blurred circle behind the image would clash with the art. */
+.VPHero .image-bg {
+  display: none;
+}
+
+/* Soft edges, so the art's light background fades into the page in both themes. */
+.VPHero .image-src {
+  max-width: 100%;
+  max-height: none;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 55%, transparent 75%);
+  mask-image: radial-gradient(ellipse at center, #000 55%, transparent 75%);
+}
+
+/* Dark theme: the light art reads as a card, not as a pale blur on a dark page. */
+.dark .VPHero .image-src {
+  -webkit-mask-image: none;
+  mask-image: none;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+  filter: brightness(0.9);
+}
+
+@media (min-width: 960px) {
+  .VPHero .image-container {
+    width: 560px;
+    height: 320px;
+  }
+}

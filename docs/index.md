@@ -18,6 +18,9 @@ hero:
     - theme: alt
       text: GitHub
       link: https://github.com/foliwake/foliwake-js
+  image:
+    src: /hero.webp
+    alt: Pages fly out of an open book and turn into interactive blocks
 
 features:
   - title: I write blocks
