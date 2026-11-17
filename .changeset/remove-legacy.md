@@ -22,3 +22,8 @@
   without blocks. `codeRelease` of `PageEnvelope` and `FoliwakePageData` is `CodeReleaseId` (never null),
   and the client error code `NO_CODE_RELEASE` is removed.
 - A `foliwake.remote.json` with any `version` other than 2 is refused with one "unsupported version" error.
+
+Added (not breaking): `defineBlock(name, setup, { autoReady: false })` in `@foliwake/block-kit`. The kit then
+sends `ready` only when the block sends it (`ctx.emit('ready', …)`), so a setup that cannot run leaves the root
+without `ready`. The default (`autoReady: true`) is unchanged: after a setup that did not send `ready`, the kit
+sends it.

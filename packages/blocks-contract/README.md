@@ -286,7 +286,7 @@ interface CoreEventDetails
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit after setup when it did not (block-kit 1 does not). |
+| `ready` | `{ contract: number; }` | The block finished its setup: the block sends it, or the block-kit after setup when it did not (unless the block opted out with `defineBlock(…, { autoReady: false })`). |
 | `error` | `{ code: string; message: string; recoverable: boolean; }` |  |
 
 #### `HostCore`

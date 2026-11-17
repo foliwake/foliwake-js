@@ -1,7 +1,7 @@
 // @foliwake/block-kit in a real browser (system Chrome through playwright-core): the module `@foliwake/block-kit`
 // (dist/block-kit.js with dist/lit-html.js), loaded through an import map as pages load it.
 // Covers defineBlock(name, setup) and its ctx: fields of every field type, on/emit and their end on dispose,
-// idempotent init, host.signal, the automatic `ready`, t() and its fallback chain, state batching,
+// idempotent init, host.signal, the automatic `ready` and its opt-out, t() and its fallback chain, state batching,
 // render/update/dispose, list over the server list, effect, mount with its rollback (also with real React 19
 // through the starters' React view), a scaffolded block through the starter loader, and readFields(root).
 // Ported from the engine's block-kit browser tests, with the same assertions.
@@ -223,6 +223,33 @@ test('ready is sent after setup when the block did not send it; not twice; '
   assert.deepEqual(events, [
     ['ready', { key: 'one', block: 'all', contract: 2 }],
     ['ready', { key: 'two', block: 'all', contract: 2, restored: true }],
+  ]);
+});
+
+test('autoReady: false: ready only when the block sends it, sync or async; the default still sends it', async () => {
+  const page = await open();
+  const events = await page.evaluate(async () => {
+    const { defineBlock } = window.kit;
+    const [one, two] = document.querySelectorAll('[data-component="all"]');
+    one.setAttribute('data-block-key', 'one');
+    two.setAttribute('data-block-key', 'two');
+    const quiet = { prefix: 'quiz', autoReady: false };
+    document.addEventListener('quiz:ready', (e) => window.events.push(['quiz:ready', e.detail]));
+    defineBlock('all', () => {}, quiet)(one); // a setup that cannot run: no ready
+    await defineBlock('all', async () => {}, quiet)(document.createElement('div'));
+    await defineBlock('all', async (fields, c) => {
+      await new Promise((r) => setTimeout(r, 20));
+      c.emit('ready', { restored: false });
+    }, quiet)(two);
+    const three = document.createElement('div');
+    three.setAttribute('data-block-key', 'three');
+    one.append(three);
+    defineBlock('all', () => {}, { prefix: 'quiz', autoReady: true })(three);
+    return window.events;
+  });
+  assert.deepEqual(events, [
+    ['quiz:ready', { key: 'two', block: 'all', contract: 2, restored: false }],
+    ['quiz:ready', { key: 'three', block: 'all', contract: 2 }],
   ]);
 });
 
