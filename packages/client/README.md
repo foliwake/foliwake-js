@@ -150,10 +150,8 @@ customElements.define('foliwake-page', FoliwakePageElement);
 
 ### The import map of `@foliwake/block-kit`
 
-Blocks import the block kit by the bare specifier `@foliwake/block-kit`. The map also has the previous
-specifier `foliwake` for the same kit; it is deprecated and leaves the map in 0.5.0. Before it imports a page's
-blocks module,
-`mountFoliwakePage` makes sure the document has the import map of the page's code release (scoped to its code
+Blocks import the block kit by the bare specifier `@foliwake/block-kit`. Before it imports a page's blocks
+module, `mountFoliwakePage` makes sure the document has the import map of the page's code release (scoped to its code
 path, so pages of two releases resolve their own kits): a map the server rendered (`@foliwake/next`) is used,
 else one is added to `<head>`. `pageImportMap(page)` gives the map's text for your own server rendering
 (`<script type="importmap" data-foliwake-code="${page.codeBase}">`).

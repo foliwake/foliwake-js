@@ -17,7 +17,7 @@ that ask and grade (answers, verdicts, saved answers, `answer` and `complete` ev
 | --- | --- |
 | `@foliwake/blocks-contract` | `BlocksModule`, `MountHandle`, `MountReport`, `MountStatus`, `BlockInit`, `BlockMeta`, `BlockHandle`, `BlockHost`, `HostCore`, `HostReact`, `KnownShell`, `BlockEvents`, `BlockEventDetail`, `FoliwakeEvent` |
 | `@foliwake/blocks-contract/assessment` | `AssessmentHost`, `AssessmentHostMembers`, `AssessmentEvents`, `AssessmentMode`, `Answer`, `SavedAnswer`, `Verdict` |
-| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`@foliwake/block-kit`, and the deprecated `foliwake` until 0.5.0 → its block-kit, scoped to its code path), shared by `@foliwake/server` and `@foliwake/client`; `KIT_SPECIFIER`, `KIT_SPECIFIERS`, `KIT_PATH` |
+| `@foliwake/blocks-contract/import-map` | `pageImportMap(page)`: the import map of a code release (`@foliwake/block-kit` → its block-kit, scoped to its code path), shared by `@foliwake/server` and `@foliwake/client`; `KIT_SPECIFIER`, `KIT_PATH` |
 | `@foliwake/blocks-contract/reserved` | `BLOCK_ATTRIBUTES`, `KNOWN_SHELLS`, `HOST_CONTEXT_KEY`: names of the contract as values |
 | `@foliwake/blocks-contract/page` | `PageEnvelope` (the origin's answer, the only thing an app caches), `FoliwakePageData` (the prepared page a client component receives), `ClientSettings`, `PreloadHint`, `QueryIndex` |
 
@@ -185,8 +185,7 @@ export const isStatic = (page: FoliwakePageData): boolean => page.blocksUrl === 
   accepted. (A blocks module declares its own major in `BLOCKS_CONTRACT`; `@foliwake/client` refuses another one
   with `BLOCKS_CONTRACT_UNSUPPORTED`.)
 - **The kit's specifier is `@foliwake/block-kit`**, the npm name of the kit, so its types need no path
-  mapping. The import map of a code release also maps the previous specifier `foliwake` to the same kit; that
-  key is **deprecated** and leaves the map in 0.5.0.
+  mapping.
 - **Attributes** a loader and an app share (`BLOCK_ATTRIBUTES`): `data-component` on a block root (written by the
   engine), `data-component-status` (`loading` · `ready` · `error`) and `data-block-key` on a root, and
   `data-component-css` (the block's name) with `data-code-release` on a block's stylesheet link.

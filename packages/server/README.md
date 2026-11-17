@@ -172,8 +172,8 @@ export const settingsForBrowser = clientSettings(config);
 | | |
 | --- | --- |
 | Node.js | 22.22 or newer (Web `fetch`, `Request`, `Response`, streams) |
-| Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); a plain/1 origin gives bodies without blocks |
-| Config | `foliwake.remote.json` version 2 (version 1 files are refused) |
+| Foliwake origin | plain/2: `X-Code-Release` with every `.plain.html` (a body without it is refused) |
+| Config | `foliwake.remote.json` version 2 |
 | Blocks contract | `foliwake-blocks/2` |
 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package

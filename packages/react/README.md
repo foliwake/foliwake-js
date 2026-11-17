@@ -137,7 +137,7 @@ export function LessonWithStatus({ page }: { page: FoliwakePageData }) {
 ```
 
 Statuses: `mounting`, then `ready`, `partial` (some blocks failed) or `static` (shown without blocks; with
-`requireBlocks` that is `error`). Error codes include `NO_CODE_RELEASE`, `BLOCKS_CONTRACT_UNSUPPORTED`,
+`requireBlocks` that is `error`). Error codes include `NO_BLOCKS_ENTRY`, `BLOCKS_CONTRACT_UNSUPPORTED`,
 `BLOCKS_MODULE_FAILED` and `EVENT_PREFIX_MISMATCH`.
 
 ## Compatibility

@@ -197,9 +197,8 @@ async function LessonBody({ params }: { params: Params }) {
 }
 ```
 
-`<FoliwakeImportMap>` renders the page's import map: blocks import the block kit as `@foliwake/block-kit`
-(the deprecated `foliwake` is mapped too until 0.5.0), and the map points that name at the kit of the page's
-own code release, scoped to the release's code path
+`<FoliwakeImportMap>` renders the page's import map: blocks import the block kit as `@foliwake/block-kit`,
+and the map points that name at the kit of the page's own code release, scoped to the release's code path
 (`<FoliwakeServerPage>` renders it for you). `@foliwake/client` adds the same map when it is missing. A map
 that arrives after the document's first module load (a client navigation to a page of another code release)
 is honoured only by browsers with multiple import maps (Chrome 133+); module hints are therefore `preload
@@ -236,7 +235,7 @@ export async function readLiveEnvelope(path: string) {
 | Next.js | 16.2 or newer, below 17 (peer `>=16.2.0 <17`; tested with 16.2.12), App Router with `cacheComponents: true` |
 | React | 19.2 or newer (tested with 19.3.0) |
 | Node.js | 22.22 or newer |
-| Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); an older origin gives pages without blocks |
+| Foliwake origin | plain/2: `X-Code-Release` with every `.plain.html` (a body without it is refused) |
 | Config | `foliwake.remote.json` version 2 |
 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package
