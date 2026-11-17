@@ -72,7 +72,7 @@ Each package's README has its purpose, a minimal example, task examples, compati
 
 | Packages | Origin (`.plain.html`) | Blocks contract | Config | Next | React | Browser (`@foliwake/client`) |
 |---|---|---|---|---|---|---|
-| 0.3.x | plain/2 (`X-Code-Release`); plain/1 → static body | `foliwake-blocks/2` | `foliwake.remote.json` v2 | 16.2.x with `cacheComponents` (tested 16.2.12) | 19.2+ (tested 19.3.0) | ES2022 + dynamic `import()` (tested: Chrome) |
+| 0.4.x | plain/2 (`X-Code-Release` required) | `foliwake-blocks/2` | `foliwake.remote.json` v2 | 16.2.x with `cacheComponents` (tested 16.2.12) | 19.2+ (tested 19.3.0) | ES2022 + dynamic `import()` (tested: Chrome) |
 
 Node.js 22.22 or newer.
 The packages share one version and are released together.
