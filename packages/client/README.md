@@ -148,10 +148,10 @@ class FoliwakePageElement extends HTMLElement {
 customElements.define('foliwake-page', FoliwakePageElement);
 ```
 
-### The import map of `foliwake`
+### The import map of `@foliwake/block-kit`
 
-Blocks import the engine's block-kit by the bare specifier `foliwake`. Before it imports a page's blocks module,
-`mountFoliwakePage` makes sure the document has the import map of the page's code release (scoped to its code
+Blocks import the block kit by the bare specifier `@foliwake/block-kit`. Before it imports a page's blocks
+module, `mountFoliwakePage` makes sure the document has the import map of the page's code release (scoped to its code
 path, so pages of two releases resolve their own kits): a map the server rendered (`@foliwake/next`) is used,
 else one is added to `<head>`. `pageImportMap(page)` gives the map's text for your own server rendering
 (`<script type="importmap" data-foliwake-code="${page.codeBase}">`).
@@ -197,11 +197,12 @@ Changes per version, breaking ones marked: `CHANGELOG.md` in the package
   are an extension point. A hook gets a `signal` and must check it after each `await`; a running hook is not
   stopped by dispose.
 
-## Guides
+## See also
 
-- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react) (section
-  "Without a framework, or with another one" covers adapters)
-- [Write a block](https://docs.foliwake.dev/guide/write-a-block)
+- [`@foliwake/server`](https://www.npmjs.com/package/@foliwake/server): the server side that prepares the page
+  and proxies its code and pictures.
+- [`@foliwake/react`](https://www.npmjs.com/package/@foliwake/react): the React wrapper of this package.
+- [`@foliwake/block-kit`](https://www.npmjs.com/package/@foliwake/block-kit): how a site writes its blocks.
 
 License: Apache-2.0.
 

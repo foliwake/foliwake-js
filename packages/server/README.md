@@ -48,7 +48,7 @@ The config file sits in the app's root and holds no secrets, only the names of t
 ```
 
 An endpoint is open (no `auth`), behind HTTP Basic (`"type": "basic"`), or behind a delivery that checks
-service tokens, such as the Cloudflare Worker (`packages/worker-origin`):
+service tokens (for example an edge worker in front of the site's storage):
 
 ```json
 "live": {
@@ -172,8 +172,8 @@ export const settingsForBrowser = clientSettings(config);
 | | |
 | --- | --- |
 | Node.js | 22.22 or newer (Web `fetch`, `Request`, `Response`, streams) |
-| Foliwake origin | sends `X-Code-Release` with `.plain.html` (plain/2); a plain/1 origin gives bodies without blocks |
-| Config | `foliwake.remote.json` version 2 (version 1 files are refused) |
+| Foliwake origin | plain/2: `X-Code-Release` with every `.plain.html` (a body without it is refused) |
+| Config | `foliwake.remote.json` version 2 |
 | Blocks contract | `foliwake-blocks/2` |
 
 Changes per version, breaking ones marked: `CHANGELOG.md` in the package
@@ -194,11 +194,12 @@ Changes per version, breaking ones marked: `CHANGELOG.md` in the package
 - `preparePage` leaves `page.preload` empty; `preloadHints` fills it from the release's
   `components/components.json` (only blocks that declare a `.js` or `.css` get hints).
 
-## Guides
+## See also
 
-- [Embed Foliwake pages in a React or Next app](https://docs.foliwake.dev/guide/embed-in-react): config keys,
-  proxies, caching and troubleshooting.
-- [Configuration and storage](https://docs.foliwake.dev/guide/configuration-storage)
+- [`@foliwake/next`](https://www.npmjs.com/package/@foliwake/next): this toolkit wired into a Next.js App
+  Router app.
+- [`@foliwake/client`](https://www.npmjs.com/package/@foliwake/client) and
+  [`@foliwake/react`](https://www.npmjs.com/package/@foliwake/react): mount the prepared page in the browser.
 
 License: Apache-2.0.
 

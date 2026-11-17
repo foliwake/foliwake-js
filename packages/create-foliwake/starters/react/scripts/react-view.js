@@ -1,4 +1,4 @@
-// A React view for block-kit's ctx.mount (website/guide/write-a-block.md): `reactView(react, Component)`
+// A React view for block-kit's ctx.mount: `reactView(react, Component)`
 // renders Component with the block's props into the element the kit gives it, with `react` being
 // {createElement, createRoot}: the shell's (host.react) or the vendored scripts/vendor/react.js.
 // A render error after the first commit (React 19 onUncaughtError) fails the view: the kit shows the
