@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="1008" viewBox="0 0 360 1008" role="img" aria-labelledby="title desc">
+<title id="title">From a commit to live code</title>
+<desc id="desc">A commit pushed to a branch gives a branch preview with that branch's code and the preview content. A commit merged to main goes through site-check and becomes code release cd_N; the preview is rebuilt with it; the release, automatic or manual, then takes it live.</desc>
+<defs>
+<linearGradient id="canvas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbfcfd"/><stop offset="1" stop-color="#f2f5f8"/></linearGradient>
+<linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-slate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f8fa"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#effcf9"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-violet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f3ff"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<linearGradient id="tint-amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaeb"/><stop offset="1" stop-color="#f9fafc"/></linearGradient>
+<radialGradient id="glow-teal"><stop offset="0" stop-color="#5eead4" stop-opacity="0.28"/><stop offset="1" stop-color="#5eead4" stop-opacity="0"/></radialGradient>
+<radialGradient id="glow-violet"><stop offset="0" stop-color="#c4b5fd" stop-opacity="0.26"/><stop offset="1" stop-color="#c4b5fd" stop-opacity="0"/></radialGradient>
+<radialGradient id="glow-amber"><stop offset="0" stop-color="#fcd34d" stop-opacity="0.18"/><stop offset="1" stop-color="#fcd34d" stop-opacity="0"/></radialGradient>
+<filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.08"/></filter>
+<marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M1 1.2L8.6 5L1 8.8z" fill="#94a3b8" stroke="#94a3b8" stroke-width="1" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="360" height="1008" rx="20" fill="url(#canvas)"/>
+<ellipse cx="43.2" cy="0" rx="162" ry="286" fill="url(#glow-teal)"/>
+<ellipse cx="331.2" cy="907.2" rx="162" ry="312" fill="url(#glow-violet)"/>
+<ellipse cx="270" cy="0" rx="108" ry="182" fill="url(#glow-amber)"/>
+<rect x=".5" y=".5" width="359" height="1007" rx="19.5" fill="none" stroke="#0f172a" stroke-opacity="0.07"/>
+<text x="20" y="40" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="19" font-weight="700" fill="#0f172a" text-anchor="start">From a commit to live code</text>
+<text x="20" y="66" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">New code reaches live only through</text>
+<text x="20" y="84" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">the preview, where every page is</text>
+<text x="20" y="102" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13" font-weight="400" fill="#475569" text-anchor="start">rebuilt with it first.</text>
+<path d="M96 192 L96 232" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M264 192 L264 232" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M96 328 L96 368" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M264 328 L264 368" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M264 464 L264 504" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M264 608 L264 648" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M264 752 L264 816" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<path d="M180 880 L180 920" fill="none" stroke="#94a3b8" stroke-width="1.6" stroke-linecap="round" marker-end="url(#head)"/>
+<g><rect x="20" y="128" width="320" height="64" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="34" y="144" width="32" height="32" rx="9.6" fill="#fdf0cf"/><path transform="translate(40.7 150.7) scale(0.773)" d="M12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM3 12h6M15 12h6" fill="none" stroke="#b45309" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="78" y="164.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Commit</text></g>
+<g><rect x="20" y="232" width="152" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="80" y="249.3" width="32" height="32" rx="9.6" fill="#eef2f6"/><path transform="translate(86.7 256) scale(0.773)" d="M6 3v12M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 9a9 9 0 0 1-9 9" fill="none" stroke="#475569" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="96" y="305.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Push a branch</text>
+</g>
+<g><rect x="188" y="232" width="152" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="248" y="249.3" width="32" height="32" rx="9.6" fill="#eef2f6"/><path transform="translate(254.7 256) scale(0.773)" d="M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM18 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM6 9v12M6 9a9 9 0 0 0 9 9" fill="none" stroke="#475569" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="264" y="305.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Merge to main</text>
+</g>
+<g><rect x="20" y="368" width="152" height="136" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="80" y="376.5" width="32" height="32" rx="9.6" fill="#eef2f6"/><path transform="translate(86.7 383.2) scale(0.773)" d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5zM3 9h18M6.5 6.5h.01M9 6.5h.01" fill="none" stroke="#475569" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="96" y="432.9" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Branch preview</text>
+<text x="96" y="453.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="middle">that branch's</text>
+<text x="96" y="472.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="middle">code, the preview</text>
+<text x="96" y="490.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="middle">content</text></g>
+<g><rect x="188" y="368" width="152" height="96" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="248" y="385.3" width="32" height="32" rx="9.6" fill="#eef2f6"/><path transform="translate(254.7 392) scale(0.773)" d="M12 3l7 3v5.5c0 4.4-2.9 7.9-7 9.5-4.1-1.6-7-5.1-7-9.5V6zM9 12l2 2 4-4" fill="none" stroke="#475569" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="264" y="441.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">site-check</text>
+</g>
+<g><rect x="188" y="504" width="152" height="104" rx="14" fill="url(#tint-violet)" stroke="#a78bfa" stroke-opacity=".55" filter="url(#shadow)"/>
+<rect x="248" y="515" width="32" height="32" rx="9.6" fill="#ede9fe"/><path transform="translate(254.7 521.7) scale(0.773)" d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9M8 5.25l8 4.5" fill="none" stroke="#6d28d9" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="264" y="571.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Code release</text>
+<text x="264" y="592.2" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="400" fill="#334155" text-anchor="middle">cd_N</text></g>
+<g><rect x="188" y="648" width="152" height="104" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="248" y="659" width="32" height="32" rx="9.6" fill="#eef2f6"/><path transform="translate(254.7 665.7) scale(0.773)" d="M20 11a8 8 0 0 0-14.6-4.4L4 8M4 3.5V8h4.5M4 13a8 8 0 0 0 14.6 4.4L20 16M20 20.5V16h-4.5" fill="none" stroke="#475569" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="264" y="715.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="middle">Preview rebuilt</text>
+<text x="264" y="736.2" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="400" fill="#475569" text-anchor="middle">with <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.8">cd_N</tspan></text></g>
+<g><rect x="20" y="816" width="320" height="64" rx="14" fill="url(#card)" stroke="#0f172a" stroke-opacity="0.09" filter="url(#shadow)"/>
+<rect x="34" y="832" width="32" height="32" rx="9.6" fill="#eef2f6"/><path transform="translate(40.7 838.7) scale(0.773)" d="M12 15l-3-3c1-4 3.5-7.5 9-9 0 5.5-3.5 8-6 12zM9 12H5l2-4h4M12 15v4l4-2v-4M6 17c-1.5 1-2 3-2 3s2-.5 3-2" fill="none" stroke="#475569" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="78" y="852.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Release</text></g>
+<g><rect x="20" y="920" width="320" height="64" rx="14" fill="url(#tint-amber)" stroke="#f5b83d" stroke-opacity=".55" filter="url(#shadow)"/>
+<rect x="34" y="936" width="32" height="32" rx="9.6" fill="#fdf0cf"/><path transform="translate(40.7 942.7) scale(0.773)" d="M12 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM8 8a6 6 0 0 0 0 8M16 8a6 6 0 0 1 0 8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14" fill="none" stroke="#b45309" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="78" y="956.7" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="14.5" font-weight="650" fill="#0f172a" text-anchor="start">Live</text></g>
+<rect x="214.8" y="772.3" width="98.5" height="23.5" rx="11" fill="#ffffff" stroke="#0f172a" stroke-opacity="0.1"/>
+<text x="264" y="788" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="11.5" font-weight="500" fill="#475569" text-anchor="middle">auto or manual</text>
+</svg>

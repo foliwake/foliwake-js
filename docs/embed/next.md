@@ -6,7 +6,7 @@ Read [Concepts](/concepts) first if "code release" or "host" are new to you.
 
 ## What you build
 
-![The browser talks only to your Next app. On the server, with the credential, the app serves /pages/... by reading the page's .plain.html from Foliwake live or preview (cached), proxies the page's code release under /foliwake-code and pictures under /foliwake-media.](/diagrams/next-app.svg)
+<Diagram name="next-app" alt="The browser talks only to your Next app. On the server, with the credential, the app serves /pages/... by reading the page's .plain.html from Foliwake live or preview (cached), proxies the page's code release under /foliwake-code and pictures under /foliwake-media." />
 
 - The app reads a page's body on the server, checks it, and renders it inside your layout.
 - The page's blocks come from the same code release as the body.
