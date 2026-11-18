@@ -56,6 +56,9 @@ importers:
       create-foliwake:
         specifier: workspace:*
         version: link:packages/create-foliwake
+      foliwake:
+        specifier: workspace:*
+        version: link:packages/foliwake
       jose:
         specifier: 6.2.15
         version: 6.2.15
@@ -147,6 +150,12 @@ importers:
       '@foliwake/site-check':
         specifier: workspace:*
         version: link:../site-check
+
+  packages/foliwake:
+    dependencies:
+      '@foliwake/cli':
+        specifier: workspace:*
+        version: link:../cli
 
   packages/next:
     dependencies:

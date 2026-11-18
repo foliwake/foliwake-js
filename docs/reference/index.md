@@ -32,6 +32,7 @@ The API section of each page is generated from the package's type declarations.
 | --- | --- |
 | [`@foliwake/cli`](/reference/packages/cli) | `foliwake` without the engine: sign in, link a folder (`connect`), run commands on a server |
 | [`@foliwake/core-contract`](/reference/packages/core-contract) | the procedures, types and error codes of core over HTTP |
+| [`foliwake`](/reference/packages/foliwake) | the short name of `@foliwake/cli`, for `npx foliwake` |
 
 ## Versions
 

@@ -15,6 +15,8 @@ const WHITELIST = [
   // create-foliwake: the starters it copies into a new project, and the vendored React they may get.
   /^starters\/[\w.-]+(\/[\w.-]+)+$/,
   /^vendor\/react(\.js|\.LICENSE\.txt)$/,
+  // foliwake (the short name of @foliwake/cli): its one launcher.
+  /^bin\/foliwake\.js$/,
 ];
 
 /** Files every published tarball must hold. */

@@ -1,0 +1,25 @@
+{
+  "name": "foliwake",
+  "version": "0.5.0",
+  "description": "The foliwake command: the same as @foliwake/cli, under the short name for `npx foliwake`.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": { "node": ">=22.22" },
+  "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/foliwake" },
+  "homepage": "https://sdk.foliwake.dev/reference/packages/foliwake",
+  "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
+  "keywords": ["foliwake", "cms", "cli"],
+  "publishConfig": { "access": "public", "provenance": true },
+  "foliwake": { "coreApi": 1 },
+  "bin": {
+    "foliwake": "bin/foliwake.js"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@foliwake/cli": "workspace:*"
+  },
+  "files": ["bin/", "LICENSE", "README.md", "CHANGELOG.md"]
+}

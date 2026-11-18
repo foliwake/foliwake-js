@@ -26,8 +26,12 @@ import { PUBLISH_ORDER } from './packages.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/** The packages in build (and publish) order: each after the packages it depends on. */
-export const BUILD_ORDER = PUBLISH_ORDER;
+/**
+ * The packages in build (and publish) order: each after the packages it depends on. A package without a
+ * tsconfig.json ships its files as written (`foliwake`, the short name of @foliwake/cli) and is not built.
+ */
+const compiled = (name) => existsSync(path.join(ROOT, 'packages', name, 'tsconfig.json'));
+export const BUILD_ORDER = PUBLISH_ORDER.filter(compiled);
 
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 

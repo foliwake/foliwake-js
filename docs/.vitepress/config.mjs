@@ -12,6 +12,7 @@ const referenceItems = [
   { text: '@foliwake/blocks-contract', link: '/reference/packages/blocks-contract' },
   { text: '@foliwake/cli', link: '/reference/packages/cli' },
   { text: '@foliwake/core-contract', link: '/reference/packages/core-contract' },
+  { text: 'foliwake', link: '/reference/packages/foliwake' },
 ];
 
 export default defineConfig({
