@@ -18,6 +18,7 @@
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./bin": { "types": "./dist/bin.d.ts", "default": "./dist/bin.js" },
+    "./local-runtime": { "types": "./dist/local-runtime.d.ts", "default": "./dist/local-runtime.js" },
     "./package.json": "./package.json"
   },
   "oclif": {

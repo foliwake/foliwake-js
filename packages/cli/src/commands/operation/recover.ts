@@ -1,6 +1,7 @@
 import { Flags } from '@oclif/core';
 
 import { CoreCommand, NEEDS_ENGINE } from '../../core-command.js';
+import { localRuntime } from '../../local-runtime.js';
 import { recoveryLines } from '../../render/recovery.js';
 
 /**
@@ -9,12 +10,20 @@ import { recoveryLines } from '../../render/recovery.js';
  */
 export const EXIT_REFRESH_PENDING = 3;
 
+/** The lock is the engine's, and removing it is the operator's call on the host that runs it. */
+const BREAK_LOCK_HERE = localRuntime()
+  ? "needs the site's local configuration; it does not apply with a server."
+  : NEEDS_ENGINE;
+
 export default class OperationRecover extends CoreCommand {
   static description =
     'Find out what happened to interrupted operations, finish the engine’s interrupted work and pending cache ' +
     'refreshes; never runs an operation again (core operations.recover)';
 
-  static examples = ['<%= config.bin %> operation recover --wait'];
+  static examples = [
+    '<%= config.bin %> operation recover --wait',
+    '<%= config.bin %> operation recover --break-lock --wait   # only when the process named by STATE_LOCKED is gone',
+  ];
 
   static flags = {
     ...CoreCommand.siteFlags,
@@ -25,7 +34,9 @@ export default class OperationRecover extends CoreCommand {
     }),
     'wait-timeout': Flags.integer({ min: 0, description: 'limit of --wait in seconds (default: settle delay + 90 s)' }),
     'break-lock': Flags.boolean({
-      description: 'remove a state lock left by a process that is gone (on the server: needs the engine there)',
+      description: localRuntime()
+        ? 'first remove a state lock left by a process that is gone (for example on another host name)'
+        : 'remove a state lock left by a process that is gone (on the server: needs the engine there)',
     }),
     ...CoreCommand.timingsFlag,
     ...CoreCommand.inputFlag,
@@ -33,7 +44,7 @@ export default class OperationRecover extends CoreCommand {
 
   async run(): Promise<unknown> {
     const { flags } = await this.parse(OperationRecover);
-    if (flags['break-lock']) this.error(`--break-lock ${NEEDS_ENGINE}`, { exit: 2 });
+    if (flags['break-lock'] && !this.local) this.error(`--break-lock ${BREAK_LOCK_HERE}`, { exit: 2 });
     const input = await this.resolveInput(flags.input, async () => {
       const { site } = await this.siteInput(flags.site);
       if (!flags.wait) return { site, waitMs: null };
@@ -45,6 +56,7 @@ export default class OperationRecover extends CoreCommand {
             : flags['wait-timeout'] * 1000,
       };
     });
+    if (flags['break-lock'] && this.local) this.log(await this.local.breakLock(input.site));
     const answer = await this.timed('recover', flags.timings, () => this.core.operations.recover(input));
     if (!this.jsonEnabled()) for (const line of recoveryLines(answer)) this.log(line);
     if (input.waitMs !== null && answer.engine.cacheRefresh.state === 'pending')

@@ -92,6 +92,17 @@ block kit (`@foliwake/block-kit`, served from this package's installed copy). De
 never loaded. With `--watch`, open pages reload after a change to the local code and show the problems the
 platform's checks (`@foliwake/site-check`) find in it.
 
+## Inside the engine
+
+The Foliwake engine (its checkout or Docker image) is the same `foliwake` command with this package as an oclif
+plugin: it registers its local runtime with `registerLocalRuntime()` from `@foliwake/cli/local-runtime` before
+oclif loads the commands. Then the same commands also run on that computer: `--server`, then `--config` or
+`FOLIWAKE_CONFIG`, then `.foliwake/connection.json`, then `FOLIWAKE_SERVER`, then `./foliwake.config.json`,
+then the default server, else the local configuration. `--config` and `--content` are shown and work, the engine
+serves `dev` (local content, and `--remote` with its block catalog), `operation recover --break-lock` removes a
+local state lock, and `--timings` reports the engine's phase timings. The hook is for the engine; its shape may
+change with it.
+
 ## Compatibility
 
 The CLI speaks core over HTTP as `@foliwake/core-contract` describes it, and names itself to the server in
