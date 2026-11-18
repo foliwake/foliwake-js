@@ -3,8 +3,9 @@
 // own repository variable is `true`, branch previews and production use
 // separate environments, production runs only from main after the checks,
 // nothing with secrets runs for pull requests or forks, the only secret is the
-// CI key FOLIWAKE_TOKEN, the CLI is the version pinned in package.json, run
-// outside the checkout, and every action is pinned to a commit SHA.
+// CI key FOLIWAKE_TOKEN, the CLI is the version pinned in package.json
+// `foliwake.cli` (not a dependency), run outside the checkout, and every
+// action is pinned to a commit SHA.
 // Text-based (no YAML dependency).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -49,7 +50,8 @@ test('frontend checks use no secrets (safe for fork pull requests) and run the t
 
 /** A job that calls the server: the pinned CLI, outside the checkout, with the server and key from GitHub. */
 function assertServerCall(job, id, command) {
-  assert.match(job, /devDependencies\['@foliwake\/cli'\]/, `${id}: the CLI version comes from package.json`);
+  const pick = /version=\$\(node -p "require\('\.\/package\.json'\)\.foliwake\?\.cli"\)\n/;
+  assert.match(job, pick, `${id}: the CLI version comes from package.json foliwake.cli`);
   assert.match(job, /\^\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$/, `${id}: an exact version only`);
   assert.match(job, new RegExp(`npx --yes "\\$FOLIWAKE_CLI" ${command} .*--site "\\$SITE" .*--json`), `${id}: ${command}`);
   assert.match(job, /working-directory: \$\{\{ runner\.temp \}\}/, `${id}: runs outside the checkout`);
@@ -58,8 +60,12 @@ function assertServerCall(job, id, command) {
   for (const [, secret] of job.matchAll(/secrets\.([A-Z0-9_]+)/g)) assert.equal(secret, 'FOLIWAKE_TOKEN', `${id}: ${secret}`);
 }
 
-test('the project pins the Foliwake CLI the workflows run, exactly', () => {
-  assert.match(manifest.devDependencies?.['@foliwake/cli'] ?? '', /^[0-9]+\.[0-9]+\.[0-9]+$/);
+test('the project pins the Foliwake CLI the workflows run, exactly, outside its dependencies', () => {
+  assert.match(manifest.foliwake?.cli ?? '', /^[0-9]+\.[0-9]+\.[0-9]+$/);
+  // A dependency would put its `foliwake` (server commands only) first on `npm run`'s PATH.
+  for (const deps of [manifest.dependencies, manifest.devDependencies]) {
+    assert.equal(deps?.['@foliwake/cli'], undefined, '@foliwake/cli is not a dependency');
+  }
 });
 
 test('branch previews: inert until BRANCH_PREVIEWS_ENABLED, own environment, never main', () => {

@@ -15,7 +15,7 @@
 # FOLIWAKE_TOKEN of the environment `branch-previews` (a CI key of this site,
 # `foliwake account keys create --site <site>`; it cannot publish pages or roll
 # back). The CLI is the open npm package @foliwake/cli, run with npx at the
-# exact version pinned in package.json devDependencies, outside the checkout so
+# exact version pinned in package.json `foliwake.cli`, outside the checkout so
 # only FOLIWAKE_SERVER picks the server. Pushes of forks never run here; pull
 # requests are not a trigger.
 #
@@ -52,11 +52,11 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '^22.22.0'
-      - name: The Foliwake CLI pinned in package.json
+      - name: The Foliwake CLI pinned in package.json foliwake.cli
         id: cli
         run: |
-          version=$(node -p "require('./package.json').devDependencies['@foliwake/cli']")
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "@foliwake/cli must be an exact version, not '$version'"; exit 1; }
+          version=$(node -p "require('./package.json').foliwake?.cli")
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "package.json foliwake.cli must be an exact version of @foliwake/cli, not '$version'"; exit 1; }
           echo "package=@foliwake/cli@$version" >> "$GITHUB_OUTPUT"
       - name: Update the branch preview on the Foliwake server
         working-directory: ${{ runner.temp }}
@@ -89,11 +89,11 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '^22.22.0'
-      - name: The Foliwake CLI pinned in package.json
+      - name: The Foliwake CLI pinned in package.json foliwake.cli
         id: cli
         run: |
-          version=$(node -p "require('./package.json').devDependencies['@foliwake/cli']")
-          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "@foliwake/cli must be an exact version, not '$version'"; exit 1; }
+          version=$(node -p "require('./package.json').foliwake?.cli")
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "package.json foliwake.cli must be an exact version of @foliwake/cli, not '$version'"; exit 1; }
           echo "package=@foliwake/cli@$version" >> "$GITHUB_OUTPUT"
       - name: Stop the branch preview on the Foliwake server
         working-directory: ${{ runner.temp }}
