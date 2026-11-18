@@ -95,6 +95,7 @@ export const ERROR_CODES: Readonly<Record<string, string>> = Object.freeze({
   SITE_CONFLICT: 'conflict',
   SITE_CREATION_BUSY: 'busy',
   SITE_EXISTS: 'conflict',
+  SITE_HAS_NO_STORAGE: 'refused',
   SITE_ORG_UNKNOWN: 'refused',
   SITE_STATE_EXISTS: 'conflict',
   SITE_UNKNOWN: 'invalid | not_found',
