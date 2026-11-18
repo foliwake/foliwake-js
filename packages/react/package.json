@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/react",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "React components for Foliwake pages: <FoliwakePage> mounts a page's blocks from its code release, useFoliwakeEvents, createHost. A thin wrapper of @foliwake/client; SSR-safe.",
   "license": "Apache-2.0",
   "type": "module",

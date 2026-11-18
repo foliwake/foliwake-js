@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/cli",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "The foliwake command without the engine: sign in to a Foliwake server and run its commands there (site status, sync, preview, publish, code deploy, branches, releases, sources, credentials, CI keys), and develop blocks against a remote preview.",
   "license": "Apache-2.0",
   "type": "module",

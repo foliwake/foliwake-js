@@ -1,5 +1,23 @@
 # @foliwake/cli
 
+## 0.8.0
+
+### Patch Changes
+
+- 8f83657: With the engine registered, an explicit `FOLIWAKE_SERVER` now wins over `FOLIWAKE_CONFIG`: a command goes to
+  `--server`, then `--config`, then `FOLIWAKE_CONFIG` only while `FOLIWAKE_SERVER` is unset, then the folder's
+  `.foliwake/connection.json`, `FOLIWAKE_SERVER`, `./foliwake.config.json`, the last `login`, else locally. The
+  engine's Docker image sets `FOLIWAKE_CONFIG` for its own commands; a CI job or operator naming a server in the
+  container now reaches it without clearing that variable.
+- Updated dependencies [3edc810]
+- Updated dependencies [7e70573]
+  - @foliwake/core-contract@0.8.0
+  - create-foliwake@0.8.0
+  - @foliwake/block-kit@0.8.0
+  - @foliwake/blocks-contract@0.8.0
+  - @foliwake/server@0.8.0
+  - @foliwake/site-check@0.8.0
+
 ## 0.7.0
 
 ### Minor Changes
