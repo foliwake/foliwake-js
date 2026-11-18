@@ -21,7 +21,9 @@ function send(res, status, body) {
 }
 
 function rpcError(res, status, error, path) {
-  send(res, status, { error: { message: error.message, code: -32000, data: { code: 'X', httpStatus: status, path, coreError: error } } });
+  send(res, status, {
+    error: { message: error.message, code: -32000, data: { code: 'X', httpStatus: status, path, coreError: error } },
+  });
 }
 
 async function bodyOf(req) {
@@ -52,16 +54,25 @@ export async function startFakeCoreServer({ handlers = {}, manifest = PROCEDURES
     const path = url.pathname.slice('/api/rpc/'.length);
     const type = Object.hasOwn(manifest, path) ? manifest[path] : undefined;
     if (type === undefined) {
-      return rpcError(res, 404, coreError('PROCEDURE_UNKNOWN', 'not_found', `This server has no operation ${path}.`), path);
+      return rpcError(
+        res,
+        404,
+        coreError('PROCEDURE_UNKNOWN', 'not_found', `This server has no operation ${path}.`),
+        path,
+      );
     }
-    if ((type === 'query') !== (req.method === 'GET')) return send(res, 405, { error: { message: 'METHOD_NOT_SUPPORTED', data: { code: 'METHOD_NOT_SUPPORTED' } } });
+    if ((type === 'query') !== (req.method === 'GET'))
+      return send(res, 405, { error: { message: 'METHOD_NOT_SUPPORTED', data: { code: 'METHOD_NOT_SUPPORTED' } } });
     const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? '')?.[1] ?? null;
-    if (token !== null && !allowed.has(token)) return rpcError(res, 401, coreError('TOKEN_INVALID', 'unauthorized', 'The sign-in token is not valid.'), path);
-    if (token === null && path !== 'sites.list') return rpcError(res, 401, coreError('UNAUTHORIZED', 'unauthorized', 'Sign in first.'), path);
+    if (token !== null && !allowed.has(token))
+      return rpcError(res, 401, coreError('TOKEN_INVALID', 'unauthorized', 'The sign-in token is not valid.'), path);
+    if (token === null && path !== 'sites.list')
+      return rpcError(res, 401, coreError('UNAUTHORIZED', 'unauthorized', 'Sign in first.'), path);
     const input = await inputOf(req, url);
     request.input = input;
     const handler = handlers[path] ?? (path === 'whoami' ? () => OWNER_GRANT : null);
-    if (!handler) return rpcError(res, 500, coreError('FAKE_NO_HANDLER', 'internal', `The fake has no handler for ${path}.`), path);
+    if (!handler)
+      return rpcError(res, 500, coreError('FAKE_NO_HANDLER', 'internal', `The fake has no handler for ${path}.`), path);
     try {
       send(res, 200, { result: { data: await handler(input, { token, request }) } });
     } catch (error) {
@@ -75,9 +86,17 @@ export async function startFakeCoreServer({ handlers = {}, manifest = PROCEDURES
       const body = await bodyOf(req);
       requests.at(-1).input = body;
       const verification = `${origin}/device`;
-      return send(res, 200, { device_code: 'dc_1', user_code: 'ABCD-EFGH', verification_uri: verification, verification_uri_complete: `${verification}?code=ABCD-EFGH`, expires_in: 60, interval: 1 });
+      return send(res, 200, {
+        device_code: 'dc_1',
+        user_code: 'ABCD-EFGH',
+        verification_uri: verification,
+        verification_uri_complete: `${verification}?code=ABCD-EFGH`,
+        expires_in: 60,
+        interval: 1,
+      });
     }
-    if (url.pathname === '/api/auth/device/token') return send(res, 200, { access_token: FAKE_TOKEN, token_type: 'Bearer', account_email: 'owner@example.com' });
+    if (url.pathname === '/api/auth/device/token')
+      return send(res, 200, { access_token: FAKE_TOKEN, token_type: 'Bearer', account_email: 'owner@example.com' });
     if (url.pathname === '/api/auth/logout') {
       res.writeHead(204).end();
       return;
@@ -89,7 +108,8 @@ export async function startFakeCoreServer({ handlers = {}, manifest = PROCEDURES
     const url = new URL(req.url, 'http://fake');
     const request = { method: req.method, path: url.pathname, headers: { ...req.headers } };
     requests.push(request);
-    if (url.pathname === '/api/version') return send(res, 200, { api: CORE_API, engine: '0.0.0-fake', build: null, contract: CONTRACT_DIGEST });
+    if (url.pathname === '/api/version')
+      return send(res, 200, { api: CORE_API, engine: '0.0.0-fake', build: null, contract: CONTRACT_DIGEST });
     if (url.pathname.startsWith('/api/rpc/')) return rpc(req, res, url, request);
     if (url.pathname.startsWith('/api/auth/')) return auth(req, res, url);
     send(res, 404, { error: { code: 'NOT_FOUND', message: 'There is no such route.' } });
@@ -102,7 +122,11 @@ export async function startFakeCoreServer({ handlers = {}, manifest = PROCEDURES
     requests,
     handlers,
     rpcCalls: (path) => requests.filter((r) => r.path === `/api/rpc/${path}`),
-    close: () => new Promise((resolve) => { server.closeAllConnections?.(); server.close(resolve); }),
+    close: () =>
+      new Promise((resolve) => {
+        server.closeAllConnections?.();
+        server.close(resolve);
+      }),
   };
 }
 

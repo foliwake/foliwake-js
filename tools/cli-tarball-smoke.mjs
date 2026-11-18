@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// The CLI as someone installs it: packs @foliwake/core-contract and @foliwake/cli, installs both tarballs with
-// npm into a throwaway folder (their third-party dependencies from the registry or npm's cache), and runs
-// `foliwake login --no-browser` and `foliwake whoami --json` there against a fake server. Until
-// @foliwake/core-contract is on npm, `npx ./foliwake-cli-<version>.tgz` alone cannot resolve it; this is that
-// command with the contract's tarball beside it.
+// The CLI as someone installs it: packs @foliwake/cli and the packages of this repository it needs, installs
+// the tarballs with npm into a throwaway folder (third-party dependencies from the registry or npm's cache),
+// and runs `foliwake login --no-browser` and `foliwake whoami --json` there against a fake server. Until these
+// versions are on npm, `npx ./foliwake-cli-<version>.tgz` alone cannot resolve them; this is that command with
+// their tarballs beside it.
 //
 //   node tools/cli-tarball-smoke.mjs
 import { execFileSync } from 'node:child_process';
@@ -15,10 +15,16 @@ import { fileURLToPath } from 'node:url';
 import { runCli } from '../test/helpers/cli.js';
 import { startFakeCoreServer } from '../test/helpers/fake-core-server.js';
 
+/** @foliwake/cli and the packages of this repository it installs (create-foliwake and what that needs). */
+const PACKED = ['blocks-contract', 'block-kit', 'site-check', 'create-foliwake', 'core-contract', 'cli'];
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function pack(dir, into) {
-  execFileSync('pnpm', ['pack', '--pack-destination', into], { cwd: path.join(ROOT, 'packages', dir), stdio: 'ignore' });
+  execFileSync('pnpm', ['pack', '--pack-destination', into], {
+    cwd: path.join(ROOT, 'packages', dir),
+    stdio: 'ignore',
+  });
 }
 
 function check(condition, message) {
@@ -28,8 +34,7 @@ function check(condition, message) {
 const work = mkdtempSync(path.join(os.tmpdir(), 'foliwake-cli-smoke-'));
 const fake = await startFakeCoreServer();
 try {
-  pack('core-contract', work);
-  pack('cli', work);
+  for (const dir of PACKED) pack(dir, work);
   const tarballs = readdirSync(work).filter((name) => name.endsWith('.tgz'));
   writeFileSync(path.join(work, 'package.json'), JSON.stringify({ name: 'smoke', private: true }));
   const install = ['install', '--no-audit', '--no-fund', '--prefer-offline', ...tarballs.map((t) => `./${t}`)];

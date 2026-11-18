@@ -17,6 +17,6 @@ export class CoreFailure extends Error {
 /** Anything thrown, as a CoreFailure: a CoreFailure as it is, anything else as INTERNAL. */
 export function toCoreFailure(error: unknown): CoreFailure {
   if (error instanceof CoreFailure) return error;
-  const message = 'The command failed unexpectedly.';
+  const message = 'The operation failed unexpectedly.';
   return new CoreFailure({ code: 'INTERNAL', category: 'internal', retryable: false, message }, error);
 }

@@ -17,7 +17,7 @@ const REMOTE_SETTLE_DELAY_MS = 30_000;
 
 /** What a command that needs the engine says, with exit 2. */
 export const NEEDS_ENGINE =
-  `needs the Foliwake engine: the Docker image (\`${COMMAND} docker install\`) or the engine checkout.`;
+  `needs the Foliwake engine: the Docker image (\`${COMMAND} docker install\`) or the ` + `engine checkout.`;
 
 const NO_SERVER =
   `No Foliwake server is named: pass --server, link this folder (\`${COMMAND} site link <id>\`), ` +
@@ -33,7 +33,7 @@ export abstract class CoreCommand extends Command {
     debug: Flags.boolean({ description: 'print the underlying error on stderr', helpGroup: 'GLOBAL' }),
     server: Flags.string({
       description:
-        'call this Foliwake server (origin or host; default: the folder\'s .foliwake/connection.json, ' +
+        "call this Foliwake server (origin or host; default: the folder's .foliwake/connection.json, " +
         'then $FOLIWAKE_SERVER, then the last `login`)',
       helpGroup: 'GLOBAL',
     }),
@@ -73,8 +73,7 @@ export abstract class CoreCommand extends Command {
 
   static expectLiveFlags = {
     expect: Flags.string({
-      description:
-        'the live site release you saw (sr_…, as `site status` shows it); refused when live is another one',
+      description: 'the live site release you saw (sr_…, as `site status` shows it); refused when live is another one',
       exclusive: ['latest-live'],
     }),
     'latest-live': Flags.boolean({
@@ -101,6 +100,15 @@ export abstract class CoreCommand extends Command {
         'deployment ordering (a positive integer such as the CI run id), instead of --expect: refused as ' +
         'superseded when a request with a higher sequence already updated or deleted this branch',
       exclusive: ['expect', 'latest-selection'],
+    }),
+  };
+
+  /** Accepted as in the engine's CLI; only the total time is known here (phase timings need the engine). */
+  static timingsFlag = {
+    timings: Flags.boolean({
+      description:
+        'report the total time on stderr (one JSON line with --json); also FOLIWAKE_TIMINGS=1 ' +
+        '(phase timings need the engine)',
     }),
   };
 
@@ -229,6 +237,24 @@ export abstract class CoreCommand extends Command {
   /** `operations.wait` against a server, in slices under its request timeout. */
   private waitOperation(input: { site: string; id: string; until: 'commit' | 'delivery'; timeoutMs: number }) {
     return waitInSlices((sliceMs) => this.core.operations.wait({ ...input, timeoutMs: sliceMs }), input);
+  }
+
+  /** Runs `fn`; with `--timings` (or FOLIWAKE_TIMINGS=1) reports its total time on stderr. */
+  protected async timed<T>(name: string, requested: boolean, fn: () => Promise<T>): Promise<T> {
+    if (!requested && process.env.FOLIWAKE_TIMINGS !== '1') return fn();
+    const started = performance.now();
+    try {
+      return await fn();
+    } finally {
+      this.reportTotal(name, Math.round(performance.now() - started));
+    }
+  }
+
+  private reportTotal(name: string, totalMs: number): void {
+    const line = this.jsonEnabled()
+      ? JSON.stringify({ timings: { command: name, totalMs } })
+      : `timings: ${name} ${totalMs} ms in total (phase timings need the engine)`;
+    process.stderr.write(`${line}\n`);
   }
 
   protected noteProvisional(provisional: boolean): void {

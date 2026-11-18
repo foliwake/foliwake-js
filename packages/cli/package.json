@@ -25,13 +25,25 @@
     "commands": "./dist/commands",
     "topicSeparator": " ",
     "topics": {
+      "account": { "description": "Accounts of this server: CI keys" },
+      "branch": { "description": "Branch previews" },
+      "code": { "description": "Code releases: prepare, release and roll back the site's JS/CSS" },
+      "credential": { "description": "Credential values the content sources name (stored on the server, never shown)" },
+      "migration": { "description": "Whole-site rebuilds against new code, released as one" },
+      "operation": { "description": "Long operations: their state, cancellation and recovery" },
+      "page": { "description": "Working pages" },
+      "project": { "description": "This project folder and the site it is linked to" },
+      "release": { "description": "Live site releases" },
+      "site": { "description": "Sites on the server" },
+      "source": { "description": "Content sources and their plugins" },
       "servers": { "description": "The Foliwake servers this computer is signed in to" }
     }
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",
     "@foliwake/core-contract": "workspace:*",
-    "@oclif/core": "4.14.0"
+    "@oclif/core": "4.14.0",
+    "create-foliwake": "workspace:*"
   },
   "files": ["dist/", "!dist/**/*.map", "LICENSE", "README.md", "CHANGELOG.md"]
 }
