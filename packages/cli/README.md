@@ -622,7 +622,7 @@ saves it after a confirmation; nothing is fetched (core sources.probe, sources.a
 - `--list-title <value>`: Drupal: the heading of the article list page, per --language in the same order (repeatable)
 - `--mappings <value>`: a JSON file with path mapping rules (default: each file names its address)
 - `--owns <value>`: a path the source owns, such as /lessons or "=/" (repeatable)
-- `--page <value>`: Google Docs: <document link or ID>=<page path>, one published page (repeatable)
+- `--page <value>`: Google Docs: &lt;document link or ID&gt;=&lt;page path&gt;, one published page (repeatable)
 - `--plugin <value>`: the connector
 - `--repository <value>`: Git: the https address of the repository
 - `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
@@ -662,7 +662,7 @@ and the page addresses they would get; a saved source (--source) or a new one de
 - `--mappings <value>`: a JSON file with path mapping rules (default: each file names its address)
 - `--max <value>`: at most this many files in the listing (default 500)
 - `--owns <value>`: a path the source owns, such as /lessons or "=/" (repeatable)
-- `--page <value>`: Google Docs: <document link or ID>=<page path>, one published page (repeatable)
+- `--page <value>`: Google Docs: &lt;document link or ID&gt;=&lt;page path&gt;, one published page (repeatable)
 - `--plugin <value>`: the connector
 - `--repository <value>`: Git: the https address of the repository
 - `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
