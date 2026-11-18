@@ -82,7 +82,7 @@ function localConfig(id: string): string {
   const site = {
     id,
     code: { root: '.', repository: null },
-    contentRoot: './content',
+    sources: [{ id: 'content', plugin: 'local-markdown', owns: ['/'], settings: { root: './content' } }],
     storage: { endpoint: 'http://127.0.0.1:8333', bucket: `foliwake-${id}` },
     stateDir: './.foliwake',
     liveHosts: [`${id}.localhost`],

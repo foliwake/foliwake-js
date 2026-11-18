@@ -64,6 +64,10 @@ registerLocalRuntime({
     trace(`traced ${name}`);
     return fn();
   },
+  created: async (folder) => {
+    trace(`created ${path.basename(folder)}`);
+    return null;
+  },
   dev: async (options) => {
     trace(`dev ${JSON.stringify(options)}`);
     return options.port === 3997 ? 2 : 0;

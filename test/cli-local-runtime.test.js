@@ -125,6 +125,18 @@ describe('with the engine registered', () => {
   });
 });
 
+test('create: the engine trusts the configuration of the new project', async () => {
+  const home = await cliHome();
+  try {
+    const args = ['create', 'made', '--no-interactive', '--no-connect', '--no-git'];
+    const run = await runCli(args, { env: home.env, cwd: home.cwd, bin: ENGINE_BIN });
+    assert.equal(run.code, 0, run.stderr);
+    assert.ok(localCalls(run.stderr).includes('local: created made'), run.stderr);
+  } finally {
+    await home.cleanup();
+  }
+});
+
 describe('without the engine', () => {
   let home;
   before(async () => {

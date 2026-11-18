@@ -76,6 +76,11 @@ export interface LocalRuntime {
    * errors. Resolves to the exit code: 0, 1 (failed), 2 (a refused command line).
    */
   dev(options: LocalDevOptions, io: LocalDevIo): Promise<number>;
+  /**
+   * `create` made a project in `folder`: the engine trusts the configuration it wrote, so `dev` and local
+   * commands run there at once. Resolves to a line to print when that failed, else null.
+   */
+  created(folder: string): Promise<string | null>;
 }
 
 // One registration per process, also when two copies of this module are loaded (a symlinked plugin).

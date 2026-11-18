@@ -64,7 +64,11 @@ test('without a terminal nothing is asked: foliwake-site, minimal, no site id, a
   assert.deepEqual(await tree(target), MINIMAL_FILES);
   const config = json(path.join(target, 'foliwake.config.json'));
   assert.equal(config.sites[0].id, 'foliwake-site', 'local id from the folder name');
-  assert.equal(config.sites[0].contentRoot, './content');
+  // The engine's configuration format: the content folder is a local-markdown source (`contentRoot` is refused).
+  assert.deepEqual(config.sites[0].sources, [
+    { id: 'content', plugin: 'local-markdown', owns: ['/'], settings: { root: './content' } },
+  ]);
+  assert.equal(config.sites[0].contentRoot, undefined);
   assert.equal(json(path.join(target, 'package.json')).name, 'foliwake-site');
   // The first commit: branch main, the configured identity, every file, a clean tree.
   const branch = git(target, w.env, 'symbolic-ref', '--short', 'HEAD');
