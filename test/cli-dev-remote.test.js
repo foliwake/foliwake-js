@@ -389,7 +389,7 @@ describe('command line', () => {
 
   test('invalid combinations are usage errors', async () => {
     await assert.rejects(parseDev(['--remote', 'staging']), /Unknown remote target "staging"/);
-    await assert.rejects(parseDev(['--remote', '--content', 'x']), /Nonexistent flag/);
+    await assert.rejects(parseDev(['--remote', '--content', 'x']), /--content does not apply with --remote/);
     await assert.rejects(parseDev(['--remote-auth-env', 'X']), /applies with --remote-url/);
     await assert.rejects(
       parseDev(['--remote', '--remote-auth-env', 'X', '--remote-auth-user', 'u']),

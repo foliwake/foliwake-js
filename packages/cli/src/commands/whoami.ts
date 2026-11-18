@@ -15,9 +15,10 @@ export default class Whoami extends CoreCommand {
 
   async run(): Promise<unknown> {
     const grant = await this.core.whoami();
-    const server = this.target.origin;
+    // Locally (the engine on this computer) no server is called.
+    const server = this.local ? null : this.target.origin;
     const organisations = grant.memberships.map(membershipText).join('; ');
-    this.log(`Server         ${serverDisplay(server)}`);
+    this.log(`Server         ${server ? serverDisplay(server) : 'none (this computer, local configuration)'}`);
     this.log(`Principal      ${grant.principal}`);
     this.log(`Installation   ${grant.installation ? 'yes' : 'no'}`);
     this.log(`Organisations  ${organisations || (grant.installation ? 'all' : 'none')}`);

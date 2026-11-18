@@ -7,6 +7,10 @@ export interface DevFlags {
   'remote-config'?: string | undefined;
   'remote-auth-env'?: string | undefined;
   'remote-auth-user'?: string | undefined;
+  /** Local mode only (the engine's): the configuration, site and content folder it serves. */
+  content?: string | undefined;
+  config?: string | undefined;
+  site?: string | undefined;
   watch?: boolean | undefined;
   'watch-polling'?: boolean | undefined;
 }
@@ -33,6 +37,16 @@ function authProblem(flags: DevFlags): string | null {
   return null;
 }
 
+/** Remote mode reads no site configuration and no content folder. */
+function localProblem(flags: DevFlags): string | null {
+  const option = (['content', 'config', 'site'] as const).find((name) => flags[name] !== undefined);
+  if (!option) return null;
+  return (
+    `--${option} does not apply with --remote: remote mode reads no site configuration and no content folder; ` +
+    'it uses ./foliwake.remote.json (or --remote-url) in the frontend checkout.'
+  );
+}
+
 /** What the command line of `dev` may not combine; the message, or null. */
 export function devProblem(flags: DevFlags): string | null {
   const polling = flags['watch-polling'];
@@ -43,6 +57,8 @@ export function devProblem(flags: DevFlags): string | null {
   if (flags.remote !== undefined && flags.remote !== 'preview' && flags.remote !== 'live') {
     return `Unknown remote target "${flags.remote}"; use --remote preview (the default) or --remote live.`;
   }
+  const local = localProblem(flags);
+  if (local) return local;
   if (flags['remote-config'] !== undefined && flags['remote-url'] !== undefined) {
     return 'Use either --remote-config or --remote-url, not both.';
   }

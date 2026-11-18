@@ -117,7 +117,15 @@ At the end it can create or link the site on your Foliwake server (--create-site
       process.exitCode = result.status;
       return;
     }
+    await this.trustLocally(result.answers.target);
     process.exitCode = await this.connect(result, flags, server);
+  }
+
+  /** With the engine: it trusts the configuration create wrote, as its own `create` did. */
+  private async trustLocally(folder: string): Promise<void> {
+    const { localRuntime } = await import('../local-runtime.js');
+    const note = await localRuntime()?.created(folder);
+    if (note) this.logToStderr(note);
   }
 
   private async serverOf(typed: string | undefined): Promise<string | undefined> {

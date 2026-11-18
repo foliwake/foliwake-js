@@ -5,3 +5,4 @@ export { type CoreError, CoreFailure } from './remote/core-failure.js';
 export { remoteCallerFor, tokenFor } from './remote/session.js';
 export { type Target, resolveTarget, serverOrigin } from './remote/servers.js';
 export { main } from './main.js';
+export { chooseTarget, type TargetFlags } from './local-target.js';
