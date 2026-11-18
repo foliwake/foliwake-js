@@ -655,7 +655,7 @@ interface PageEnvelope
 | `lang` | `string \| null` | `Content-Language`. |
 | `pageId` | `string \| null` | `X-Page-Id`. |
 | `etag` | `string \| null` |  |
-| `generation` | `string \| null` | `X-Site-Generation`. |
+| `generation` | `number \| null` | `X-Site-Generation`: the live generation the answer belongs to (it only grows), or null without it. |
 
 #### `PreloadHint`
 

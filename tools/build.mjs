@@ -63,8 +63,16 @@ async function minifyBlockKit(staging) {
   writeFileSync(path.join(staging, 'block-kit.js'), await minifyKit(readFileSync(readable, 'utf8')));
 }
 
+/** The hook endpoint answers a ping with `@foliwake/next/<version>`: the version is stamped in at build time. */
+function stampNextVersion(staging) {
+  const file = path.join(staging, 'revalidate-core.js');
+  const { version } = JSON.parse(readFileSync(path.join(ROOT, 'packages/next/package.json'), 'utf8'));
+  writeFileSync(file, readFileSync(file, 'utf8').replace('__FOLIWAKE_NEXT_VERSION__', version));
+}
+
 /** Files a package's build composes from tsc's output in dist/, after the copies. */
 const COMPOSED = {
+  next: stampNextVersion,
   'block-kit': async (staging) => {
     const kit = readFileSync(path.join(staging, 'block-kit.d.ts'), 'utf8');
     const lit = readFileSync(path.join(staging, 'lit-html.d.ts'), 'utf8');

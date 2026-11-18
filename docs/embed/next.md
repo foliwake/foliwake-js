@@ -284,23 +284,21 @@ Open `http://localhost:3000/pages/` and check:
   and at most 24 hours.
 - Its tags are `foliwake`, `foliwake:<site>`, `foliwake:<site>:live` and `foliwake:<site>:live:page:<path>`
   (`foliwakeTags`).
-- Foliwake does not notify apps of publications yet.
-  Expire the tags from your own webhook or admin action:
+- A Foliwake server whose site lists your app as a hook target calls it after every change, once the change
+  is live and the caches in front of the origin serve it.
+  Mount the handler and give it the shared secret:
 
 ```ts
-// app/api/foliwake-revalidate/route.ts
-import { revalidateTag } from 'next/cache';
-import { foliwakeTags } from '@foliwake/next';
+// app/api/webhooks/foliwake/route.ts
+import { foliwakeRevalidateHandler } from '@foliwake/next/revalidate';
 
-export async function POST(request: Request) {
-  if (request.headers.get('authorization') !== `Bearer ${process.env.REVALIDATE_TOKEN}`) {
-    return new Response(null, { status: 401 });
-  }
-  const { path } = (await request.json()) as { path?: string };
-  const tag = path ? foliwakeTags('live', path).at(-1)! : foliwakeTags('live')[2]!;
-  revalidateTag(tag, { expire: 0 });
-  return Response.json({ revalidated: tag });
-}
+export const { POST } = foliwakeRevalidateHandler({ secretEnv: 'FOLIWAKE_HOOK_SECRET' });
 ```
+
+- It checks the signature and expires the tag of every changed path, or `foliwake:<site>:live` when every page
+  changed; the next request of each page reads it again.
+- Another cached read of a changed path (an index, a sitemap) needs the path's tag,
+  `foliwakeTags('live', path)`, to be expired with it.
+- `app.revalidate` stays the safety net when a hook is lost.
 
 Something does not work? See [Troubleshooting](/embed/troubleshooting).

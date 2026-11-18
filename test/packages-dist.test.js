@@ -20,6 +20,12 @@ const METADATA = { 'block-kit': { blocksContract: 2 }, 'core-contract': { coreAp
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const manifest = (name) => JSON.parse(read(`packages/${name}/package.json`));
 
+test('the hook endpoint of @foliwake/next answers a ping with the built version', () => {
+  const core = read('packages/next/dist/revalidate-core.js');
+  assert.doesNotMatch(core, /__FOLIWAKE_NEXT_VERSION__/);
+  assert.ok(core.includes(`'@foliwake/next/${manifest('next').version}'`));
+});
+
 test("'use client', 'use cache' and the runtime import comments are kept in dist/", () => {
   assert.match(read('packages/react/dist/index.js'), /^'use client';/);
   assert.match(read('packages/next/dist/client.js'), /^'use client';/);
@@ -27,7 +33,7 @@ test("'use client', 'use cache' and the runtime import comments are kept in dist
   assert.match(read('packages/next/dist/cache.js'), /async function readEnvelopeCachedEntry\(path\) \{\s+'use cache';/);
   assert.doesNotMatch(read('packages/react/dist/foliwake-page.js'), /import\(/, 'the React wrapper imports no blocks module itself');
   for (const file of ['index.js', 'mount.js', 'events.js', 'host.js', 'load.js', 'import-map.js', 'css-registry.js', 'dev.js']) assert.doesNotMatch(read(`packages/client/dist/${file}`), /from ['"](react|react-dom|next)[/'"]/, `client ${file} imports no framework`);
-  for (const file of ['index.js', 'cache.js', 'routes.js', 'server.js', 'page.js']) assert.match(read(`packages/next/dist/${file}`), /import 'server-only';/, file);
+  for (const file of ['index.js', 'cache.js', 'routes.js', 'server.js', 'page.js', 'revalidate.js']) assert.match(read(`packages/next/dist/${file}`), /import 'server-only';/, file);
 });
 
 test('one coordinated 0.x version, compatibility metadata, public npm metadata', () => {

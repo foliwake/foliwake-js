@@ -17,7 +17,7 @@ export type { PageEnvelope, FoliwakePageData } from '@foliwake/blocks-contract/p
 const HTML_CONTRACT = /^\d{1,4}$/;
 const LANG = /^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/;
 const PAGE_ID = /^[A-Za-z0-9_-]{1,128}$/;
-const GENERATION = /^[A-Za-z0-9_.:-]{1,128}$/;
+const GENERATION = /^\d{1,15}$/;
 const MODE = /^[a-z][a-z0-9-]{0,31}$/;
 
 /** The origin URL path of a page's body (`/` → `/index.plain.html`). */
@@ -33,6 +33,11 @@ function header(response: Response, name: string, pattern: RegExp, required = fa
   }
   if (!pattern.test(value)) throw new FoliwakePageError('invalid', `The origin answered an invalid ${name}.`);
   return value;
+}
+
+/** `X-Site-Generation` as a number: a non-negative integer, or null when the origin sent none. */
+function generationOf(value: string | null): number | null {
+  return value === null ? null : Number(value);
 }
 
 const NO_CODE_RELEASE = 'The origin answered without X-Code-Release: it is not a plain/2 Foliwake origin.';
@@ -86,7 +91,7 @@ export async function readEnvelope(config: FoliwakeAppConfig, client: OriginClie
   const htmlContract = header(response, 'x-html-contract', HTML_CONTRACT, true)!;
   const lang = header(response, 'content-language', LANG);
   const pageId = header(response, 'x-page-id', PAGE_ID);
-  const generation = header(response, 'x-site-generation', GENERATION);
+  const generation = generationOf(header(response, 'x-site-generation', GENERATION));
   const etag = response.headers.get('etag');
   let bytes: Uint8Array;
   try {

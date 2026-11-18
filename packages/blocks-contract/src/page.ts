@@ -23,8 +23,8 @@ export interface PageEnvelope {
   /** `X-Page-Id`. */
   pageId: string | null;
   etag: string | null;
-  /** `X-Site-Generation`. */
-  generation: string | null;
+  /** `X-Site-Generation`: the live generation the answer belongs to (it only grows), or null without it. */
+  generation: number | null;
 }
 
 /** What a client component receives: serialisable, prepared per request. */

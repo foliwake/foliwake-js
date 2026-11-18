@@ -18,6 +18,7 @@ directly with another server framework (a Vite or Remix server, Hono, Express wi
 | `@foliwake/server/html` | the strict body check: `checkPlainBody`, `checkBody`, `serialize`, `srcsetCandidates` |
 | `@foliwake/server/csp` | `foliwakeCsp` |
 | `@foliwake/server/preload` | `preloadHints`: modulepreload and stylesheet hints for a page's blocks |
+| `@foliwake/server/hook` | `verifyFoliwakeSignature`, `parseFoliwakeHook`: the signed hook a Foliwake server sends after a change |
 | `@foliwake/server/schemas/remote-2.schema.json` | the JSON Schema of the config file |
 
 ## Install
@@ -119,6 +120,36 @@ export async function pageEndpoint(request: Request): Promise<Response> {
 }
 ```
 
+### Refresh the cache when the site changes
+
+A Foliwake server whose site lists your app as a hook target POSTs `delivery.settled` once a change is live
+and the caches in front of the origin serve it. The body names the live `generation`, and either the changed
+paths (`pages`, at most 100: pages and other files such as an index) or `all: true`. Check the signature on
+the raw body, then drop what you cached:
+
+```ts
+import { parseFoliwakeHook, verifyFoliwakeSignature } from '@foliwake/server/hook';
+
+const cached = new Map<string, unknown>();
+
+/** POST /api/webhooks/foliwake */
+export async function hookEndpoint(request: Request): Promise<Response> {
+  const body = new Uint8Array(await request.arrayBuffer());
+  const signature = request.headers.get('foliwake-signature');
+  const secrets = [process.env.FOLIWAKE_HOOK_SECRET, process.env.FOLIWAKE_HOOK_SECRET_PREVIOUS];
+  if (!verifyFoliwakeSignature(body, signature, secrets).ok) return new Response(null, { status: 401 });
+  const payload = parseFoliwakeHook(body);
+  if (payload.event === 'ping') return Response.json({ ok: true, site: payload.site });
+  if (payload.all) cached.clear();
+  else for (const path of payload.pages ?? []) cached.delete(path);
+  return Response.json({ ok: true });
+}
+```
+
+The signature is `t=<unix seconds>,v1=<hex HMAC-SHA256(secret, "<t>.<raw body>")>`, accepted within 300 s of
+the app's clock. Answer 2xx only once the change is handled: anything else is sent again. Limit the body to
+64 KiB (`HOOK_BODY_LIMIT`) and check that `payload.site` is yours.
+
 ### Code and media proxies
 
 Mount the handlers under the prefixes of `app.proxies` and pass them the path segments after the prefix. They
@@ -189,6 +220,8 @@ Changes per version, breaking ones marked: `CHANGELOG.md` in the package
 - Credentials never appear in messages; a missing or malformed password or key variable is a
   `FoliwakeConfigError` that names the variable, not its value. The secret is read at each request, so a
   rotated secret works without a restart. A private key whose own `kid` differs from the config's is refused.
+- Rotating the hook secret: give the app the new secret as the previous one too (both accepted), switch the
+  server to it, then drop the old one.
 - Rotating a service-token key: add the new public key to the delivery's key set first (both `kid`s listed),
   then switch the app's `kid` and private key, then remove the old public key.
 - `preparePage` leaves `page.preload` empty; `preloadHints` fills it from the release's
@@ -993,6 +1026,198 @@ function staticImports(source: string): string[]
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/blocks-contract/page`: `PreloadHint`
+
+### `@foliwake/server/hook`
+
+**Functions and components**
+
+#### `isFoliwakePagePath()`
+
+Whether a path of `pages` is a page (`/lessons/a`), not another file such as `/lessons/query-index.json`.
+
+```ts
+function isFoliwakePagePath(path: string): boolean
+```
+
+**Returns** `boolean`
+
+#### `parseFoliwakeHook()`
+
+Parses a hook body (after its signature was checked). Unknown fields are ignored; an unknown operation kind is accepted, so a newer server's operations still refresh the app.
+
+```ts
+function parseFoliwakeHook(body: Body): FoliwakeHookPayload
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `body` | `Body` | The raw body. |
+
+**Returns** `FoliwakeHookPayload`: The payload; throws FoliwakeHookError when it is not a version 1 `delivery.settled` or `ping`.
+
+#### `signFoliwakeHook()`
+
+The `Foliwake-Signature` value for a body: what a Foliwake server sends; useful in an app's tests.
+
+```ts
+function signFoliwakeHook(body: Body, secret: string, t?: number): string
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `body` | `Body` | The raw body, byte for byte as sent. |
+| `secret` | `string` | The shared secret. |
+| `t?` | `number` | The signature time in unix seconds (default: now). |
+
+**Returns** `string`
+
+#### `verifyFoliwakeSignature()`
+
+Checks `Foliwake-Signature` against the raw body. Every secret is tried (the current one and, while it is rotated, the previous one); the comparison is constant-time.
+
+```ts
+function verifyFoliwakeSignature(body: Body, header: string | null, secrets: readonly (string | null | undefined)[], options?: VerifySignatureOptions): SignatureCheck
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `body` | `Body` | The raw request body, byte for byte as received. |
+| `header` | `string \| null` | The `Foliwake-Signature` header, or null. |
+| `secrets` | `readonly (string \| null \| undefined)[]` | The accepted secrets; empty or blank ones are ignored. |
+| `options?` | `VerifySignatureOptions` | `now` (ms) and `toleranceS` (default 300). |
+
+**Returns** `SignatureCheck`: `{ ok: true }`, or `{ ok: false, reason }`: `malformed`, `expired`, `mismatch` or `no_secret`.
+
+**Classes**
+
+#### `FoliwakeHookError`
+
+A hook body that is not a valid payload.
+
+```ts
+class FoliwakeHookError extends Error
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `name` | `string` |  |
+
+**Constants**
+
+#### `HOOK_BODY_LIMIT`
+
+The largest hook body an app accepts, in bytes.
+
+```ts
+const HOOK_BODY_LIMIT: number
+```
+
+#### `HOOK_PAGES_LIMIT`
+
+The most `pages` a delivery lists; a larger change is sent as `all: true`.
+
+```ts
+const HOOK_PAGES_LIMIT = 100
+```
+
+#### `HOOK_TOLERANCE_SECONDS`
+
+How far the signature time may be from the app's clock by default, in seconds.
+
+```ts
+const HOOK_TOLERANCE_SECONDS = 300
+```
+
+**Interfaces**
+
+#### `FoliwakeDeliveryPayload`
+
+`delivery.settled`: the live site is at `generation`, and the caches in front of the origin serve it.
+
+```ts
+interface FoliwakeDeliveryPayload
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `version` | `1` |  |
+| `event` | `'delivery.settled'` |  |
+| `site` | `string` |  |
+| `generation` | `number` | The live generation; it only grows, except that `init` starts a new history. |
+| `release` | `string \| null` | The site release (`sr_…`), or null. |
+| `codeRelease` | `string \| null` | The code release (`cd_…`), or null. |
+| `operation` | `{ id: string; kind: FoliwakeOperationKind \| (string & {}); }` |  |
+| `pages?` | `string[]` | The changed paths (pages, indexes); present only when `all` is false. A hint, at most 100. |
+| `all` | `boolean` | Every live page may have changed. |
+| `verified` | `boolean` | Whether the server read the new generation back through its own cache before sending. |
+| `sentAt` | `string` |  |
+
+#### `FoliwakePingPayload`
+
+`ping`: the server checks the endpoint and its secret; the app changes nothing.
+
+```ts
+interface FoliwakePingPayload
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `version` | `1` |  |
+| `event` | `'ping'` |  |
+| `site` | `string` |  |
+| `sentAt` | `string` |  |
+
+#### `VerifySignatureOptions`
+
+Options of `verifyFoliwakeSignature`.
+
+```ts
+interface VerifySignatureOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `now?` | `number` | The app's clock, in milliseconds since the epoch (default `Date.now()`). |
+| `toleranceS?` | `number` | The allowed distance between the signature time and `now`, in seconds (default 300). |
+
+**Types**
+
+#### `FoliwakeHookPayload`
+
+Any hook body.
+
+```ts
+type FoliwakeHookPayload = FoliwakeDeliveryPayload | FoliwakePingPayload
+```
+
+#### `FoliwakeOperationKind`
+
+The operations a delivery reports; a newer server may send others, which an app treats like any change.
+
+```ts
+type FoliwakeOperationKind = 'content_publish' | 'unpublish' | 'rollback_full' | 'code_release' | 'rollback_code' | 'site_migration' | 'recovery_purge' | 'engine_update' | 'init'
+```
+
+#### `SignatureCheck`
+
+The result of `verifyFoliwakeSignature`.
+
+```ts
+type SignatureCheck = {
+    ok: true;
+} | {
+    ok: false;
+    reason: SignatureFailure;
+}
+```
+
+#### `SignatureFailure`
+
+Why a signature was refused.
+
+```ts
+type SignatureFailure = 'malformed' | 'expired' | 'mismatch' | 'no_secret'
+```
 
 ### `@foliwake/server/schemas/remote-2.schema.json`
 
