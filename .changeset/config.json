@@ -13,7 +13,8 @@
       "@foliwake/react",
       "@foliwake/server",
       "@foliwake/next",
-      "create-foliwake"
+      "create-foliwake",
+      "@foliwake/cli"
     ]
   ],
   "linked": [],

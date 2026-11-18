@@ -23,6 +23,7 @@
     "@changesets/cli": "3.0.3",
     "@foliwake/block-kit": "workspace:*",
     "@foliwake/blocks-contract": "workspace:*",
+    "@foliwake/cli": "workspace:*",
     "@foliwake/client": "workspace:*",
     "@foliwake/core-contract": "workspace:*",
     "@foliwake/next": "workspace:*",

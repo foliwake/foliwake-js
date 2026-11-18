@@ -16,7 +16,7 @@ const NAMES = PUBLISH_ORDER;
 const APP_PACKAGES = ['blocks-contract', 'server', 'client', 'react', 'next'];
 const FORMATS = { htmlContract: 2, blocksPack: 1, templates: 1, references: 1, query: 1 };
 /** What the other packages carry in `foliwake`: the versions they speak. */
-const METADATA = { 'block-kit': { blocksContract: 2 }, 'core-contract': { coreApi: 1 } };
+const METADATA = { 'block-kit': { blocksContract: 2 }, 'core-contract': { coreApi: 1 }, cli: { coreApi: 1 } };
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const manifest = (name) => JSON.parse(read(`packages/${name}/package.json`));
 

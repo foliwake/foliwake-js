@@ -155,6 +155,14 @@ if (has('create-foliwake')) {
   const bin = fileURLToPath(new URL('dist/bin.js', import.meta.resolve('create-foliwake/package.json')));
   assert.match(execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' }), /^0\./);
 }
+if (has('@foliwake/cli')) {
+  const { execFileSync } = await import('node:child_process');
+  const bin = fileURLToPath(new URL('dist/bin.js', import.meta.resolve('@foliwake/cli/package.json')));
+  const version = execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' });
+  assert.ok(version.startsWith('@foliwake/cli/0.'), version);
+  const help = execFileSync(process.execPath, [bin, '--help'], { encoding: 'utf8' });
+  assert.match(help, /login/);
+}
 if (has('@foliwake/client')) {
   const client = await import('@foliwake/client');
   assert.equal(typeof client.mountFoliwakePage, 'function');

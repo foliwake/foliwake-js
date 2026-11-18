@@ -1,0 +1,33 @@
+{
+  "name": "@foliwake/cli",
+  "version": "0.5.0",
+  "description": "The foliwake command without the engine: sign in to a Foliwake server and run its commands there (site status, sync, preview, publish, code deploy, branches, releases, sources, credentials, CI keys), and develop blocks against a remote preview.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": { "node": ">=22.22" },
+  "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/cli" },
+  "homepage": "https://sdk.foliwake.dev/reference/packages/cli",
+  "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
+  "keywords": ["foliwake", "cms", "cli", "deploy", "preview"],
+  "publishConfig": { "access": "public", "provenance": true },
+  "foliwake": { "coreApi": 1 },
+  "bin": {
+    "foliwake": "./dist/bin.js"
+  },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./package.json": "./package.json"
+  },
+  "oclif": {
+    "bin": "foliwake",
+    "dirname": "foliwake",
+    "commands": "./dist/commands",
+    "topicSeparator": " "
+  },
+  "dependencies": {
+    "@foliwake/core-contract": "workspace:*",
+    "@oclif/core": "4.14.0"
+  },
+  "files": ["dist/", "!dist/**/*.map", "LICENSE", "README.md", "CHANGELOG.md"]
+}
