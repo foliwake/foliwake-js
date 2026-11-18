@@ -41,9 +41,15 @@
   },
   "dependencies": {
     "@clack/prompts": "1.8.1",
+    "@foliwake/block-kit": "workspace:*",
+    "@foliwake/blocks-contract": "workspace:*",
     "@foliwake/core-contract": "workspace:*",
+    "@foliwake/server": "workspace:*",
+    "@foliwake/site-check": "workspace:*",
     "@oclif/core": "4.14.0",
-    "create-foliwake": "workspace:*"
+    "chokidar": "6.0.0",
+    "create-foliwake": "workspace:*",
+    "parse5": "7.3.0"
   },
   "files": ["dist/", "!dist/**/*.map", "LICENSE", "README.md", "CHANGELOG.md"]
 }

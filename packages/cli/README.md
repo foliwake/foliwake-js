@@ -47,6 +47,7 @@ Each command calls one operation of the server and prints the same text and `--j
 - `operation get | list | cancel | recover`
 - `credential set | list | rm`
 - `account keys create | list | revoke`
+- `dev --remote [preview|live]`, `dev --remote-url <url>`: your blocks over a deployed site's pages
 
 `foliwake <command> --help` describes each; `--debug` prints the underlying error. The full list with flags
 is under [Command reference](#command-reference).
@@ -73,6 +74,24 @@ the engine.
 Create a CI key on the server (`foliwake account keys create`), then set `FOLIWAKE_SERVER` and
 `FOLIWAKE_TOKEN` in the job. The key is sent only to `FOLIWAKE_SERVER`, never to a server another flag names.
 
+## dev --remote
+
+```sh
+foliwake dev --remote --watch          # in the frontend checkout: preview content, this checkout's code
+foliwake dev --remote live --port 3001
+foliwake dev --remote-url https://preview.foliwake.example --remote-auth-user owner --remote-auth-env PREVIEW_PASSWORD
+```
+
+A local server on `http://127.0.0.1:3000/` shows the pages of the deployed preview (or, only when named, live)
+site with the `components/`, `scripts/` and `styles/` of the folder it runs in. The endpoints come from the
+secret-free `foliwake.remote.json` of the checkout (`--remote-config` names another file) or from
+`--remote-url`; a Basic password is read from the environment variable the file or `--remote-auth-env`
+names, at start, and is never printed. Each page is fetched when the browser asks for it: only its `<main>`,
+`<title>`, description and language are kept and wrapped in a local page shell with the import map of the
+block kit (`@foliwake/block-kit`, served from this package's installed copy). Deployed JavaScript and CSS are
+never loaded. With `--watch`, open pages reload after a change to the local code and show the problems the
+platform's checks (`@foliwake/site-check`) find in it.
+
 ## Compatibility
 
 The CLI speaks core over HTTP as `@foliwake/core-contract` describes it, and names itself to the server in
@@ -91,6 +110,11 @@ engine and contract.
   `create`. The server choice and sign-in questions are the same.
 - Commands default waits to a 30 s settle delay, as the engine CLI does against a server (the server's own delay
   is not read).
+- `dev` serves only remote content (`--remote`, `--remote-url`); serving local Markdown needs the engine.
+- `dev --remote` has no block catalog: `/_dev/blocks` and `/_foliwake/blocks` answer 501 until the open block
+  renderer exists (the engine's `foliwake dev` has it).
+- `dev --remote` signs in to a protected site with HTTP Basic only, not with your `foliwake login`.
+- `dev --remote` shows no content errors: the content is the deployed site's, checked when it was published.
 
 ## Command reference
 
@@ -265,6 +289,26 @@ uses it without a restart. The value is read from a file or stdin, never from th
 
 - `--from-file <value>`: read the value from this file (a Google service-account JSON key is checked)
 - `--from-stdin`: read the value from standard input
+
+### `foliwake dev`
+
+Develop blocks against a deployed site: its content, this checkout’s code (dev --remote)
+
+- `--port <value>`: port to listen on (default 3000)
+- `--remote <[preview|live]>`: content from the deployed preview (default) or live site, local components/, scripts/ and
+  styles/; endpoints from ./foliwake.remote.json. Live only when named; never a fallback
+- `--remote-auth-env <NAME>`: with --remote-url: NAME of the environment variable holding the HTTP Basic password (never
+  the password itself)
+- `--remote-auth-user <value>`: with --remote-auth-env: the HTTP Basic user name
+- `--remote-config <value>`: with --remote: another endpoints file than ./foliwake.remote.json (same format,
+  secret-free)
+- `--remote-url <value>`: remote mode with this site origin instead of foliwake.remote.json (https; http only for
+  loopback)
+- `--watch`: watch local components/, scripts/, styles/ and reload open browser pages after changes (one reload per
+  burst of saves; problems are shown in the page until fixed). Without it, refresh by hand
+- `--watch-polling` / --no-watch-polling: with --watch: detect code changes by polling file stats (default on macOS);
+  --no-watch-polling: native file-system events (default elsewhere). Precedence: this flag, then
+  FOLIWAKE_WATCH_POLLING=1|0, then CHOKIDAR_USEPOLLING, then the platform default
 
 ### `foliwake login [server]`
 

@@ -1,30 +1,37 @@
 #!/usr/bin/env node
-// The CLI as someone installs it: packs @foliwake/cli and the packages of this repository it needs, installs
-// the tarballs with npm into a throwaway folder (third-party dependencies from the registry or npm's cache),
-// and runs `foliwake login --no-browser` and `foliwake whoami --json` there against a fake server. Until these
-// versions are on npm, `npx ./foliwake-cli-<version>.tgz` alone cannot resolve them; this is that command with
-// their tarballs beside it.
+// The CLI as someone installs it: packs @foliwake/cli and the workspace packages it depends on, installs the
+// tarballs with npm into a throwaway folder (their third-party dependencies from the registry or npm's cache),
+// and runs `foliwake login --no-browser` and `foliwake whoami --json` there against a fake server. Until those
+// packages are on npm at this version, `npx ./foliwake-cli-<version>.tgz` alone cannot resolve them; this is
+// that command with their tarballs beside it.
 //
 //   node tools/cli-tarball-smoke.mjs
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PACKAGES } from './packages.mjs';
 import { runCli } from '../test/helpers/cli.js';
 import { startFakeCoreServer } from '../test/helpers/fake-core-server.js';
-
-/** @foliwake/cli and the packages of this repository it installs (create-foliwake and what that needs). */
-const PACKED = ['blocks-contract', 'block-kit', 'site-check', 'create-foliwake', 'core-contract', 'cli'];
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 function pack(dir, into) {
-  execFileSync('pnpm', ['pack', '--pack-destination', into], {
-    cwd: path.join(ROOT, 'packages', dir),
-    stdio: 'ignore',
-  });
+  const cwd = path.join(ROOT, 'packages', dir);
+  execFileSync('pnpm', ['pack', '--pack-destination', into], { cwd, stdio: 'ignore' });
+}
+
+/** The folders of `dir` and of every workspace package it depends on, dependencies first. */
+function withWorkspaceDependencies(dir, seen = new Set()) {
+  if (seen.has(dir)) return [];
+  seen.add(dir);
+  const manifest = JSON.parse(readFileSync(path.join(ROOT, 'packages', dir, 'package.json'), 'utf8'));
+  const dependencies = Object.entries(manifest.dependencies ?? {});
+  const internal = dependencies.filter(([, spec]) => spec === 'workspace:*');
+  const folders = internal.map(([name]) => PACKAGES.find((p) => p.name === name).dir);
+  return [...folders.flatMap((folder) => withWorkspaceDependencies(folder, seen)), dir];
 }
 
 function check(condition, message) {
@@ -34,7 +41,7 @@ function check(condition, message) {
 const work = mkdtempSync(path.join(os.tmpdir(), 'foliwake-cli-smoke-'));
 const fake = await startFakeCoreServer();
 try {
-  for (const dir of PACKED) pack(dir, work);
+  for (const dir of withWorkspaceDependencies('cli')) pack(dir, work);
   const tarballs = readdirSync(work).filter((name) => name.endsWith('.tgz'));
   writeFileSync(path.join(work, 'package.json'), JSON.stringify({ name: 'smoke', private: true }));
   const install = ['install', '--no-audit', '--no-fund', '--prefer-offline', ...tarballs.map((t) => `./${t}`)];
