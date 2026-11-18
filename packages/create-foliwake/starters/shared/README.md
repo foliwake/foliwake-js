@@ -84,20 +84,23 @@ With the repository connected to your site (below):
 
 - **Push a branch** → the branch preview `https://<branch>--<site>.<branch host domain>/` shows the site's pages with that branch's code. Deleting the branch removes its preview.
 - **Merge into `main`** → the checks run, the server prepares a code release from exactly that commit and rebuilds every page with it in the site's **preview**. Live does not change.
-- **Release** → review the preview, then release it in the Foliwake admin: *Frontend → New code → Release*. A rollback is in the same place, or in GitHub: *Actions → Frontend production → Run workflow*.
+- **Release** → review the preview, then release it in the Foliwake admin: *Frontend → New code → Release*. A rollback is in the same place (or `foliwake release rollback`, by an admin of the site).
 
 ## Connect to Foliwake
 
 The workflows in `.github/workflows/` do nothing until the repository is connected. The "Frontend checks" workflow runs on every push and pull request from the start; it needs no secrets.
 
 1. Push this repository to GitHub.
-2. In the Foliwake admin, connect the repository to your site (or ask the operator of your Foliwake server to): it needs the clone URL and gives you the **site id** and the SSH keys of the two deployment commands (branch previews and production){{siteIdNote}}.
-3. In the GitHub repository settings:
-   - **Environments**: `branch-previews` with the secrets `BRANCH_PREVIEW_SSH_KEY`, `BRANCH_PREVIEW_KNOWN_HOSTS`, `BRANCH_PREVIEW_SSH_TARGET`; `production` (deployment branches: `main` only) with `PRODUCTION_DEPLOY_SSH_KEY`, `PRODUCTION_DEPLOY_KNOWN_HOSTS`, `PRODUCTION_DEPLOY_SSH_TARGET`.
-   - **Variables**: `FOLIWAKE_SITE_ID` = the site id; `BRANCH_PREVIEWS_ENABLED` = `true` to turn on branch previews; `FRONTEND_PRODUCTION_DEPLOY_ENABLED` = `true` to turn on main → preview → live (with the site setting `codeRelease: auto`, the default, a merge to main is released when every page builds without problems; with `manual` it waits for Release in the admin); optionally `FOLIWAKE_PREVIEW_URL` and `FOLIWAKE_PRODUCTION_URL` (shown as links in GitHub).
+2. In the Foliwake admin, connect the repository to your site (or ask the operator of your Foliwake server to): it needs the clone URL (a private repository also needs a read token stored on the server) and gives you the **site id**{{siteIdNote}}.
+3. Create a CI key of the site: `foliwake account keys create --site <site id> --server <server address>`. It can deploy code and update branch previews of this one site; it cannot publish pages or roll back.
+4. In the GitHub repository settings:
+   - **Environments**: `branch-previews` and `production` (deployment branches: `main` only), each with the secret `FOLIWAKE_TOKEN` = the CI key.
+   - **Variables**: `FOLIWAKE_SERVER` = the server's address (e.g. `https://foliwake.example.com`); `FOLIWAKE_SITE_ID` = the site id; `BRANCH_PREVIEWS_ENABLED` = `true` to turn on branch previews; `FRONTEND_PRODUCTION_DEPLOY_ENABLED` = `true` to turn on main → preview → live (with the site setting `codeRelease: auto`, the default, a merge to main is released when every page builds without problems; with `manual` it waits for Release in the admin); optionally `FOLIWAKE_PREVIEW_URL` and `FOLIWAKE_PRODUCTION_URL` (shown as links in GitHub).
    - **Branch protection** for `main`: require the "frontend-checks" status check.
 
-Each variable switches on one workflow, so you can enable branch previews first and production later. The keys only reach the server's fixed deployment commands: the branch-preview key can update branch previews of this one site; the production key can deploy the tip of `main` (released only when the server's checks pass, or kept in preview with `codeRelease: manual`) and roll back; it cannot release any other preview.
+Each variable switches on one workflow, so you can enable branch previews first and production later. The workflows run the open Foliwake CLI (`npx @foliwake/cli@<version>`) at the exact version pinned in `package.json` `devDependencies`; update it there. They run it outside the checkout, so only `FOLIWAKE_SERVER` picks the server.
+
+`npm install` also puts that CLI into `node_modules/`: it talks to a server only and has no local preview, so after an install `npm run dev` and `npm run check:pages` find it instead of the Foliwake CLI described above. Run `foliwake dev --watch` and `foliwake page check` directly then.
 
 ## Content
 
