@@ -83,6 +83,10 @@ At the end it can create or link the site on your Foliwake server (--create-site
     relink: Flags.boolean({
       description: 'with --create-site or --link-site in a folder already linked elsewhere: replace that link',
     }),
+    org: Flags.string({
+      dependsOn: ['create-site'],
+      description: "with --create-site: the site's organisation (default: the only one where you may create sites)",
+    }),
     connect: Flags.boolean({
       allowNo: true,
       description: '--no-connect: never ask «Connect to a Foliwake server?» (default: asked at the end in a terminal)',
@@ -154,7 +158,14 @@ At the end it can create or link the site on your Foliwake server (--create-site
 
   private async connect(
     result: CreateResult,
-    flags: { 'create-site': boolean; 'link-site'?: string; relink: boolean; connect?: boolean; interactive?: boolean },
+    flags: {
+      'create-site': boolean;
+      'link-site'?: string;
+      relink: boolean;
+      org?: string;
+      connect?: boolean;
+      interactive?: boolean;
+    },
     server: string | undefined,
   ): Promise<number> {
     const { COMMAND } = await import('../settings.js');
@@ -180,6 +191,7 @@ At the end it can create or link the site on your Foliwake server (--create-site
               linkSite: flags['link-site'],
               server,
               relink: flags.relink,
+              org: flags.org,
               prompts: { input: process.stdin, output: process.stdout },
               signIn: (await import('../remote/sign-in-here.js')).signInHere,
             },

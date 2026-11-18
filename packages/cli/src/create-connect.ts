@@ -24,6 +24,9 @@ export interface ConnectStep {
   /** An origin, from --server. */
   server: string | undefined;
   relink: boolean;
+  /** A new site's organisation and repository (`--org`, `--repository`; see connect-choices.ts). */
+  org?: string | undefined;
+  repository?: string | undefined;
   prompts: PromptStreams;
   signIn: (origin: string) => Promise<boolean>;
   /** Told the server and site the folder was linked to (`connect --json`). */
@@ -34,7 +37,7 @@ type Run = (server: string | null) => Promise<number>;
 
 function relinkOf(step: ConnectStep) {
   const ask = terminalQuestions({ input: process.stdin, output: process.stdout }, { ask: step.interactive });
-  return { relink: step.relink, confirmRelink: ask.confirmRelink };
+  return { relink: step.relink, confirmRelink: ask.confirmRelink, pickOrg: ask.pickOrg };
 }
 
 function runner(step: ConnectStep, io: ConnectIO, site: string): Run {
@@ -46,7 +49,10 @@ function runner(step: ConnectStep, io: ConnectIO, site: string): Run {
       if (linked.exit === 0) step.onLinked?.({ server: linked.server, site: step.linkSite, created: false });
       return linked.exit;
     }
-    const created = await createSite({ ...base, site, server: on, code: true }, io);
+    const created = await createSite(
+      { ...base, site, server: on, code: true, org: step.org, repository: step.repository },
+      io,
+    );
     if (created.exit === 0) step.onLinked?.({ server: created.server, site, created: true });
     return created.exit;
   };

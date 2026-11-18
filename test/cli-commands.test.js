@@ -23,6 +23,8 @@ const HANDLERS = {
   'channels.rollback': () => answers.operation('rollback', null, 'queued'),
   'operations.wait': () => answers.operation('rollback', answers.releaseResult),
   'operations.get': () => answers.operation('rollback', answers.releaseResult),
+  'org.create': (input) => ({ ...input, membership: { role: 'admin', live: false, sites: null } }),
+  'sites.delete': (input) => ({ site: input.site, org: 'acme-org', livePages: 0, foldersSetAside: 2, bucket: 'kept' }),
 };
 
 describe('remote commands with FOLIWAKE_SERVER and FOLIWAKE_TOKEN (CI)', () => {
@@ -71,6 +73,22 @@ describe('remote commands with FOLIWAKE_SERVER and FOLIWAKE_TOKEN (CI)', () => {
       branches.stdout,
       /^main \(default\) +cd_b{32} {2}- {2}https:\/\/main--0123abcd\.preview\.example\.com\/\n$/,
     );
+  });
+
+  test('org list and org create; site delete with --confirm (the bucket is kept and said so)', async () => {
+    const orgs = await cli(['org', 'list']);
+    assert.equal(orgs.code, 0, orgs.stderr);
+    assert.equal(orgs.stdout, 'acme-org (Acme)  admin, every site\n', 'live is a developer flag');
+    const created = await cli(['org', 'create', 'labs', '--name', 'Labs', '--json']);
+    assert.equal(created.code, 0, created.stderr);
+    assert.deepEqual(fake.rpcCalls('org.create').at(-1).input, { id: 'labs', name: 'Labs' });
+    const deleted = await cli(['site', 'delete', '--confirm', 'my-site']);
+    assert.equal(deleted.code, 0, deleted.stderr);
+    assert.deepEqual(fake.rpcCalls('sites.delete').at(-1).input, { site: 'my-site', confirm: 'my-site' });
+    assert.match(deleted.stdout, /^Deleted site my-site \(organisation acme-org\) from the server\./);
+    assert.match(deleted.stdout, /bucket was NOT touched/);
+    const unasked = await cli(['site', 'delete']);
+    assert.equal(unasked.code, 2, 'without a terminal --confirm is needed');
   });
 
   test('release rollback: a mutation, followed to its commit in slices; the release report', async () => {

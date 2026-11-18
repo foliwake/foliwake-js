@@ -33,6 +33,7 @@
       "credential": { "description": "Credential values the content sources name (stored on the server, never shown)" },
       "migration": { "description": "Whole-site rebuilds against new code, released as one" },
       "operation": { "description": "Long operations: their state, cancellation and recovery" },
+      "org": { "description": "Organisations of the server" },
       "page": { "description": "Working pages" },
       "project": { "description": "This project folder and the site it is linked to" },
       "release": { "description": "Live site releases" },

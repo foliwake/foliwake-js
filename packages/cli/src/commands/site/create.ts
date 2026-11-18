@@ -7,7 +7,8 @@ export default class SiteCreate extends Command {
 
   static description =
     `In a project folder (as \`foliwake create\` makes it), signed in with \`foliwake login\` to ` +
-    `any Foliwake server: creates the site in your organisation (you must be its admin), with release 1 from the ` +
+    `any Foliwake server: creates the site in an organisation where you are admin (--org; never chosen silently), ` +
+    `with its repository (--repository, default: the folder's Git origin), and release 1 from the ` +
     `folder's last commit (its code and pages, sent as a Git bundle), links the folder to it and prints what to ` +
     `set up next (GitHub, workflows, content sources). Nothing on GitHub is changed. To use a site that exists ` +
     `already: \`foliwake site link <id>\`.`;
@@ -38,9 +39,15 @@ export default class SiteCreate extends Command {
       description:
         'replace the link of this folder (.foliwake/connection.json) to another server or site without asking',
     }),
-    org: Flags.string({ description: 'the organisation (default: your only one where you are admin)' }),
+    org: Flags.string({
+      description:
+        'the organisation (default: the only one where you may create sites; several: asked in a terminal, ' +
+        'refused without one)',
+    }),
     repository: Flags.string({
-      description: "where the code will live, e.g. https://github.com/acme/mytest (the server checkout's origin)",
+      description:
+        "where the code lives, e.g. https://github.com/acme/mytest (the server checkout's origin; default: this " +
+        "folder's Git origin as an https:// address; `none`: no repository yet)",
     }),
     code: Flags.boolean({
       allowNo: true,
@@ -61,7 +68,7 @@ export default class SiteCreate extends Command {
         server: flags.server,
         site: args.id,
         org: flags.org,
-        repository: flags.repository ?? null,
+        repository: flags.repository,
         code: flags.code,
         env: process.env,
         relink: flags.relink,
