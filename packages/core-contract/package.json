@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/core-contract",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "The contract of Foliwake core over HTTP: every procedure of /api/rpc with its kind, input and output types, the error codes, the API version and the contract digest. Generated from the engine's router.",
   "license": "Apache-2.0",
   "type": "module",
