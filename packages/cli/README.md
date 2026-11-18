@@ -135,6 +135,10 @@ engine and contract.
   Organisations cannot be renamed or deleted, and only the installation's owner creates them.
 - `org list` / `org create` / `site delete` need a server with core `org.create` and `sites.delete`
   (`PROCEDURE_UNKNOWN` on an older one).
+- `source add` does not narrow another source for you: when the project's `content` source owns the whole site
+  (`/`), it prints the `site set … owns` to run first. `--allow-private-host` is accepted only from the
+  installation's owner, and only by a server that takes a new source's `operator` settings (older ones refuse
+  it at the field).
 
 ## Command reference
 
@@ -601,19 +605,24 @@ Remove this project folder's link to its site (.foliwake/connection.json); the s
 Adds a content source to a site: checks it first (settings, credentials, connection, files and their addresses), then
 saves it after a confirmation; nothing is fetched (core sources.probe, sources.add)
 
+- `--allow-private-host <value>`: a host on a private network the source may reach, e.g. a Drupal inside the server's
+  network (operator.allowPrivateHosts; the installation's owner only; repeatable)
 - `--base-url <value>`: Drupal: the site address
 - `--basic-password <value>`: Drupal: the credential name of its password
 - `--basic-user <value>`: Drupal: the credential name of a read-only user name (HTTP Basic)
 - `--branch <value>`: Git: the branch (default main)
 - `--check-only`: check and print, save nothing
 - `--display-name <value>`: the name the dashboard shows
-- `--folder <value>`: Google Drive: the folder link or ID
+- `--folder <value>`: Google Drive or Google Docs: the folder link or ID
+- `--force`: save even when the connection check fails
 - `--id <value>`: the new source id (lower case, digits, "-")
 - `--identity <value>`: Google Drive: file-id (default; renames keep the page) or front-matter
-- `--key <value>`: Google Drive: the credential name of the service-account key (default FOLIWAKE_GOOGLE_SA_KEY)
+- `--key <value>`: Google Drive or Docs: the credential name of the service-account key (default FOLIWAKE_GOOGLE_SA_KEY)
 - `--language <value>`: Drupal: a language code, the default first (repeatable)
+- `--list-title <value>`: Drupal: the heading of the article list page, per --language in the same order (repeatable)
 - `--mappings <value>`: a JSON file with path mapping rules (default: each file names its address)
 - `--owns <value>`: a path the source owns, such as /lessons or "=/" (repeatable)
+- `--page <value>`: Google Docs: <document link or ID>=<page path>, one published page (repeatable)
 - `--plugin <value>`: the connector
 - `--repository <value>`: Git: the https address of the repository
 - `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
@@ -632,13 +641,34 @@ paths it owns; preview and live are unchanged (core sources.adoptPages)
 ### `foliwake source check`
 
 Checks content sources without changing anything: settings, credentials, the connection and, with --listing, the files
-and the page addresses they would get (core sources.probe)
+and the page addresses they would get; a saved source (--source) or a new one described with the flags of `source add`
+(--id …) (core sources.probe)
 
+- `--allow-private-host <value>`: a host on a private network the source may reach, e.g. a Drupal inside the server's
+  network (operator.allowPrivateHosts; the installation's owner only; repeatable)
+- `--base-url <value>`: Drupal: the site address
+- `--basic-password <value>`: Drupal: the credential name of its password
+- `--basic-user <value>`: Drupal: the credential name of a read-only user name (HTTP Basic)
+- `--branch <value>`: Git: the branch (default main)
+- `--display-name <value>`: the name the dashboard shows
+- `--folder <value>`: Google Drive or Google Docs: the folder link or ID
+- `--id <value>`: the new source id (lower case, digits, "-")
+- `--identity <value>`: Google Drive: file-id (default; renames keep the page) or front-matter
 - `--input <value>`: raw JSON for the full operation input; overrides the other input flags
+- `--key <value>`: Google Drive or Docs: the credential name of the service-account key (default FOLIWAKE_GOOGLE_SA_KEY)
+- `--language <value>`: Drupal: a language code, the default first (repeatable)
+- `--list-title <value>`: Drupal: the heading of the article list page, per --language in the same order (repeatable)
 - `--listing`: also list the files and their page addresses (slower: reads the whole source)
+- `--mappings <value>`: a JSON file with path mapping rules (default: each file names its address)
 - `--max <value>`: at most this many files in the listing (default 500)
+- `--owns <value>`: a path the source owns, such as /lessons or "=/" (repeatable)
+- `--page <value>`: Google Docs: <document link or ID>=<page path>, one published page (repeatable)
+- `--plugin <value>`: the connector
+- `--repository <value>`: Git: the https address of the repository
 - `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
 - `--source <value>`: one source of the site (default: every enabled source)
+- `--subfolder <value>`: Google Drive or Git: the folder inside that holds the pages
+- `--token <value>`: Git: the credential name of a read-only token (private repository)
 
 ### `foliwake source list`
 
