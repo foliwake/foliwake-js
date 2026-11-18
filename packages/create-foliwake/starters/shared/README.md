@@ -98,9 +98,37 @@ The workflows in `.github/workflows/` do nothing until the repository is connect
    - **Variables**: `FOLIWAKE_SERVER` = the server's address (e.g. `https://foliwake.example.com`); `FOLIWAKE_SITE_ID` = the site id; `BRANCH_PREVIEWS_ENABLED` = `true` to turn on branch previews; `FRONTEND_PRODUCTION_DEPLOY_ENABLED` = `true` to turn on main → preview → live (with the site setting `codeRelease: auto`, the default, a merge to main is released when every page builds without problems; with `manual` it waits for Release in the admin); optionally `FOLIWAKE_PREVIEW_URL` and `FOLIWAKE_PRODUCTION_URL` (shown as links in GitHub).
    - **Branch protection** for `main`: require the "frontend-checks" status check.
 
-Each variable switches on one workflow, so you can enable branch previews first and production later. The workflows run the open Foliwake CLI (`npx @foliwake/cli@<version>`) at the exact version pinned in `package.json` `devDependencies`; update it there. They run it outside the checkout, so only `FOLIWAKE_SERVER` picks the server.
+Each variable switches on one workflow, so you can enable branch previews first and production later.
 
-`npm install` also puts that CLI into `node_modules/`: it talks to a server only and has no local preview, so after an install `npm run dev` and `npm run check:pages` find it instead of the Foliwake CLI described above. Run `foliwake dev --watch` and `foliwake page check` directly then.
+### The CLI version of the workflows
+
+The workflows run the open Foliwake CLI with `npx @foliwake/cli@<version>`, outside the checkout (so only `FOLIWAKE_SERVER` picks the server). The version is the exact one in the `foliwake.cli` field of `package.json`, set by create to its own release:
+
+```json
+"foliwake": { "cli": "{{createVersion}}" }
+```
+
+Update it there; the workflows refuse anything but an exact version (`1.2.3`, no range). It is deliberately not a `devDependency`: `npm run` puts `node_modules/.bin` first on PATH, and an installed `@foliwake/cli` (server commands only, no local preview) would replace your own `foliwake` in `npm run dev` and `npm run check:pages`. On your machine, install a CLI globally instead: `npm i -g @foliwake/cli` for the server commands (`foliwake account keys create`, `branch update`, …), or the Foliwake CLI described in "Develop" for the local preview and page checks.
+
+To let [Renovate](https://docs.renovatebot.com/) bump the field, add a custom manager to `renovate.json`:
+
+```json
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The Foliwake CLI the workflows run: package.json foliwake.cli",
+      "managerFilePatterns": ["/(^|/)package\\.json$/"],
+      "matchStrings": ["\"foliwake\"\\s*:\\s*\\{[^}]*\"cli\"\\s*:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "@foliwake/cli",
+      "datasourceTemplate": "npm"
+    }
+  ]
+}
+```
+
+With `enabledManagers` set, add `"custom.regex"` to it.
 
 ## Content
 

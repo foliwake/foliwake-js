@@ -1,6 +1,6 @@
 // create-foliwake: the files of a new project, planned in memory from the starters (starters.ts). Nothing is
-// downloaded: React comes vendored with this package. The project's only npm dependency is the Foliwake CLI its CI
-// workflows run (pinned, never needed locally), plus Storybook's packages when asked.
+// downloaded: React comes vendored with this package, and the project has no npm dependencies unless it has
+// Storybook. The Foliwake CLI its CI workflows run is pinned in package.json `foliwake.cli`, not a dependency.
 import path from 'node:path';
 
 import { localSiteId, packageName, type TemplateName } from './options.js';
@@ -58,8 +58,7 @@ const REACT_NOTE =
 
 const STORYBOOK_NOTE =
   ' With the Foliwake CLI, Storybook shows them too: `npm install && npm run stories` (stories from ' +
-  '`foliwake blocks render`, configuration in `.storybook/`; it uses the Foliwake CLI on your PATH, not the ' +
-  '`@foliwake/cli` that `npm install` adds, so run `foliwake blocks render` yourself before `npm run build-stories`).';
+  '`foliwake blocks render`, configuration in `.storybook/`).';
 
 function placeholders(input: ProjectInput, version: string, checker: string): Record<string, string> {
   return {
@@ -93,11 +92,12 @@ function localConfig(id: string): string {
 }
 
 /**
- * The project's devDependencies: the Foliwake CLI its CI workflows run with npx (exact, one version with this
- * package: the Foliwake packages are released together), and Storybook's packages when asked.
+ * The Foliwake CLI the CI workflows run with npx: an exact version, the one of this package (the Foliwake packages
+ * are released together). It is a field of its own, not a devDependency: `npm run` puts node_modules/.bin first on
+ * PATH, and that `@foliwake/cli` (server commands only) would shadow the developer's `foliwake` in `npm run dev`.
  */
-function devDependencies(cliVersion: string, storybook: boolean): Record<string, string> {
-  return { '@foliwake/cli': cliVersion, ...(storybook ? STORYBOOK_PACKAGES : {}) };
+function foliwakeField(cliVersion: string): { cli: string } {
+  return { cli: cliVersion };
 }
 
 function packageJson(name: string, storybook: boolean, cliVersion: string): string {
@@ -114,7 +114,8 @@ function packageJson(name: string, storybook: boolean, cliVersion: string): stri
       'check:pages': 'foliwake page check',
       ...(storybook ? stories : {}),
     },
-    devDependencies: devDependencies(cliVersion, storybook),
+    foliwake: foliwakeField(cliVersion),
+    ...(storybook ? { devDependencies: STORYBOOK_PACKAGES } : {}),
   };
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }

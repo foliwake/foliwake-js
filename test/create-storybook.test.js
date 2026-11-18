@@ -13,6 +13,7 @@ import { after, test } from 'node:test';
 
 import {
   CLI,
+  CREATE_VERSION,
   KEY,
   fakePackageManager,
   fileText,
@@ -54,8 +55,9 @@ test('the Storybook files are added only with --storybook; the project still pas
   for (const template of ['minimal', 'examples']) {
     const plain = await projectFiles({ template, target: '/tmp/x', siteId: null });
     assert.ok(!plain.some((f) => f.path.startsWith('.storybook/')), template);
-    const cli = JSON.parse(fileText(plain, 'package.json')).devDependencies;
-    assert.deepEqual(Object.keys(cli), ['@foliwake/cli'], 'only the CLI the workflows run');
+    const plainManifest = JSON.parse(fileText(plain, 'package.json'));
+    assert.equal(plainManifest.devDependencies, undefined, 'no npm dependencies without Storybook');
+    assert.deepEqual(plainManifest.foliwake, { cli: CREATE_VERSION }, 'the CI CLI: a field');
     const withStorybook = await projectFiles({ template, target: '/tmp/x', siteId: null, storybook: true });
     const config = withStorybook.filter((f) => f.path.startsWith('.storybook/')).map((f) => f.path);
     assert.deepEqual(config, ['.storybook/main.js', '.storybook/preview.js', '.storybook/run.mjs']);
@@ -66,8 +68,9 @@ test('the Storybook files are added only with --storybook; the project still pas
     assert.deepEqual(yamlSettings(fileText(withStorybook, 'pnpm-workspace.yaml')), PNPM_WORKSPACE);
     assert.deepEqual(await projectProblems(withStorybook), [], template);
     const manifest = JSON.parse(fileText(withStorybook, 'package.json'));
-    const packages = { ...cli, '@storybook/html-vite': '10.6.3', storybook: '10.6.3', vite: '8.3.5' };
+    const packages = { '@storybook/html-vite': '10.6.3', storybook: '10.6.3', vite: '8.3.5' };
     assert.deepEqual(manifest.devDependencies, packages);
+    assert.deepEqual(manifest.foliwake, { cli: CREATE_VERSION });
     assert.equal(manifest.scripts.stories, 'node .storybook/run.mjs');
     assert.equal(manifest.scripts['build-stories'], 'foliwake blocks render && storybook build');
     assert.match(fileText(withStorybook, 'README.md'), /`npm install && npm run stories`/);
