@@ -8,7 +8,7 @@ import { localSiteId } from 'create-foliwake';
 import { connectChoices, createSite, knownServers, linkSite, type ConnectIO } from './connect.js';
 import { terminalQuestions } from './connect-prompts.js';
 import { type PromptStreams, askConnect, askServer } from './lib/prompts.js';
-import { serverOrigin } from './remote/servers.js';
+import { cloudConfigured, serverOrigin } from './remote/servers.js';
 import { COMMAND, setting } from './settings.js';
 
 export interface ConnectStep {
@@ -26,6 +26,8 @@ export interface ConnectStep {
   relink: boolean;
   prompts: PromptStreams;
   signIn: (origin: string) => Promise<boolean>;
+  /** Told the server and site the folder was linked to (`connect --json`). */
+  onLinked?: (linked: { server: string | null; site: string; created: boolean }) => void;
 }
 
 type Run = (server: string | null) => Promise<number>;
@@ -39,8 +41,14 @@ function runner(step: ConnectStep, io: ConnectIO, site: string): Run {
   const base = { cwd: step.target, env: process.env, ...relinkOf(step) };
   return async (server) => {
     const on = server ?? undefined;
-    if (step.linkSite) return (await linkSite({ ...base, site: step.linkSite, server: on }, io)).exit;
-    return (await createSite({ ...base, site, server: on, code: true }, io)).exit;
+    if (step.linkSite) {
+      const linked = await linkSite({ ...base, site: step.linkSite, server: on }, io);
+      if (linked.exit === 0) step.onLinked?.({ server: linked.server, site: step.linkSite, created: false });
+      return linked.exit;
+    }
+    const created = await createSite({ ...base, site, server: on, code: true }, io);
+    if (created.exit === 0) step.onLinked?.({ server: created.server, site, created: true });
+    return created.exit;
   };
 }
 
@@ -74,7 +82,7 @@ export async function connectStep(step: ConnectStep, io: ConnectIO): Promise<num
   const run = runner(step, io, site);
   const asked = step.createSite || step.linkSite !== undefined;
   if (!step.interactive) return asked ? run(step.server ?? null) : null;
-  const known = await knownServers(process.env, { withCloud: true });
+  const known = await knownServers(process.env, { withCloud: cloudConfigured() });
   const server =
     step.server ?? presetServer() ?? (await askServer(step.prompts, known, (typed) => serverOrigin(typed)));
   if (server === null) return null;
@@ -96,5 +104,7 @@ export async function connectStep(step: ConnectStep, io: ConnectIO): Promise<num
 
 async function linkWith(step: ConnectStep, io: ConnectIO, site: string, server: string): Promise<number> {
   const request = { cwd: step.target, env: process.env, site, server, ...relinkOf(step) };
-  return (await linkSite(request, io)).exit;
+  const linked = await linkSite(request, io);
+  if (linked.exit === 0) step.onLinked?.({ server: linked.server, site, created: false });
+  return linked.exit;
 }

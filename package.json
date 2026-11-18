@@ -16,6 +16,7 @@
     "pack:all": "node tools/pack.mjs",
     "check:tarballs": "node tools/pack.mjs && node tools/check-package-tarballs.mjs .tarballs",
     "core-contract:sync": "node tools/core-contract-sync.mjs",
+    "cli:reference": "node tools/build.mjs && node tools/cli-reference.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },
