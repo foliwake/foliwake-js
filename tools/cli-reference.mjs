@@ -20,6 +20,17 @@ async function loadConfig() {
 
 const firstLine = (text) => (text ?? '').split('\n')[0].trim();
 
+/**
+ * `text` with `<` and `>` escaped outside `code` spans. A bare `<page path>` in a description would be an
+ * unknown HTML tag on npm and breaks the documentation build (VitePress compiles the page as a Vue template).
+ */
+export function escapeAngles(text) {
+  return text
+    .split(/(`[^`]*`)/)
+    .map((part) => (part.startsWith('`') ? part : part.replaceAll('<', '&lt;').replaceAll('>', '&gt;')))
+    .join('');
+}
+
 /** Words of `text` in lines of at most 120 columns; lines after the first start with `indent`. */
 function wrap(text, indent = '') {
   const lines = [];
@@ -37,7 +48,7 @@ function wrap(text, indent = '') {
 function flagLine([name, flag]) {
   const value = flag.type === 'option' ? ` <${flag.helpValue ?? 'value'}>` : '';
   const negation = flag.allowNo ? ` / --no-${name}` : '';
-  return wrap(`- \`--${name}${value}\`${negation}: ${firstLine(flag.description)}`, '  ');
+  return wrap(`- \`--${name}${value}\`${negation}: ${escapeAngles(firstLine(flag.description))}`, '  ');
 }
 
 const GLOBAL = new Set(['json', 'debug', 'server', 'help']);
@@ -51,7 +62,7 @@ function commandSection(command) {
     .filter(([name, flag]) => !flag.hidden && !GLOBAL.has(name))
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .flatMap(flagLine);
-  const summary = firstLine(command.summary ?? command.description);
+  const summary = escapeAngles(firstLine(command.summary ?? command.description));
   const heading = `### \`foliwake ${words}${args}\``;
   return [heading, '', ...wrap(summary), ...(flags.length ? ['', ...flags] : []), ''];
 }
