@@ -107,7 +107,8 @@ test('flags: template, site id, --no-git, a nested folder name', async () => {
   for (const file of expected) assert.ok(files.includes(file), file);
   const config = json(path.join(target, 'foliwake.config.json'));
   assert.equal(config.sites[0].id, 'shop');
-  assert.equal(config.sites[0].liveHosts[0], 'shop.localhost');
+  assert.deepEqual(Object.keys(config.sites[0]).sort(), ['code', 'id', 'sources'], 'a minimal project file');
+  assert.deepEqual(config.sites[0].code, { root: '.' });
   assert.equal(json(path.join(target, 'package.json')).name, 'my-site');
   const readme = await readFile(path.join(target, 'README.md'), 'utf8');
   assert.match(readme, /^# My Site\n/);

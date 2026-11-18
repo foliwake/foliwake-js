@@ -318,11 +318,12 @@ export function nextSteps(result: CreateResult): string[] {
   if (result.shown !== '.') steps.push(`  cd ${shellWord(result.shown)}`);
   steps.push(
     '  npx @foliwake/site-check            re-check after every change; the platform runs the same checks',
-    '  Push the repository to GitHub and connect it to your site in the Foliwake admin ' +
+    '  Push the repository to GitHub and link this folder to your site with `foliwake connect` ' +
       '(README.md, "Connect to Foliwake"):',
     "    every branch gets a preview with the site's content; " +
       "a merge to main goes to the site's preview, then Release in the admin.",
-    '  Local preview and page checks need the Foliwake CLI (Docker image or Foliwake Cloud): foliwake dev --watch',
+    '  Server commands (connect, keys, deploy): npm i -g @foliwake/cli',
+    "  Local preview and page checks need the Foliwake engine's CLI (not public yet): foliwake dev --watch",
   );
   if (result.answers?.storybook && !result.answers.install)
     steps.push('  npm install   (Storybook; `npm run stories` needs the Foliwake CLI)');

@@ -1,2 +1,4 @@
 version: 1
-authoring: blocks-v3
+# No `authoring` default: each page names its dialect in its front matter (`authoring: blocks-v3`).
+# A default here would apply to the pages of every content source of the site, and a site with a
+# Drupal or Google Docs source refuses it: their pages cannot be written in blocks-v3.
