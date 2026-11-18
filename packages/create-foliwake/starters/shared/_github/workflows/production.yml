@@ -1,43 +1,35 @@
 # Frontend production: a push to main (normally a merged pull request) runs the
-# frontend checks and asks the Foliwake server to deploy exactly that commit:
-# the server makes a code release from it and rebuilds every page against it
-# in the site's preview. With the site setting `codeRelease: auto` (the
-# default) the server then checks the rebuild (every page built, no page with
-# problems, the code fits the pages) and releases code and pages to live as one
-# site release: merge to main = release. If a check fails, or the site uses
-# `codeRelease: manual`, the code waits in the preview and you release it in
-# the Foliwake admin (Frontend > New code > Release); live is unchanged.
+# frontend checks and asks the Foliwake server to deploy exactly that commit
+# with `foliwake code deploy`: the server fetches the commit, makes a code
+# release from it and rebuilds every page against it in the site's preview.
+# With the site setting `codeRelease: auto` (the default) the server then
+# checks the rebuild (every page built, no page with problems, the code fits
+# the pages) and releases code and pages to live as one site release: merge to
+# main = release. If a check fails, or the site uses `codeRelease: manual`, the
+# code waits in the preview and you release it in the Foliwake admin
+# (Frontend > New code > Release); live is unchanged.
 # This site has no build step: the server takes the code from the main commit.
-# Manual rollback (workflow_dispatch) makes an earlier site release live again,
-# only while live is still the release you name as `expect`.
 #
-# Ordering: one run at a time (concurrency). The server refuses a commit that
-# is no longer the tip of main and a deploy older than one it already prepared.
+# Ordering: one run at a time (concurrency); the server refuses a deploy older
+# than one it already prepared (--sequence is the run id).
 #
-# INERT until enabled: the deploy and rollback jobs are skipped unless the
-# repository variable FRONTEND_PRODUCTION_DEPLOY_ENABLED is `true` (separate
-# from BRANCH_PREVIEWS_ENABLED) and FOLIWAKE_SITE_ID is set. How to enable it:
-# README.md, "Connect to a Foliwake server".
+# INERT until enabled: the deploy job is skipped unless the repository variable
+# FRONTEND_PRODUCTION_DEPLOY_ENABLED is `true` (separate from
+# BRANCH_PREVIEWS_ENABLED) and FOLIWAKE_SITE_ID is set. How to enable it:
+# README.md, "Connect to Foliwake".
 #
-# Credentials (environment `production`, deployment branches: main only,
-# secret NAMES only): PRODUCTION_DEPLOY_SSH_KEY, PRODUCTION_DEPLOY_KNOWN_HOSTS,
-# PRODUCTION_DEPLOY_SSH_TARGET. The key can deploy main (and so release it when the
-# site's checks pass) and roll back; it cannot release any other preview.
+# Server and key: the repository variable FOLIWAKE_SERVER (the server's address)
+# and the secret FOLIWAKE_TOKEN (environment `production`, deployment branches:
+# main only): a CI key of this site from `foliwake account keys create --site
+# <site>`. It can deploy code and update branch previews; it cannot publish
+# pages or roll back (an admin does that in the Foliwake admin or with
+# `foliwake release rollback`). The CLI is the open npm package @foliwake/cli,
+# run with npx at the exact version pinned in package.json devDependencies,
+# outside the checkout so only FOLIWAKE_SERVER picks the server.
 name: Frontend production
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-    inputs:
-      to:
-        description: 'Rollback target: "previous" (one site release back from live) or a site release sr_…'
-        required: true
-        default: previous
-        type: string
-      expect:
-        description: 'The live site release you saw (sr_…, from the Foliwake admin or `site status`); nothing changes if live is no longer it'
-        required: true
-        type: string
 permissions:
   contents: read
 concurrency:
@@ -65,70 +57,26 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Build the request
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '^22.22.0'
+      - name: The Foliwake CLI pinned in package.json
+        id: cli
+        run: |
+          version=$(node -p "require('./package.json').devDependencies['@foliwake/cli']")
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "@foliwake/cli must be an exact version, not '$version'"; exit 1; }
+          echo "package=@foliwake/cli@$version" >> "$GITHUB_OUTPUT"
+      - name: Deploy on the Foliwake server
+        working-directory: ${{ runner.temp }}
         env:
+          FOLIWAKE_SERVER: ${{ vars.FOLIWAKE_SERVER }}
+          FOLIWAKE_TOKEN: ${{ secrets.FOLIWAKE_TOKEN }}
+          FOLIWAKE_CLI: ${{ steps.cli.outputs.package }}
           SHA: ${{ github.sha }}
           RUN_ID: ${{ github.run_id }}
           SITE: ${{ vars.FOLIWAKE_SITE_ID }}
         run: |
-          python3 -c 'import json, os; print(json.dumps({"action": "deploy", "revision": os.environ["SHA"], "sequence": int(os.environ["RUN_ID"]), "site": os.environ["SITE"]}))' > "$RUNNER_TEMP/request.json"
-      - id: send
-        uses: ./.github/actions/foliwake-request
-        with:
-          command: frontend-production
-          request: ${{ runner.temp }}/request.json
-          ssh-key: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
-          known-hosts: ${{ secrets.PRODUCTION_DEPLOY_KNOWN_HOSTS }}
-          target: ${{ secrets.PRODUCTION_DEPLOY_SSH_TARGET }}
-      - name: Report (fails unless released, prepared for a manual release, or superseded)
-        env:
-          EXIT: ${{ steps.send.outputs.exit }}
-        run: |
-          python3 .github/scripts/foliwake-report.py production "$RUNNER_TEMP/foliwake-result.json"
-          # 0: released (delivered), prepared (codeRelease: manual) or superseded; 3: released, cache
-          # refresh still pending; 1: failed, refused, or held by a check (the code waits in preview).
-          test "$EXIT" = 0
-  rollback:
-    if: >-
-      github.event_name == 'workflow_dispatch' &&
-      github.ref == 'refs/heads/main' &&
-      vars.FRONTEND_PRODUCTION_DEPLOY_ENABLED == 'true' &&
-      vars.FOLIWAKE_SITE_ID != '' &&
-      !github.event.repository.fork
-    environment:
-      name: production
-      url: ${{ vars.FOLIWAKE_PRODUCTION_URL }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          persist-credentials: false
-      - name: Build the request (site releases only, with the live release you saw)
-        env:
-          TO: ${{ inputs.to }}
-          EXPECT: ${{ inputs.expect }}
-          SITE: ${{ vars.FOLIWAKE_SITE_ID }}
-        run: |
-          python3 - <<'PY' > "$RUNNER_TEMP/request.json"
-          import json, os, re, sys
-          to, expect = os.environ['TO'], os.environ['EXPECT']
-          if not (to == 'previous' or re.fullmatch(r'sr_[0-9a-f]{32}', to)) or not re.fullmatch(r'sr_[0-9a-f]{32}', expect):
-              sys.exit('to must be "previous" or sr_…, and expect the live sr_… you saw')
-          print(json.dumps({'action': 'rollback', 'to': to, 'expect': expect, 'site': os.environ['SITE']}))
-          PY
-      - id: send
-        uses: ./.github/actions/foliwake-request
-        with:
-          command: frontend-production
-          request: ${{ runner.temp }}/request.json
-          ssh-key: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
-          known-hosts: ${{ secrets.PRODUCTION_DEPLOY_KNOWN_HOSTS }}
-          target: ${{ secrets.PRODUCTION_DEPLOY_SSH_TARGET }}
-      - name: Report (fails unless delivered or a no-op)
-        env:
-          EXIT: ${{ steps.send.outputs.exit }}
-        run: |
-          python3 .github/scripts/foliwake-report.py rollback "$RUNNER_TEMP/foliwake-result.json"
-          # 0: delivered / noop; 3: committed but the cache refresh is still pending; 1: refused or failed.
-          test "$EXIT" = 0
+          # 0: released (or prepared for a manual release); 3: released, cache refresh pending; 1: failed or held.
+          npx --yes "$FOLIWAKE_CLI" code deploy --site "$SITE" --rev "$SHA" --sequence "$RUN_ID" --json

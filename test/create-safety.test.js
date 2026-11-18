@@ -264,7 +264,7 @@ test('recovery instructions fit the failure and never stage other files of the f
   await writeFile(path.join(kept, 'notes.txt'), 'mine');
   const initFails = plainIO(w.cwd, await fakeGit(w, 'bin-init', failOnArgument('init')));
   assert.equal(await runCreate({ folder: 'kept', existing: 'keep' }, initFails.io), 1);
-  const first = '\\.github\\/actions\\/foliwake-request\\/action\\.yml';
+  const first = '\\.github\\/workflows\\/branch-preview\\.yml';
   const explicit = new RegExp(`run \`git init -b main\`, \`git add -- ${first} .* tests\\/workflows\\.test\\.mjs\` `);
   assert.match(initFails.err(), explicit);
   const rest =

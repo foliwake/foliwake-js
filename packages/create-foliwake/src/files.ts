@@ -1,6 +1,6 @@
 // create-foliwake: the files of a new project, planned in memory from the starters (starters.ts). Nothing is
-// downloaded: React comes vendored with this package, and the project has no npm dependencies unless it has
-// Storybook.
+// downloaded: React comes vendored with this package. The project's only npm dependency is the Foliwake CLI its CI
+// workflows run (pinned, never needed locally), plus Storybook's packages when asked.
 import path from 'node:path';
 
 import { localSiteId, packageName, type TemplateName } from './options.js';
@@ -58,7 +58,8 @@ const REACT_NOTE =
 
 const STORYBOOK_NOTE =
   ' With the Foliwake CLI, Storybook shows them too: `npm install && npm run stories` (stories from ' +
-  '`foliwake blocks render`, configuration in `.storybook/`).';
+  '`foliwake blocks render`, configuration in `.storybook/`; it uses the Foliwake CLI on your PATH, not the ' +
+  '`@foliwake/cli` that `npm install` adds, so run `foliwake blocks render` yourself before `npm run build-stories`).';
 
 function placeholders(input: ProjectInput, version: string, checker: string): Record<string, string> {
   return {
@@ -91,7 +92,15 @@ function localConfig(id: string): string {
   return `${JSON.stringify({ version: 1, sites: [site] }, null, 2)}\n`;
 }
 
-function packageJson(name: string, storybook: boolean): string {
+/**
+ * The project's devDependencies: the Foliwake CLI its CI workflows run with npx (exact, one version with this
+ * package: the Foliwake packages are released together), and Storybook's packages when asked.
+ */
+function devDependencies(cliVersion: string, storybook: boolean): Record<string, string> {
+  return { '@foliwake/cli': cliVersion, ...(storybook ? STORYBOOK_PACKAGES : {}) };
+}
+
+function packageJson(name: string, storybook: boolean, cliVersion: string): string {
   const stories = { stories: 'node .storybook/run.mjs', 'build-stories': 'foliwake blocks render && storybook build' };
   const manifest = {
     name,
@@ -105,14 +114,15 @@ function packageJson(name: string, storybook: boolean): string {
       'check:pages': 'foliwake page check',
       ...(storybook ? stories : {}),
     },
-    ...(storybook ? { devDependencies: STORYBOOK_PACKAGES } : {}),
+    devDependencies: devDependencies(cliVersion, storybook),
   };
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
 /** Every file of the new project, sorted by path. */
 export async function projectFiles(input: ProjectInput): Promise<ProjectFile[]> {
-  const values = placeholders(input, await packageVersion(), await siteCheckVersion());
+  const version = await packageVersion();
+  const values = placeholders(input, version, await siteCheckVersion());
   const layers = [...TEMPLATE_LAYERS[input.template], ...(input.storybook ? ['storybook' as const] : [])];
   if (input.react) layers.push('react');
   const files = new Map<string, Buffer>();
@@ -124,7 +134,7 @@ export async function projectFiles(input: ProjectInput): Promise<ProjectFile[]> 
   }
   if (input.react) for (const [file, bytes] of await vendoredReact()) files.set(file, bytes);
   files.set(CONFIG_FILE_NAME, Buffer.from(localConfig(localSiteId(input.siteId, input.target))));
-  files.set('package.json', Buffer.from(packageJson(packageName(input.target), input.storybook ?? false)));
+  files.set('package.json', Buffer.from(packageJson(packageName(input.target), input.storybook ?? false, version)));
   const sorted = [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return sorted.map(([file, bytes]) => ({ path: file, bytes }));
 }

@@ -1,14 +1,17 @@
 // Static checks of the deployment workflows (run: node --test "tests/*.test.mjs"). They pin
 // down what keeps them safe: both deployment workflows stay inert until their
 // own repository variable is `true`, branch previews and production use
-// separate environments and secrets, production runs only from main after the
-// checks, nothing with secrets runs for pull requests or forks, and every
-// action is pinned to a commit SHA. Text-based (no YAML dependency).
+// separate environments, production runs only from main after the checks,
+// nothing with secrets runs for pull requests or forks, the only secret is the
+// CI key FOLIWAKE_TOKEN, the CLI is the version pinned in package.json, run
+// outside the checkout, and every action is pinned to a commit SHA.
+// Text-based (no YAML dependency).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const read = (name) => readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), 'utf8');
+const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const files = { checks: read('frontend-checks.yml'), preview: read('branch-preview.yml'), production: read('production.yml') };
 
 // Job blocks: `  <id>:` lines directly under `jobs:`.
@@ -44,7 +47,22 @@ test('frontend checks use no secrets (safe for fork pull requests) and run the t
   assert.match(files.checks, /node --test "tests\/\*\.test\.mjs"/);
 });
 
-test('branch previews: inert until BRANCH_PREVIEWS_ENABLED, own environment and secrets, never main', () => {
+/** A job that calls the server: the pinned CLI, outside the checkout, with the server and key from GitHub. */
+function assertServerCall(job, id, command) {
+  assert.match(job, /devDependencies\['@foliwake\/cli'\]/, `${id}: the CLI version comes from package.json`);
+  assert.match(job, /\^\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$/, `${id}: an exact version only`);
+  assert.match(job, new RegExp(`npx --yes "\\$FOLIWAKE_CLI" ${command} .*--site "\\$SITE" .*--json`), `${id}: ${command}`);
+  assert.match(job, /working-directory: \$\{\{ runner\.temp \}\}/, `${id}: runs outside the checkout`);
+  assert.match(job, /FOLIWAKE_SERVER: \$\{\{ vars\.FOLIWAKE_SERVER \}\}/, `${id}: the server is a variable`);
+  assert.match(job, /RUN_ID/, `${id}: ordering sequence from the run id`);
+  for (const [, secret] of job.matchAll(/secrets\.([A-Z0-9_]+)/g)) assert.equal(secret, 'FOLIWAKE_TOKEN', `${id}: ${secret}`);
+}
+
+test('the project pins the Foliwake CLI the workflows run, exactly', () => {
+  assert.match(manifest.devDependencies?.['@foliwake/cli'] ?? '', /^[0-9]+\.[0-9]+\.[0-9]+$/);
+});
+
+test('branch previews: inert until BRANCH_PREVIEWS_ENABLED, own environment, never main', () => {
   const text = files.preview;
   assert.match(text, /^  push:\n    branches-ignore: \[main\]\n  delete:\n/m);
   assert.doesNotMatch(text, /workflow_dispatch|pull_request/);
@@ -57,28 +75,27 @@ test('branch previews: inert until BRANCH_PREVIEWS_ENABLED, own environment and 
     assert.match(job, /!github\.event\.repository\.fork/, `${id}: not in forks`);
     assert.match(job, /(github\.ref_name|github\.event\.ref) != 'main'/, `${id}: never main`);
     assert.match(job, /^    environment: branch-previews$/m, `${id}: environment`);
-    for (const [, secret] of job.matchAll(/secrets\.([A-Z0-9_]+)/g)) assert.match(secret, /^BRANCH_PREVIEW_/, `${id}: ${secret}`);
-    assert.match(job, /RUN_ID/, `${id}: ordering sequence from the run id`);
   }
+  assertServerCall(all.preview, 'preview', 'branch update "\\$BRANCH"');
+  assertServerCall(all.delete, 'delete', 'branch delete "\\$BRANCH"');
 });
 
-test('production: inert until FRONTEND_PRODUCTION_DEPLOY_ENABLED, main only, after the checks, production secrets only', () => {
+test('production: inert until FRONTEND_PRODUCTION_DEPLOY_ENABLED, main only, after the checks, deploy only', () => {
   const text = files.production;
   assert.match(text, /^  push:\n    branches: \[main\]\n/m);
-  assert.doesNotMatch(text, /secrets\.BRANCH_PREVIEW/);
+  assert.doesNotMatch(text, /workflow_dispatch/, 'no rollback from CI: a CI key cannot roll back');
   const all = jobs(text);
+  assert.deepEqual(Object.keys(all).sort(), ['checks', 'deploy']);
   assert.match(all.checks, /uses: \.\/\.github\/workflows\/frontend-checks\.yml/);
-  assert.match(all.deploy, /^    needs: checks$/m, 'deploy needs the checks');
-  assert.match(all.deploy, /"action": "deploy"/, 'a push deploys main: the server prepares it and, with codeRelease auto, releases it when its checks pass');
-  assert.doesNotMatch(text, /promote|"action": "release"/, 'no request names a release: only the server decides one, for the commit it deployed');
-  for (const id of ['deploy', 'rollback']) {
-    const job = all[id];
-    assert.match(job, /vars\.FRONTEND_PRODUCTION_DEPLOY_ENABLED == 'true'/, `${id}: own enablement guard`);
-    assert.doesNotMatch(job, /BRANCH_PREVIEWS_ENABLED/, `${id}: not the branch-preview guard`);
-    assert.match(job, /github\.ref == 'refs\/heads\/main'/, `${id}: main only`);
-    assert.match(job, /!github\.event\.repository\.fork/, `${id}: not in forks`);
-    assert.match(job, /^    environment:\n      name: production$/m, `${id}: production environment`);
-    for (const [, secret] of job.matchAll(/secrets\.([A-Z0-9_]+)/g)) assert.match(secret, /^PRODUCTION_DEPLOY_/, `${id}: ${secret}`);
-  }
-  assert.match(all.rollback, /expect/, 'a rollback names the live release it expects');
+  const job = all.deploy;
+  assert.match(job, /^    needs: checks$/m, 'deploy needs the checks');
+  assert.match(job, /vars\.FRONTEND_PRODUCTION_DEPLOY_ENABLED == 'true'/, 'own enablement guard');
+  assert.doesNotMatch(job, /BRANCH_PREVIEWS_ENABLED/, 'not the branch-preview guard');
+  assert.match(job, /github\.ref == 'refs\/heads\/main'/, 'main only');
+  assert.match(job, /!github\.event\.repository\.fork/, 'not in forks');
+  assert.match(job, /^    environment:\n      name: production$/m, 'production environment');
+  assertServerCall(job, 'deploy', 'code deploy');
+  assert.match(job, /--rev "\$SHA"/, 'exactly the pushed commit');
+  const steps = Object.values(all).join('');
+  assert.doesNotMatch(steps, /release rollback|promote/, 'only the server decides a release, for the commit it deployed');
 });
