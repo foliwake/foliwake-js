@@ -5,6 +5,16 @@ with them. While the version is 0.x, a minor release may break; breaking changes
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.7.0
+
+### Patch Changes
+
+- 214dd98: The `foliwake.config.json` of a new project names its content folder as a `local-markdown` source, the engine's
+  current format: the engine refuses the old `contentRoot` key, so `foliwake dev` and `page check` failed in a new
+  project with `SITE_CONFIG_INVALID`.
+- @foliwake/block-kit@0.7.0
+  - @foliwake/site-check@0.7.0
+
 ## 0.6.0
 
 ### Patch Changes
