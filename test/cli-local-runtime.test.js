@@ -59,6 +59,20 @@ describe('with the engine registered', () => {
     assert.ok(localCalls(local.stderr).includes('local: sites.status {"site":"my-site"}'), local.stderr);
   });
 
+  test('an explicit FOLIWAKE_SERVER wins over FOLIWAKE_CONFIG; FOLIWAKE_CONFIG alone runs locally', async () => {
+    const env = { ...server, FOLIWAKE_SERVER: fake.origin, FOLIWAKE_CONFIG: '/data/foliwake.config.json' };
+    const before = fake.rpcCalls('sites.status').length;
+    const remote = await engine(['site', 'status'], { env });
+    assert.equal(remote.code, 0, remote.stderr);
+    assert.equal(fake.rpcCalls('sites.status').length, before + 1, remote.stderr);
+    assert.deepEqual(localCalls(remote.stderr), ['local: traced site.status']);
+    const local = await engine(['site', 'status'], { env: { FOLIWAKE_CONFIG: 'site.json' } });
+    assert.equal(local.code, 0, local.stderr);
+    assert.ok(localCalls(local.stderr).includes('local: sites.status {"site":"my-site"}'), local.stderr);
+    const flag = await engine(['site', 'status', '--config', 'site.json'], { env });
+    assert.ok(localCalls(flag.stderr).includes('local: sites.status {"site":"my-site"}'), 'a flag wins over both');
+  });
+
   test("the folder's .foliwake/connection.json comes before FOLIWAKE_SERVER and the folder config", async () => {
     const folder = path.join(home.root, 'linked');
     await mkdir(path.join(folder, '.foliwake'), { recursive: true });
