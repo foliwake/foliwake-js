@@ -7,6 +7,36 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.9.0
+
+### Minor Changes
+
+- 003f643: Apps can be told when the live site changes. `@foliwake/server/hook` verifies the signed hook a Foliwake server
+  sends once a change is live and the caches in front of the origin serve it (`verifyFoliwakeSignature`,
+  `parseFoliwakeHook`, `signFoliwakeHook` for tests, payload types). `@foliwake/next/revalidate` adds
+  `foliwakeRevalidateHandler({ secretEnv })`, a route handler that expires the live tag of every changed path, or
+  of the whole site when every page changed, with `{ expire: 0 }` by default (`mode: 'max'` for background
+  refresh), reads up to 20 changed pages again after answering (`warm`), accepts a previous secret while it is
+  rotated (`previousSecretEnv`) and calls `onDelivery(payload)`.
+- 6dd1fd4: **BREAKING** `PageEnvelope.generation` is now a number (`X-Site-Generation`, the live generation, which only
+  grows), or null when the origin sends none; it was a string. An origin that sends a value that is not a
+  non-negative integer is refused (`FoliwakePageError` kind `invalid`). Code that compared or stored the string
+  needs updating.
+  
+  `@foliwake/next/cache` adds `setGenerationFloor((site) => Promise<number | null>)`: the app's highest known live
+  generation (for example written by the hook's `onDelivery`). A cached live read whose generation is below the
+  floor no longer stays for `app.revalidate` seconds: it lives at most 15 seconds and is read again, and the old
+  page is shown meanwhile instead of an error. A floor that cannot be read turns the check off for that read and
+  logs; without a floor nothing changes.
+
+### Patch Changes
+
+- Updated dependencies [003f643]
+- Updated dependencies [6dd1fd4]
+  - @foliwake/server@0.9.0
+  - @foliwake/blocks-contract@0.9.0
+  - @foliwake/react@0.9.0
+
 ## 0.8.0
 
 ### Patch Changes
