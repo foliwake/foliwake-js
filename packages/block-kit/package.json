@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/block-kit",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "The block kit of Foliwake site blocks, the module `@foliwake/block-kit` (defineBlock, html, readFields), with its types and the blocks contract's: one package for block authors. The browser files the engine adds to every code release.",
   "license": "Apache-2.0",
   "type": "module",

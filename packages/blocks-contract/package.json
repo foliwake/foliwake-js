@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/blocks-contract",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Types of the Foliwake blocks contract (foliwake-blocks/2: the core, and the /assessment extension) and the page types shared by @foliwake/server and @foliwake/client; one browser-safe runtime helper, the import map of a code release (/import-map).",
   "license": "Apache-2.0",
   "type": "module",
