@@ -1,5 +1,45 @@
 # @foliwake/cli
 
+## 0.9.0
+
+### Minor Changes
+
+- 0cfb15c: Organisations and site deletion: `foliwake org list`, `foliwake org create <id> [--name]` (the installation's owner;
+  core `org.create`) and `foliwake site delete --site <id> [--confirm <id>] [--force]` (core `sites.delete`: refused
+  while the site works, has live pages or is named by memberships, invitations or CI keys; its bucket is kept and the
+  command says how to go on).
+  
+  `site create`, `connect --create` and `create --create-site` never leave the organisation to the server: `--org`, or
+  the only organisation where the account may create sites (said), or asked in a terminal when there are several
+  (refused without one, listing them). `connect --create` gets `--org` and `--repository`; the repository defaults to
+  the folder's Git `origin` as an https:// address (`--repository none`: none). The "Next steps" after a new site no
+  longer mention SSH secrets: a public repository needs no code token, a private one a read token; the workflows take
+  a CI key made with `account keys create --site <id> --label github-actions`.
+  
+  The core contract adds `org.create` and `sites.delete` and their error codes.
+- 69dee17: `source add`: `--list-title` (Drupal, per `--language`), `--plugin google-docs` with `--page <document link or
+  ID>=<path>` (repeatable) and an optional `--folder`, and `--allow-private-host <host>` (the source's
+  `operator.allowPrivateHosts`; the installation's owner only). A source whose connection check fails is no longer
+  saved unless `--force`. When another source owns the whole site (`/`), it prints how to narrow that one first.
+  `source check` checks a new source described with the same flags (`--id …`) without saving it.
+
+### Patch Changes
+
+- c8e7363: With the engine, `page check --content <dir>` (and every command with `--content`) in a folder linked to a site
+  checks the local files with the folder's `foliwake.config.json` instead of refusing: `--content` names a folder on
+  this computer, so it chooses the local runtime before the folder's link. `--server` with `--content` is still
+  refused.
+- Updated dependencies [003f643]
+- Updated dependencies [0cfb15c]
+- Updated dependencies [5a7ffdf]
+- Updated dependencies [6dd1fd4]
+  - @foliwake/server@0.9.0
+  - @foliwake/core-contract@0.9.0
+  - create-foliwake@0.9.0
+  - @foliwake/blocks-contract@0.9.0
+  - @foliwake/block-kit@0.9.0
+  - @foliwake/site-check@0.9.0
+
 ## 0.8.0
 
 ### Patch Changes
