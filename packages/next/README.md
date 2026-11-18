@@ -15,7 +15,7 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 | `@foliwake/next/config` | `withFoliwake`, `foliwakeCspHeader` for `next.config.ts` |
 | `@foliwake/next` | server-only: `<FoliwakeServerPage>`, `readPage`, `readEnvelopeCached`, `foliwakeTags`, config and origin client |
 | `@foliwake/next/routes` | `codeRoute`, `mediaRoute`: the code and media proxies |
-| `@foliwake/next/cache` | `readEnvelopeCached`: the cached live read alone |
+| `@foliwake/next/cache` | `readEnvelopeCached`: the cached live read alone; `setGenerationFloor` |
 | `@foliwake/next/revalidate` | `foliwakeRevalidateHandler`: the route of the hook a Foliwake server calls after a change |
 | `@foliwake/next/client` | `'use client'`: everything of `@foliwake/react` |
 
@@ -168,6 +168,29 @@ the old page once while it is read again. Changed pages (at most 20, never when 
 again right after the answer (`warm: false` turns this off). `onDelivery(payload)` runs for every delivery: a
 throw answers 500 and the server sends it again. A `ping` answers `{ ok: true, site, sdk }` and expires
 nothing. `app.revalidate` stays the safety net when a hook is lost.
+
+#### Generation floor
+
+Each delivery carries the live `generation`, which only grows. If your app keeps the highest generation it was
+told (a database row written from `onDelivery`), register it with `setGenerationFloor`: a cached read that
+answers an older generation (a cache in front of the origin still had the old page) then lives at most 15
+seconds and is read again, instead of `app.revalidate` seconds. Without a floor nothing changes. A floor that
+cannot be read turns the check off for that read (logged); an origin without `X-Site-Generation` is never
+held back.
+
+```ts
+// lib/foliwake-floor.ts: import it wherever pages are read and from the hook route
+import { setGenerationFloor } from '@foliwake/next/cache';
+
+const floors = new Map<string, number>(); // use your database: every server instance must see the floor
+
+setGenerationFloor(async (site) => floors.get(site) ?? null);
+
+export function recordGeneration(site: string, generation: number, kind: string): void {
+  const floor = floors.get(site) ?? 0;
+  floors.set(site, kind === 'init' ? generation : Math.max(floor, generation)); // init starts a new history
+}
+```
 
 ### Read the page yourself
 
@@ -512,13 +535,53 @@ function mediaRoute(opts: {
 
 #### `readEnvelopeCachedEntry()`
 
-The cached entry itself (`'use cache'`, tags of `foliwakeTags('live', path)`); readEnvelopeCached unwraps it.
+The cached entry itself (`'use cache'`, tags of `foliwakeTags('live', path)`); readEnvelopeCached unwraps it. It lives `app.revalidate` seconds, or 15 seconds when its generation is below the floor of `setGenerationFloor`.
 
 ```ts
 function readEnvelopeCachedEntry(path: string): Promise<CachedEnvelope>
 ```
 
 **Returns** `Promise<CachedEnvelope>`
+
+#### `setGenerationFloor()`
+
+Registers how the cached read learns the generation floor (for example a database row the hook's `onDelivery` writes). A cached answer with an older `X-Site-Generation` is kept at most 15 seconds instead of `app.revalidate`. Call it at module scope of a module that every route reading pages imports; `null` removes it.
+
+```ts
+function setGenerationFloor(floor: GenerationFloor | null): void
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `floor` | `GenerationFloor \| null` | `(site) => Promise<number \| null>`; a throw turns the check off for that read (logged). |
+
+**Returns** `void`
+
+**Constants**
+
+#### `BEHIND_FLOOR_LIFETIME`
+
+The lifetime of an answer older than the floor: shown at most 15 s, then read again.
+
+```ts
+const BEHIND_FLOOR_LIFETIME: EntryLifetime
+```
+
+**Interfaces**
+
+#### `EntryLifetime`
+
+A cache lifetime as `cacheLife` takes it, in seconds.
+
+```ts
+interface EntryLifetime
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `stale` | `number` |  |
+| `revalidate` | `number` |  |
+| `expire` | `number` |  |
 
 **Types**
 
@@ -534,6 +597,14 @@ type CachedEnvelope = {
     found: false;
     path: string;
 }
+```
+
+#### `GenerationFloor`
+
+The highest live generation the app was told for a site, or null when it knows none.
+
+```ts
+type GenerationFloor = (site: string) => Promise<number | null>
 ```
 
 **Also exported** (documented where they are defined)

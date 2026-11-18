@@ -8,7 +8,7 @@ import { preparePage, readEnvelope } from '@foliwake/server/page';
 import { CD, SHA, configText, startStubOrigin } from './helpers/stub-origin.js';
 
 const HTML = `<h1>A</h1><p><a href="/lessons/b">b</a> <a href="https://example.org/">ext</a></p><img src="/media/${SHA}.png" srcset="/media/${SHA}.png 480w, /media/${SHA}.png 960w" alt=""><div data-component="question"><p>Q</p></div>`;
-const plain = (extra = {}) => ({ headers: { 'content-type': 'text/html; charset=utf-8', 'x-code-release': CD, 'x-html-contract': '2', 'content-language': 'ru', 'x-page-id': 'pg_1', etag: '"p2-abc"', 'x-site-generation': 'g1', ...extra }, body: HTML });
+const plain = (extra = {}) => ({ headers: { 'content-type': 'text/html; charset=utf-8', 'x-code-release': CD, 'x-html-contract': '2', 'content-language': 'ru', 'x-page-id': 'pg_1', etag: '"p2-abc"', 'x-site-generation': '418', ...extra }, body: HTML });
 
 let stub;
 let config;
@@ -23,6 +23,8 @@ before(async () => {
     '/lessons/no-cd.plain.html': { headers: { 'content-type': 'text/html', 'x-html-contract': '2' }, body: '<p>x</p>' },
     '/lessons/bad-cd.plain.html': plain({ 'x-code-release': 'cd_XYZ' }),
     '/lessons/local.plain.html': plain({ 'x-code-release': 'local' }),
+    '/lessons/no-gen.plain.html': (() => { const p = plain(); delete p.headers['x-site-generation']; return p; })(),
+    '/lessons/bad-gen.plain.html': plain({ 'x-site-generation': 'g1' }),
     '/lessons/json.plain.html': { headers: { 'content-type': 'application/json', 'x-html-contract': '2' }, body: '{}' },
     '/lessons/script.plain.html': { ...plain(), body: '<p>x</p><script>alert(1)</script>' },
     '/lessons/latin1.plain.html': { ...plain(), body: Buffer.from([0x3c, 0x70, 0x3e, 0xff, 0x3c, 0x2f, 0x70, 0x3e]) },
@@ -48,7 +50,7 @@ const kind = (k) => (error) => error.name === 'FoliwakePageError' && error.kind 
 describe('readEnvelope', () => {
   test('reads body and metadata; credentials from the named variable, per request; nothing else sent', async () => {
     const envelope = await read('/lessons/a');
-    assert.deepEqual({ ...envelope, html: undefined }, { site: 'demo', channel: 'live', path: '/lessons/a', html: undefined, codeRelease: CD, htmlContract: '2', lang: 'ru', pageId: 'pg_1', etag: '"p2-abc"', generation: 'g1' });
+    assert.deepEqual({ ...envelope, html: undefined }, { site: 'demo', channel: 'live', path: '/lessons/a', html: undefined, codeRelease: CD, htmlContract: '2', lang: 'ru', pageId: 'pg_1', etag: '"p2-abc"', generation: 418 });
     assert.equal(envelope.html, HTML);
     const last = stub.requests.at(-1);
     assert.equal(last.path, '/lessons/a.plain.html');
@@ -59,6 +61,12 @@ describe('readEnvelope', () => {
     const rotated = { ...env, DEMO_LIVE_PASSWORD: 'rotated' };
     await read('/lessons/a', 'live', rotated);
     assert.equal(stub.requests.at(-1).headers.authorization, `Basic ${Buffer.from('app:rotated').toString('base64')}`);
+  });
+
+  test('X-Site-Generation is a number; absent → null; not an integer → invalid', async () => {
+    assert.equal((await read('/lessons/a')).generation, 418);
+    assert.equal((await read('/lessons/no-gen')).generation, null);
+    await assert.rejects(read('/lessons/bad-gen'), kind('invalid'));
   });
 
   test('a path segment may join words with _', async () => {
