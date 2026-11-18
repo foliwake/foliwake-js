@@ -160,7 +160,8 @@ export abstract class CoreCommand extends Command {
       for (const name of ['config', 'content']) if (text(name)) this.error(`--${name} ${NEEDS_ENGINE}`, { exit: 2 });
     }
     const { chooseTarget } = await import('./local-target.js');
-    const choice = await this.guarded(() => chooseTarget({ server: text('server'), config: text('config') }));
+    const target = { server: text('server'), config: text('config'), content: text('content') };
+    const choice = await this.guarded(() => chooseTarget(target));
     if (choice === 'local' && engine) {
       const content = text('content');
       const { default: path } = await import('node:path');

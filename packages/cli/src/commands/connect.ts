@@ -32,6 +32,7 @@ export default class Connect extends Command {
   static examples = [
     '<%= config.bin %> connect',
     '<%= config.bin %> connect --create mysite --server https://foliwake.example',
+    '<%= config.bin %> connect --create mysite --org acme --repository https://github.com/acme/mysite',
     '<%= config.bin %> connect --link docs-en --json',
   ];
 
@@ -42,6 +43,18 @@ export default class Connect extends Command {
     link: Flags.string({ exclusive: ['create'], description: 'link the folder to this existing site' }),
     server: Flags.string({
       description: 'the Foliwake server (origin or host; default: $FOLIWAKE_SERVER, else asked or the only one)',
+    }),
+    org: Flags.string({
+      dependsOn: ['create'],
+      description:
+        "the new site's organisation (default: the only one where you may create sites; several: asked in a " +
+        'terminal, refused without one)',
+    }),
+    repository: Flags.string({
+      dependsOn: ['create'],
+      description:
+        "the new site's repository (default: this folder's Git origin as an https:// address; `none`: no " +
+        'repository yet)',
     }),
     force: Flags.boolean({ description: 'replace the link of a folder that is linked already' }),
     interactive: Flags.boolean({
@@ -84,7 +97,7 @@ export default class Connect extends Command {
 
   private async connect(
     cwd: string,
-    flags: { create?: string; link?: string; server?: string; force: boolean },
+    flags: { create?: string; link?: string; server?: string; force: boolean; org?: string; repository?: string },
     interactive: boolean,
     json: boolean,
     onLinked: (linked: Linked) => void,
@@ -102,6 +115,8 @@ export default class Connect extends Command {
       linkSite: flags.link,
       server: flags.server === undefined ? undefined : this.originOf(flags.server),
       relink: flags.force,
+      org: flags.org,
+      repository: flags.repository,
       prompts: { input: process.stdin, output: process.stdout },
       signIn: signInHere,
       onLinked,

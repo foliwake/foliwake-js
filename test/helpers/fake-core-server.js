@@ -13,6 +13,12 @@ export const OWNER_GRANT = {
   memberships: [{ org: 'acme-org', role: 'admin', live: true, sites: null }],
 };
 
+/** The owner's organisations, as org.list answers OWNER_GRANT. */
+export const OWNER_ORGS = [{ id: 'acme-org', name: 'Acme', membership: { role: 'admin', live: true, sites: null } }];
+
+/** What every fake answers unless a test gives a handler of its own. */
+const DEFAULT_HANDLERS = { whoami: () => OWNER_GRANT, 'org.list': () => OWNER_ORGS };
+
 const coreError = (code, category, message) => ({ code, category, retryable: false, message });
 
 function send(res, status, body) {
@@ -70,7 +76,7 @@ export async function startFakeCoreServer({ handlers = {}, manifest = PROCEDURES
       return rpcError(res, 401, coreError('UNAUTHORIZED', 'unauthorized', 'Sign in first.'), path);
     const input = await inputOf(req, url);
     request.input = input;
-    const handler = handlers[path] ?? (path === 'whoami' ? () => OWNER_GRANT : null);
+    const handler = handlers[path] ?? DEFAULT_HANDLERS[path] ?? null;
     if (!handler)
       return rpcError(res, 500, coreError('FAKE_NO_HANDLER', 'internal', `The fake has no handler for ${path}.`), path);
     try {

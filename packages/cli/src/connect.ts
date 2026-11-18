@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
+import { ConnectRefused, type OrgPicker, chooseOrg, chooseRepository } from './connect-choices.js';
 import { setting } from './settings.js';
 
 import type { CoreCaller, Grant, Operation, SiteCreateResult } from './core-types.js';
@@ -49,7 +50,11 @@ export interface ConnectRequest {
   /** In a terminal: asks whether to replace a link of the folder to another server or site. */
   confirmRelink?: RelinkConfirm | undefined;
   site: string;
+  /** The organisation; default: the only one the account may create sites in (several: `pickOrg`, else refused). */
   org?: string | undefined;
+  /** In a terminal: asks which organisation when the account may create sites in several. */
+  pickOrg?: OrgPicker | undefined;
+  /** The repository; undefined: the folder's Git `origin` as https://; `none` or null: none. */
   repository?: string | null | undefined;
   /** false: create the site without code; release 1 waits for the first `code prepare`. */
   code: boolean;
@@ -70,7 +75,7 @@ export interface ConnectOutcome {
   result: SiteCreateResult | null;
 }
 
-export class ConnectRefused extends Error {}
+export { ConnectRefused } from './connect-choices.js';
 
 async function git(cwd: string, args: string[]): Promise<string> {
   return (
@@ -225,45 +230,54 @@ export async function chooseServer(
   );
 }
 
-/** How commits reach the server: it fetches them, CI names them with a key. */
-function codeOnServer(site: string): string[] {
+/** How commits reach the server: it fetches them from the repository; a private one needs a read token. */
+function codeOnServer(site: string, repository: string | null): string[] {
+  const where = repository
+    ? `  2. Code: the server fetches the commits CI names from ${repository} over HTTPS. A public repository needs`
+    : "  2. Code: the server fetches the commits CI names from the site's repository over HTTPS (none is set: the" +
+      ` installation's owner sets it, \`${C} site set code.repository <https address> --site ${site}\`). ` +
+      'A public one needs';
   return [
-    "  2. Code on the server: it fetches the commit a deploy names from the site's repository. A private one needs",
-    `     a read token: \`foliwake credential set ${codeTokenName(site)} --from-stdin\`; the workflow a CI key:`,
-    `     \`foliwake account keys create --site ${site} --label <pipeline>\`.`,
+    where,
+    `     nothing more; a private one a read token: \`${C} credential set ${codeTokenName(site)} --from-stdin\`.`,
   ];
 }
 
-/** The next steps, for what v1 does not set up itself. */
-/** The repository variables of the workflows: the site id and the addresses the server gave the site. */
-function workflowVariables(site: string, result: SiteCreateResult): string {
+/** The repository variables of the workflows: the server, the site id and the addresses the server gave it. */
+function workflowVariables(server: string, site: string, result: SiteCreateResult): string {
   const preview = result.addresses.preview ? `, FOLIWAKE_PREVIEW_URL=${result.addresses.preview}` : '';
   const live = result.addresses.live ? `, FOLIWAKE_PRODUCTION_URL=${result.addresses.live}` : '';
-  return `FOLIWAKE_SITE_ID=${site}${preview}${live}`;
+  return `FOLIWAKE_SERVER=${server}, FOLIWAKE_SITE_ID=${site}${preview}${live}`;
 }
 
-export function nextSteps(result: SiteCreateResult, { repository }: { repository: string | null }): string[] {
-  const site = result.site;
-  const lines = [
-    'Next steps (nothing of this was done for you):',
-    `  1. GitHub: create the repository and push this project, e.g. \`gh repo create <owner>/${site} --private ` +
-      `--source . --push\` (or \`git remote add origin <url>\` and \`git push -u origin ` +
-      `main\`).${repository ? '' : ` Then tell the server's operator the repository URL.`}`,
-    ...codeOnServer(site),
-    `  3. Workflows (.github/workflows, inert until enabled): repository variables ${workflowVariables(site, result)}` +
-      '; secrets BRANCH_PREVIEW_SSH_KEY, BRANCH_PREVIEW_KNOWN_HOSTS, BRANCH_PREVIEW_SSH_TARGET in the environment ' +
-      '`branch-previews` and PRODUCTION_DEPLOY_SSH_KEY, PRODUCTION_DEPLOY_KNOWN_HOSTS, PRODUCTION_DEPLOY_SSH_TARGET ' +
-      "in `production` (the keys and targets come from the server's operator); then BRANCH_PREVIEWS_ENABLED=true " +
-      'and FRONTEND_PRODUCTION_DEPLOY_ENABLED=true.',
-    `  4. Preview and publish: the pages of content/ ` +
-      `${result.releaseOne.state === 'done' ? 'are on the server' : 'reach the server with the first code'}; build ` +
-      `the preview in the admin (Publish → Preview), review it, then publish.`,
-    '  5. Content sources: the site reads content/ of this project. Google Drive, Git Markdown or Drupal are added ' +
-      'later by an admin (admin → Content sources); nothing was connected.',
-    '  The new site is served at once on a server that keeps its sites in a database; one that lists them in its ' +
-      'file serves it after its listeners restart.',
+function workflowSteps(server: string, site: string, result: SiteCreateResult): string[] {
+  return [
+    `  3. Workflows (.github/workflows, inert until enabled): a CI key, \`${C} account keys create --site ${site} ` +
+      `--label github-actions --server ${server}\`, as the secret FOLIWAKE_TOKEN of the GitHub environments ` +
+      '`branch-previews` and `production`;',
+    `     repository variables ${workflowVariables(server, site, result)}; then BRANCH_PREVIEWS_ENABLED=true and ` +
+      'FRONTEND_PRODUCTION_DEPLOY_ENABLED=true (README.md, "Connect to Foliwake").',
   ];
-  return lines;
+}
+
+/** The next steps, for what `site create` does not set up itself. */
+export function nextSteps(
+  result: SiteCreateResult,
+  { repository, server }: { repository: string | null; server: string },
+): string[] {
+  const site = result.site;
+  const pages = result.releaseOne.state === 'done' ? 'are on the server' : 'reach the server with the first code';
+  return [
+    'Next steps (nothing of this was done for you):',
+    `  1. GitHub: push this project, e.g. \`gh repo create <owner>/${site} --public --source . --push\` (or ` +
+      '`git remote add origin <url>` and `git push -u origin main`); a private repository needs the read token of 2.',
+    ...codeOnServer(site, repository),
+    ...workflowSteps(server, site, result),
+    `  4. Preview and publish: the pages of content/ ${pages}; \`${C} preview\` in this folder builds the ` +
+      'preview, review it, then publish (`foliwake publish` or the dashboard).',
+    `  5. Content sources: the site reads content/ of this project. Others (Google Drive, Git Markdown, Drupal) ` +
+      `are added by an admin: \`${C} source add\`.`,
+  ];
 }
 
 /** The signed-in caller of the server a request names. */
@@ -496,6 +510,8 @@ export async function createSite(request: ConnectRequest, io: ConnectIO): Promis
           `hyphens, starting with a letter.`,
       );
     await checkRelink(request.cwd, { server, site }, request, io);
+    const org = await chooseOrg(signed.core, request, (text) => io.out(text));
+    const repository = await chooseRepository(request, (text) => io.out(text));
     let code: { bundle: string; commit: string } | null = null;
     if (request.code) {
       const commit = await projectCommit(request.cwd, request.env);
@@ -510,8 +526,8 @@ export async function createSite(request: ConnectRequest, io: ConnectIO): Promis
     io.out(`Creating site ${site} on ${serverDisplay(server, request.env)}…`);
     const accepted = await core.sites.create({
       site,
-      ...(request.org ? { org: request.org } : {}),
-      repository: request.repository ?? null,
+      org,
+      repository,
       code,
       expect: { absent: true },
       idempotencyKey: `connect-${randomBytes(12).toString('hex')}`,
@@ -545,7 +561,7 @@ export async function createSite(request: ConnectRequest, io: ConnectIO): Promis
     if (result.addresses.live) io.out(`Live:    ${result.addresses.live}`);
     if (result.addresses.branchPattern) io.out(`Branches: ${result.addresses.branchPattern}`);
     io.out();
-    for (const line of nextSteps(result, { repository: request.repository ?? null })) io.out(line);
+    for (const line of nextSteps(result, { repository, server })) io.out(line);
     return { exit: 0, server, operation, result };
   } catch (error) {
     return failed(error, server, io, cloudOrigin(request.env));

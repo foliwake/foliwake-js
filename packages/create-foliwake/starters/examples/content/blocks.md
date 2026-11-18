@@ -3,6 +3,7 @@ id: blocks
 path: /blocks
 title: Blocks
 description: Every block of the examples template.
+authoring: blocks-v3
 ---
 
 # Blocks

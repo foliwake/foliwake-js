@@ -8,9 +8,32 @@ import type { ProbeAnswer } from '../../core-types.js';
 import { CoreCommand } from '../../core-command.js';
 import { addLines } from '../../render/add.js';
 import { probeLines } from '../../render/probe.js';
-import { DEFAULT_DRIVE_KEY, DRIVE_PLUGIN, type EntryFlags, entryOf } from '../../source-entry.js';
+import { type EntryFlags, entryOf } from '../../source-entry.js';
+import { entryFlags } from '../../source-flags.js';
 
 const usable = (probe: ProbeAnswer): boolean => Object.keys(probe.fields).length === 0;
+
+const WHOLE_SITE = /"([a-z0-9-]+)" owns the whole site/;
+
+/** The source that owns the whole site, when that is why the candidate was refused. */
+export const wholeSiteOwner = (probe: ProbeAnswer): string | null =>
+  Object.values(probe.fields)
+    .map((message) => WHOLE_SITE.exec(message)?.[1])
+    .find((owner): owner is string => Boolean(owner)) ?? null;
+
+/**
+ * When another source owns the whole site (`/`, as the project's `content` source of a new site), how to make
+ * room: that source keeps the home page and the prefixes its pages use; the new source then owns its own.
+ */
+export function ownershipHints(owner: string, index: number, site: string): string[] {
+  return [
+    '',
+    `Source "${owner}" owns the whole site (/), so no other source can own pages beside it. Narrow it to the home`,
+    'page and the prefixes its pages use (`source check --source <id> --listing` shows them), then add this',
+    'source again, e.g.:',
+    `  foliwake site set --site ${site} sources.${index}.owns '["=/", "/blocks"]'`,
+  ];
+}
 
 async function readRules(file: string | undefined): Promise<unknown> {
   if (file === undefined) return undefined;
@@ -32,39 +55,16 @@ export default class SourceAdd extends CoreCommand {
     '<%= config.bin %> source add --site docs --plugin git-markdown --id docs --owns /docs ' +
       '--repository https://github.com/acme/docs',
     '<%= config.bin %> source add --site news --plugin drupal --id news --owns /articles ' +
-      '--base-url https://cms.example.org --language en',
+      '--base-url https://cms.example.org --language en --list-title "News"',
+    '<%= config.bin %> source add --site docs --plugin google-docs --id guides --owns /guides ' +
+      '--page https://docs.google.com/document/d/1AbC…/edit=/guides/intro',
   ];
 
   static flags = {
     ...CoreCommand.siteFlags,
-    plugin: Flags.string({ description: 'the connector', default: DRIVE_PLUGIN }),
-    id: Flags.string({ description: 'the new source id (lower case, digits, "-")', required: true }),
-    'display-name': Flags.string({ description: 'the name the dashboard shows' }),
-    owns: Flags.string({
-      description: 'a path the source owns, such as /lessons or "=/" (repeatable)',
-      multiple: true,
-      required: true,
-    }),
-    mappings: Flags.string({
-      description: 'a JSON file with path mapping rules (default: each file names its address)',
-    }),
-    folder: Flags.string({ description: 'Google Drive: the folder link or ID' }),
-    subfolder: Flags.string({ description: 'Google Drive or Git: the folder inside that holds the pages' }),
-    identity: Flags.string({
-      description: 'Google Drive: file-id (default; renames keep the page) or front-matter',
-      options: ['file-id', 'front-matter'],
-    }),
-    key: Flags.string({
-      description: `Google Drive: the credential name of the service-account key (default ${DEFAULT_DRIVE_KEY})`,
-    }),
-    repository: Flags.string({ description: 'Git: the https address of the repository' }),
-    branch: Flags.string({ description: 'Git: the branch (default main)' }),
-    token: Flags.string({ description: 'Git: the credential name of a read-only token (private repository)' }),
-    'base-url': Flags.string({ description: 'Drupal: the site address' }),
-    language: Flags.string({ description: 'Drupal: a language code, the default first (repeatable)', multiple: true }),
-    'basic-user': Flags.string({ description: 'Drupal: the credential name of a read-only user name (HTTP Basic)' }),
-    'basic-password': Flags.string({ description: 'Drupal: the credential name of its password' }),
+    ...entryFlags({ required: true }),
     'check-only': Flags.boolean({ description: 'check and print, save nothing' }),
+    force: Flags.boolean({ description: 'save even when the connection check fails' }),
     yes: Flags.boolean({ description: 'save without asking (scripts)' }),
   };
 
@@ -75,7 +75,9 @@ export default class SourceAdd extends CoreCommand {
     if (!built.ok) throw new Errors.CLIError(built.problem, { exit: 2 });
     const probe = await this.core.sources.probe({ site, candidate: built.value as never, listing: {} });
     this.print(probeLines(probe));
+    if (!usable(probe)) await this.explainOwnership(probe, site);
     if (!usable(probe) || flags['check-only']) return this.finishCheck(probe);
+    if (probe.connection?.ok === false && !flags.force) return this.refuseFailed(probe);
     if (!(await this.confirmed(flags.yes, probe))) return { probe, saved: null };
     const saved = await this.core.sources.add({
       site,
@@ -88,6 +90,20 @@ export default class SourceAdd extends CoreCommand {
 
   private print(lines: string[]): void {
     if (!this.jsonEnabled()) for (const line of lines) this.log(line);
+  }
+
+  private async explainOwnership(probe: ProbeAnswer, site: string): Promise<void> {
+    const owner = wholeSiteOwner(probe);
+    if (owner === null) return;
+    const { sources } = await this.core.sources.list({ site });
+    this.print(ownershipHints(owner, Math.max(0, sources.findIndex((source) => source.id === owner)), site));
+  }
+
+  /** A source whose connection check failed is not saved unless --force. */
+  private refuseFailed(probe: ProbeAnswer): { probe: ProbeAnswer; saved: null } {
+    this.logToStderr('The connection check failed; nothing was saved. Fix it and run again, or pass --force.');
+    process.exitCode = 1;
+    return { probe, saved: null };
   }
 
   private finishCheck(probe: ProbeAnswer): { probe: ProbeAnswer; saved: AddAnswer | null } {

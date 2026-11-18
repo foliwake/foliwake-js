@@ -6,10 +6,10 @@ The frontend of a Foliwake site: blocks, styles and a few local pages to work wi
 components/<name>/     one folder per block: <name>.json (its fields), <name>.css, optionally <name>.js and <name>.example.md
 scripts/components.js  the loader: loads each block's CSS and JS on the pages that use it
 styles/styles.css      styles of every page
-site.yaml              site settings for the engine (authoring dialect)
+site.yaml              site settings for the engine (no default dialect: each page names its own)
 content/               local Markdown pages to develop against (not published by this repository)
 tests/                 quick checks of the vendored scripts and workflows (node --test "tests/*.test.mjs")
-foliwake.config.json   local configuration for the Foliwake CLI (`foliwake dev`); unused without it
+foliwake.config.json   the project for `foliwake dev` and `page check`: the code and content/, nothing else
 .github/               checks, branch previews and production (inert until connected)
 ```
 
@@ -30,7 +30,9 @@ node --test "tests/*.test.mjs"
 
 ### With the Foliwake CLI
 
-The Foliwake CLI is not public yet. Where you have it, it adds a local preview and the page checks:
+The server commands of the Foliwake CLI are open: `npm i -g @foliwake/cli` (sign-in, sites, code, branches, keys).
+The local preview and the page checks need the Foliwake engine's `foliwake` (the same command with the engine
+added), which is not public yet. Where you have it:
 
 ```bash
 foliwake dev --watch
@@ -38,7 +40,7 @@ foliwake dev --watch
 
 Open http://127.0.0.1:3000/. Edit a page in `content/`, a block or a stylesheet and save: the browser reloads. `dev` uses only local files; no server, store or account is needed. Every block and its examples are on http://127.0.0.1:3000/_dev/blocks: each example rendered with your CSS and JavaScript, its HTML and its problems. Authors see the same examples as a block catalog at `/_foliwake/blocks` on the preview.{{storybookNote}}
 
-`foliwake page check` checks every page and block example too. Run it in this folder: the CLI finds `foliwake.config.json` here by itself; after cloning the repository or changing the file, read it and run `foliwake config trust` once (it decides where credentials are sent).
+`foliwake page check` checks every page and block example too. Run it in this folder: the CLI finds `foliwake.config.json` here by itself. The file names only the code and `content/`, so it needs no `foliwake config trust`; a file that names storage, credentials or remote addresses does (it decides where credentials are sent).
 
 ### Add a block
 
@@ -56,7 +58,7 @@ Open http://127.0.0.1:3000/. Edit a page in `content/`, a block or a stylesheet 
 
    Field types: `heading`, `text`, `list`, `choices`, `quote`, `image`.
 2. Add `components/<name>/<name>.css` (and `<name>.js` if it needs JavaScript: its default export is `init(root, host, meta)`, best made with block-kit: `import { defineBlock, html } from '@foliwake/block-kit'` and `defineBlock('<name>', (fields, ctx) => …)`; the page maps that import to the kit of the code release, so nothing is installed. `jsconfig.json` gives your editor the kit's types (`.foliwake/types/foliwake.d.ts`, from `@foliwake/block-kit`, written by create) and, with the Foliwake CLI, of your blocks (`foliwake dev` writes them to `.foliwake/types/blocks/`)). With the Foliwake CLI, `foliwake blocks new <name> --js --example` writes all the files.
-3. Use it in a page:
+3. Use it in a page (a page with blocks names its dialect in its front matter: `authoring: blocks-v3`):
 
    ```md
    :::tip
@@ -82,7 +84,7 @@ git add -A && git commit -m "Describe the change"
 
 With the repository connected to your site (below):
 
-- **Push a branch** → the branch preview `https://<branch>--<site>.<branch host domain>/` shows the site's pages with that branch's code. Deleting the branch removes its preview.
+- **Push a branch** → the branch preview `https://<branch>--<site>--<org>.<branch host domain>/` shows the site's pages with that branch's code. Deleting the branch removes its preview.
 - **Merge into `main`** → the checks run, the server prepares a code release from exactly that commit and rebuilds every page with it in the site's **preview**. Live does not change.
 - **Release** → review the preview, then release it in the Foliwake admin: *Frontend → New code → Release*. A rollback is in the same place (or `foliwake release rollback`, by an admin of the site).
 
@@ -91,8 +93,8 @@ With the repository connected to your site (below):
 The workflows in `.github/workflows/` do nothing until the repository is connected. The "Frontend checks" workflow runs on every push and pull request from the start; it needs no secrets.
 
 1. Push this repository to GitHub.
-2. In the Foliwake admin, connect the repository to your site (or ask the operator of your Foliwake server to): it needs the clone URL (a private repository also needs a read token stored on the server) and gives you the **site id**{{siteIdNote}}.
-3. Create a CI key of the site: `foliwake account keys create --site <site id> --server <server address>`. It can deploy code and update branch previews of this one site; it cannot publish pages or roll back.
+2. Link this folder to your site: `foliwake connect` (or `foliwake site create <id> --repository <clone URL>`, by an admin of your organisation). The server fetches the commits CI names from the repository over HTTPS: a public one needs nothing more; a private one needs a read token stored on the server, `foliwake credential set <SITE>__CODE_TOKEN --from-stdin`. This gives you the **site id**{{siteIdNote}}.
+3. Create a CI key of the site: `foliwake account keys create --site <site id> --label <pipeline> --server <server address>` (the label says where the key is used, e.g. `github-actions`). It can deploy code and update branch previews of this one site; it cannot publish pages or roll back.
 4. In the GitHub repository settings:
    - **Environments**: `branch-previews` and `production` (deployment branches: `main` only), each with the secret `FOLIWAKE_TOKEN` = the CI key.
    - **Variables**: `FOLIWAKE_SERVER` = the server's address (e.g. `https://foliwake.example.com`); `FOLIWAKE_SITE_ID` = the site id; `BRANCH_PREVIEWS_ENABLED` = `true` to turn on branch previews; `FRONTEND_PRODUCTION_DEPLOY_ENABLED` = `true` to turn on main → preview → live (with the site setting `codeRelease: auto`, the default, a merge to main is released when every page builds without problems; with `manual` it waits for Release in the admin); optionally `FOLIWAKE_PREVIEW_URL` and `FOLIWAKE_PRODUCTION_URL` (shown as links in GitHub).

@@ -3,6 +3,7 @@ id: home
 path: /
 title: Home
 description: A Foliwake site created with create-foliwake (examples template).
+authoring: blocks-v3
 ---
 
 ![Foliwake](./images/foliwake-logo.png)

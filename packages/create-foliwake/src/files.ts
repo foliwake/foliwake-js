@@ -76,17 +76,16 @@ function substitute(bytes: Buffer, values: Record<string, string>): Buffer {
   return Buffer.from(bytes.toString('utf8').replace(/\{\{(\w+)\}\}/g, (all, key: string) => values[key] ?? all));
 }
 
+/**
+ * A minimal project file: the site id, the code and the local content, nothing else. `foliwake dev` and `page check`
+ * need no more; the storage, the state folder and the hosts are a server's, and a file without them needs no
+ * `foliwake config trust` (it names no address and no credential).
+ */
 function localConfig(id: string): string {
-  // `foliwake dev` and `page check` read only the local folders; the storage is named because the configuration
-  // format requires it (a local store, used only by `code prepare`).
   const site = {
     id,
-    code: { root: '.', repository: null },
+    code: { root: '.' },
     sources: [{ id: 'content', plugin: 'local-markdown', owns: ['/'], settings: { root: './content' } }],
-    storage: { endpoint: 'http://127.0.0.1:8333', bucket: `foliwake-${id}` },
-    stateDir: './.foliwake',
-    liveHosts: [`${id}.localhost`],
-    previewBaseHost: `preview.${id}.localhost`,
   };
   return `${JSON.stringify({ version: 1, sites: [site] }, null, 2)}\n`;
 }

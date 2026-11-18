@@ -1,6 +1,6 @@
 {
   "api": 1,
-  "digest": "d6a49be4e0ef5c20",
+  "digest": "3a132926ee914ed6",
   "procedures": {
     "account.keys.ci": "query",
     "account.keys.create": "mutation",
@@ -35,6 +35,7 @@
     "operations.list": "query",
     "operations.recover": "mutation",
     "operations.wait": "query",
+    "org.create": "mutation",
     "org.invitations.create": "mutation",
     "org.invitations.list": "query",
     "org.invitations.resend": "mutation",
@@ -45,6 +46,7 @@
     "org.members.update": "mutation",
     "sites.adopt": "mutation",
     "sites.create": "mutation",
+    "sites.delete": "mutation",
     "sites.get": "query",
     "sites.history": "query",
     "sites.list": "query",
