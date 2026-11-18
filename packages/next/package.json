@@ -18,6 +18,7 @@
     "./config": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },
     "./routes": { "types": "./dist/routes.d.ts", "default": "./dist/routes.js" },
     "./cache": { "types": "./dist/cache.d.ts", "default": "./dist/cache.js" },
+    "./revalidate": { "types": "./dist/revalidate.d.ts", "default": "./dist/revalidate.js" },
     "./package.json": "./package.json"
   },
   "dependencies": {

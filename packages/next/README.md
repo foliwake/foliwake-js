@@ -16,6 +16,7 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 | `@foliwake/next` | server-only: `<FoliwakeServerPage>`, `readPage`, `readEnvelopeCached`, `foliwakeTags`, config and origin client |
 | `@foliwake/next/routes` | `codeRoute`, `mediaRoute`: the code and media proxies |
 | `@foliwake/next/cache` | `readEnvelopeCached`: the cached live read alone |
+| `@foliwake/next/revalidate` | `foliwakeRevalidateHandler`: the route of the hook a Foliwake server calls after a change |
 | `@foliwake/next/client` | `'use client'`: everything of `@foliwake/react` |
 
 ## Install
@@ -146,26 +147,27 @@ A nonce-based policy does not work with partial prerendering and is not supporte
 
 Only the live origin answer is cached, for `app.revalidate` seconds (default 300) with stale-while-revalidate
 and at most 24 hours. Its tags are `foliwake`, `foliwake:<site>`, `foliwake:<site>:live` and
-`foliwake:<site>:live:page:<path>` (`foliwakeTags`). Foliwake does not notify apps of publications yet, so
-expire them from your own webhook or admin action:
+`foliwake:<site>:live:page:<path>` (`foliwakeTags`).
+
+A Foliwake server whose site lists your app as a hook target calls it once a change is live and the caches in
+front of the origin serve it (`delivery.settled`, signed with a shared secret). Mount the handler:
 
 ```ts
-// app/api/foliwake-revalidate/route.ts
-import { revalidateTag } from 'next/cache';
-import { foliwakeTags } from '@foliwake/next';
+// app/api/webhooks/foliwake/route.ts
+import { foliwakeRevalidateHandler } from '@foliwake/next/revalidate';
 
-export async function POST(request: Request) {
-  if (request.headers.get('authorization') !== `Bearer ${process.env.REVALIDATE_TOKEN}`) return new Response(null, { status: 401 });
-  const { path } = (await request.json()) as { path?: string };
-  // One page, or every live page of the site.
-  const tag = path ? foliwakeTags('live', path).at(-1)! : foliwakeTags('live')[2]!;
-  revalidateTag(tag, { expire: 0 });
-  return Response.json({ revalidated: tag });
-}
+export const { POST } = foliwakeRevalidateHandler({ secretEnv: 'FOLIWAKE_HOOK_SECRET' });
 ```
 
-`revalidateTag(tag, 'max')` refreshes in the background instead (the next request still gets the cached
-page).
+It checks the signature (within 300 s; `previousSecretEnv` names a second accepted secret while you rotate it)
+and expires `foliwake:<site>:live:page:<path>` of every changed path, or `foliwake:<site>:live` when every page
+changed (a code release, a large publication). Paths that are not pages, such as an index, get the same tag:
+tag your own cached reads of them with `foliwakeTags('live', path)`. By default a tag is expired with
+`{ expire: 0 }`: the next request waits for one fresh read and never sees the old page; `mode: 'max'` serves
+the old page once while it is read again. Changed pages (at most 20, never when every page changed) are read
+again right after the answer (`warm: false` turns this off). `onDelivery(payload)` runs for every delivery: a
+throw answers 500 and the server sends it again. A `ping` answers `{ ok: true, site, sdk }` and expires
+nothing. `app.revalidate` stays the safety net when a hook is lost.
 
 ### Read the page yourself
 
@@ -537,5 +539,58 @@ type CachedEnvelope = {
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/next`: `readEnvelopeCached`
+
+### `@foliwake/next/revalidate`
+
+**Functions and components**
+
+#### `foliwakeRevalidateHandler()`
+
+The route handler of the Foliwake hook, for `app/api/webhooks/foliwake/route.ts`: `export const { POST } = foliwakeRevalidateHandler({ secretEnv: 'FOLIWAKE_HOOK_SECRET' })`. A delivery expires `foliwake:<site>:live:page:<path>` of every listed path (pages and other files alike, such as an index), or `foliwake:<site>:live` when every page changed, and answers `{ ok: true, revalidated }`. A `ping` answers `{ ok: true, site, sdk }` and expires nothing. 401: bad or expired signature; 400: not a payload, or another site; 413: over 64 KiB.
+
+```ts
+function foliwakeRevalidateHandler(opts: FoliwakeRevalidateOptions): FoliwakeHookRoute
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `opts` | `FoliwakeRevalidateOptions` | `secretEnv` (required), `previousSecretEnv`, `mode`, `warm`, `onDelivery`, `toleranceS`. |
+
+**Returns** `FoliwakeHookRoute`
+
+**Interfaces**
+
+#### `FoliwakeHookRoute`
+
+The route module exports of the hook: `export const { POST } = foliwakeRevalidateHandler(…)`.
+
+```ts
+interface FoliwakeHookRoute
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `POST` | `(request: Request) => Promise<Response>` |  |
+
+#### `FoliwakeRevalidateOptions`
+
+Options of `foliwakeRevalidateHandler`.
+
+```ts
+interface FoliwakeRevalidateOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `secretEnv` | `string` | The environment variable holding the shared secret (the one the Foliwake server signs with). |
+| `previousSecretEnv?` | `string` | While the secret is rotated: the variable holding the previous secret, also accepted. |
+| `mode?` | `'expire' \| 'max'` | `expire` (default): `revalidateTag(tag, { expire: 0 })`, the next request waits for a fresh read and never sees the old page; the server sends the hook only after its caches serve the new page. `max`: `revalidateTag(tag, 'max')`, the next request gets the old page once while it is read again in the background. |
+| `warm?` | `boolean` | Read the changed pages again right after the response (at most 20, never when every page changed), so the first visitor of this region finds them cached. Default true. |
+| `onDelivery?` | `(payload: FoliwakeDeliveryPayload) => void \| Promise<void>` | Called for every delivery after its tags are expired (a log, a metric, the generation floor); a throw answers 500 and the server sends the delivery again. |
+| `toleranceS?` | `number` | The allowed clock distance of the signature, in seconds. Default 300. |
+
+**Also exported** (documented where they are defined)
+
+- from `@foliwake/server/hook`: `FoliwakeDeliveryPayload`, `FoliwakeHookPayload`, `FoliwakeOperationKind`
 
 <!-- apistop -->

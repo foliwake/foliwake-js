@@ -20,6 +20,7 @@
     "./html": { "types": "./dist/html.d.ts", "default": "./dist/html.js" },
     "./csp": { "types": "./dist/csp.d.ts", "default": "./dist/csp.js" },
     "./preload": { "types": "./dist/preload.d.ts", "default": "./dist/preload.js" },
+    "./hook": { "types": "./dist/hook.d.ts", "default": "./dist/hook.js" },
     "./schemas/remote-2.schema.json": "./schemas/remote-2.schema.json",
     "./package.json": "./package.json"
   },
