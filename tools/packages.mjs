@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 /** Folder under packages/ and npm name of each package, in build and publish order. */
 export const PACKAGES = Object.freeze([
   { dir: 'blocks-contract', name: '@foliwake/blocks-contract' },
+  { dir: 'core-contract', name: '@foliwake/core-contract' },
   { dir: 'block-kit', name: '@foliwake/block-kit' },
   { dir: 'site-check', name: '@foliwake/site-check' },
   { dir: 'client', name: '@foliwake/client' },
@@ -20,6 +21,8 @@ export const PACKAGES = Object.freeze([
   { dir: 'server', name: '@foliwake/server' },
   { dir: 'next', name: '@foliwake/next' },
   { dir: 'create-foliwake', name: 'create-foliwake' },
+  { dir: 'cli', name: '@foliwake/cli' },
+  { dir: 'foliwake', name: 'foliwake' },
 ]);
 
 /** The folder names in build and publish order. */

@@ -1,0 +1,56 @@
+{
+  "name": "@foliwake/cli",
+  "version": "0.5.0",
+  "description": "The foliwake command without the engine: sign in to a Foliwake server and run its commands there (site status, sync, preview, publish, code deploy, branches, releases, sources, credentials, CI keys), and develop blocks against a remote preview.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "engines": { "node": ">=22.22" },
+  "repository": { "type": "git", "url": "git+https://github.com/foliwake/foliwake-js.git", "directory": "packages/cli" },
+  "homepage": "https://sdk.foliwake.dev/reference/packages/cli",
+  "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
+  "keywords": ["foliwake", "cms", "cli", "deploy", "preview"],
+  "publishConfig": { "access": "public", "provenance": true },
+  "foliwake": { "coreApi": 1 },
+  "bin": {
+    "foliwake": "./dist/bin.js"
+  },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./bin": { "types": "./dist/bin.d.ts", "default": "./dist/bin.js" },
+    "./package.json": "./package.json"
+  },
+  "oclif": {
+    "bin": "foliwake",
+    "dirname": "foliwake",
+    "commands": "./dist/commands",
+    "topicSeparator": " ",
+    "topics": {
+      "account": { "description": "Accounts of this server: CI keys" },
+      "branch": { "description": "Branch previews" },
+      "code": { "description": "Code releases: prepare, release and roll back the site's JS/CSS" },
+      "credential": { "description": "Credential values the content sources name (stored on the server, never shown)" },
+      "migration": { "description": "Whole-site rebuilds against new code, released as one" },
+      "operation": { "description": "Long operations: their state, cancellation and recovery" },
+      "page": { "description": "Working pages" },
+      "project": { "description": "This project folder and the site it is linked to" },
+      "release": { "description": "Live site releases" },
+      "site": { "description": "Sites on the server" },
+      "source": { "description": "Content sources and their plugins" },
+      "servers": { "description": "The Foliwake servers this computer is signed in to" }
+    }
+  },
+  "dependencies": {
+    "@clack/prompts": "1.8.1",
+    "@foliwake/block-kit": "workspace:*",
+    "@foliwake/blocks-contract": "workspace:*",
+    "@foliwake/core-contract": "workspace:*",
+    "@foliwake/server": "workspace:*",
+    "@foliwake/site-check": "workspace:*",
+    "@oclif/core": "4.14.0",
+    "chokidar": "6.0.0",
+    "create-foliwake": "workspace:*",
+    "parse5": "7.3.0"
+  },
+  "files": ["dist/", "!dist/**/*.map", "LICENSE", "README.md", "CHANGELOG.md"]
+}

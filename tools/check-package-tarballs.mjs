@@ -111,6 +111,11 @@ for (const [name, subpaths] of Object.entries(manifests)) {
 }
 const has = (name) => name in manifests;
 if (has('@foliwake/blocks-contract')) await import('@foliwake/blocks-contract/page');
+if (has('@foliwake/core-contract')) {
+  const contract = await import('@foliwake/core-contract');
+  assert.equal(contract.procedureType('sites.status'), 'query');
+  assert.match(contract.CONTRACT_DIGEST, /^[0-9a-f]{16}$/);
+}
 if (has('@foliwake/server')) {
   const { parseFoliwakeConfig } = await import('@foliwake/server/config');
   const { preparePage } = await import('@foliwake/server/page');
@@ -149,6 +154,20 @@ if (has('create-foliwake')) {
   const { execFileSync } = await import('node:child_process');
   const bin = fileURLToPath(new URL('dist/bin.js', import.meta.resolve('create-foliwake/package.json')));
   assert.match(execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' }), /^0\./);
+}
+if (has('@foliwake/cli')) {
+  const { execFileSync } = await import('node:child_process');
+  const bin = fileURLToPath(new URL('dist/bin.js', import.meta.resolve('@foliwake/cli/package.json')));
+  const version = execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' });
+  assert.ok(version.startsWith('@foliwake/cli/0.'), version);
+  const help = execFileSync(process.execPath, [bin, '--help'], { encoding: 'utf8' });
+  assert.match(help, /login/);
+}
+if (has('foliwake')) {
+  const { execFileSync } = await import('node:child_process');
+  const bin = fileURLToPath(new URL('bin/foliwake.js', import.meta.resolve('foliwake/package.json')));
+  const version = execFileSync(process.execPath, [bin, '--version'], { encoding: 'utf8' });
+  assert.ok(version.startsWith('@foliwake/cli/0.'), version);
 }
 if (has('@foliwake/client')) {
   const client = await import('@foliwake/client');

@@ -6,13 +6,16 @@
   "fixed": [
     [
       "@foliwake/blocks-contract",
+      "@foliwake/core-contract",
       "@foliwake/block-kit",
       "@foliwake/site-check",
       "@foliwake/client",
       "@foliwake/react",
       "@foliwake/server",
       "@foliwake/next",
-      "create-foliwake"
+      "create-foliwake",
+      "@foliwake/cli",
+      "foliwake"
     ]
   ],
   "linked": [],

@@ -26,6 +26,14 @@ The API section of each page is generated from the package's type declarations.
 | --- | --- |
 | [`@foliwake/blocks-contract`](/reference/packages/blocks-contract) | the types of `foliwake-blocks/2` and the shared page types |
 
+## For the command line and tools
+
+| Package | What |
+| --- | --- |
+| [`@foliwake/cli`](/reference/packages/cli) | `foliwake` without the engine: sign in, link a folder (`connect`), run commands on a server |
+| [`@foliwake/core-contract`](/reference/packages/core-contract) | the procedures, types and error codes of core over HTTP |
+| [`foliwake`](/reference/packages/foliwake) | the short name of `@foliwake/cli`, for `npx foliwake` |
+
 ## Versions
 
 All packages share one version and are released together.

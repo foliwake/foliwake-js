@@ -16,7 +16,7 @@ const NAMES = PUBLISH_ORDER;
 const APP_PACKAGES = ['blocks-contract', 'server', 'client', 'react', 'next'];
 const FORMATS = { htmlContract: 2, blocksPack: 1, templates: 1, references: 1, query: 1 };
 /** What the other packages carry in `foliwake`: the versions they speak. */
-const METADATA = { 'block-kit': { blocksContract: 2 } };
+const METADATA = { 'block-kit': { blocksContract: 2 }, 'core-contract': { coreApi: 1 }, cli: { coreApi: 1 }, foliwake: { coreApi: 1 } };
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const manifest = (name) => JSON.parse(read(`packages/${name}/package.json`));
 
@@ -71,7 +71,7 @@ test('tarballs: dist/ without maps or build stamps, plus LICENSE, README and CHA
     const files = JSON.parse(stdout)[0].files.map((f) => f.path);
     const always = ['LICENSE', 'README.md', 'CHANGELOG.md', 'package.json'];
     assert.ok(always.every((f) => files.includes(f)), `${name}: ${files.join(', ')}`);
-    const unexpected = files.filter((f) => !always.includes(f) && !(f.startsWith('dist/') && /\.(js|d\.ts)$/.test(f)) && !(name === 'server' && f.startsWith('schemas/')) && !(name === 'create-foliwake' && /^(starters|vendor)\//.test(f)) && !(name === 'block-kit' && f === 'dist/lit-html.LICENSE'));
+    const unexpected = files.filter((f) => !always.includes(f) && !(f.startsWith('dist/') && /\.(js|d\.ts)$/.test(f)) && !(name === 'server' && f.startsWith('schemas/')) && !(name === 'create-foliwake' && /^(starters|vendor)\//.test(f)) && !(name === 'block-kit' && f === 'dist/lit-html.LICENSE') && !(name === 'foliwake' && f === 'bin/foliwake.js'));
     assert.deepEqual(unexpected, [], name);
     const exported = Object.values(manifest(name).exports).flatMap((e) => (typeof e === 'string' ? [e] : Object.values(e))).map((p) => p.replace(/^\.\//, ''));
     for (const target of exported) if (target !== 'package.json') assert.ok(files.includes(target), `${name} exports ${target}`);
