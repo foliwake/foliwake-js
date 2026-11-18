@@ -20,6 +20,9 @@ importers:
       '@foliwake/client':
         specifier: workspace:*
         version: link:packages/client
+      '@foliwake/core-contract':
+        specifier: workspace:*
+        version: link:packages/core-contract
       '@foliwake/next':
         specifier: workspace:*
         version: link:packages/next
@@ -94,6 +97,8 @@ importers:
       '@foliwake/blocks-contract':
         specifier: workspace:*
         version: link:../blocks-contract
+
+  packages/core-contract: {}
 
   packages/create-foliwake:
     dependencies:

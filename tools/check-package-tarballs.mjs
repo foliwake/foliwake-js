@@ -111,6 +111,11 @@ for (const [name, subpaths] of Object.entries(manifests)) {
 }
 const has = (name) => name in manifests;
 if (has('@foliwake/blocks-contract')) await import('@foliwake/blocks-contract/page');
+if (has('@foliwake/core-contract')) {
+  const contract = await import('@foliwake/core-contract');
+  assert.equal(contract.procedureType('sites.status'), 'query');
+  assert.match(contract.CONTRACT_DIGEST, /^[0-9a-f]{16}$/);
+}
 if (has('@foliwake/server')) {
   const { parseFoliwakeConfig } = await import('@foliwake/server/config');
   const { preparePage } = await import('@foliwake/server/page');

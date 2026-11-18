@@ -42,6 +42,7 @@ function run(args) {
  * recompiled.
  */
 const COPIED = {
+  'core-contract': ['procedures.d.ts'],
   'block-kit': [
     'lit-html.js',
     'lit-html.d.ts',

@@ -15,6 +15,7 @@
     "packages:reference": "node tools/build.mjs && node tools/packages-reference.mjs",
     "pack:all": "node tools/pack.mjs",
     "check:tarballs": "node tools/pack.mjs && node tools/check-package-tarballs.mjs .tarballs",
+    "core-contract:sync": "node tools/core-contract-sync.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },
@@ -23,6 +24,7 @@
     "@foliwake/block-kit": "workspace:*",
     "@foliwake/blocks-contract": "workspace:*",
     "@foliwake/client": "workspace:*",
+    "@foliwake/core-contract": "workspace:*",
     "@foliwake/next": "workspace:*",
     "@foliwake/react": "workspace:*",
     "@foliwake/server": "workspace:*",
