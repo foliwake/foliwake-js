@@ -5,6 +5,12 @@ with them. While the version is 0.x, a minor release may break; breaking changes
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.8.0
+
+### Patch Changes
+
+- @foliwake/blocks-contract@0.8.0
+
 ## 0.7.0
 
 ### Patch Changes
