@@ -127,10 +127,13 @@ export abstract class CoreCommand extends Command {
   }
 
   private async resolveServer(server: string | undefined): Promise<Target> {
-    const { ServerAddressError, resolveTarget } = await import('./remote/servers.js');
+    const { CLOUD_NOTE, CLOUD_ORIGIN, ServerAddressError, cloudConfigured, resolveTarget } = await import(
+      './remote/servers.js'
+    );
     try {
       const target = resolveTarget({ server });
       if (target === null) this.error(NO_SERVER, { exit: 2 });
+      if (target.origin === CLOUD_ORIGIN && !cloudConfigured()) this.error(CLOUD_NOTE, { exit: 1 });
       return target;
     } catch (error) {
       if (error instanceof ServerAddressError) this.error(error.message, { exit: 2 });

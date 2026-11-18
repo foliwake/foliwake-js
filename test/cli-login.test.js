@@ -23,7 +23,8 @@ describe('server addresses', () => {
     assert.equal(serverOrigin('foliwake.dev'), 'https://foliwake.dev');
     assert.equal(serverOrigin('https://Foliwake.example:8443/'), 'https://foliwake.example:8443');
     assert.equal(serverOrigin('http://127.0.0.1:8098'), 'http://127.0.0.1:8098');
-    assert.equal(serverOrigin('cloud', {}), 'https://foliwake.dev');
+    assert.equal(serverOrigin('cloud', {}), 'https://cloud.foliwake.org');
+    assert.equal(serverOrigin('cloud', { FOLIWAKE_CLOUD_ORIGIN: 'https://c.example' }), 'https://c.example');
     assert.throws(() => serverOrigin('http://foliwake.example'), /loopback/);
     assert.throws(() => serverOrigin('https://foliwake.example/api'), /origin only/);
     assert.throws(() => serverOrigin('https://user:pw@foliwake.example'), /origin only/);
@@ -59,7 +60,10 @@ describe('which server a command calls', () => {
 
   test('FOLIWAKE_CONFIG never makes a command local: FOLIWAKE_SERVER still names the server', () => {
     const env = { ...home.env, FOLIWAKE_SERVER: 'env.example', FOLIWAKE_CONFIG: 'foliwake.config.json' };
-    assert.deepEqual(resolveTarget({}, env, home.root + '/elsewhere'), { origin: 'https://env.example', from: 'environment' });
+    assert.deepEqual(resolveTarget({}, env, home.root + '/elsewhere'), {
+      origin: 'https://env.example',
+      from: 'environment',
+    });
   });
 });
 
@@ -70,16 +74,23 @@ describe('sign-ins, kept as the engine CLI keeps them', () => {
   });
   after(() => home.cleanup());
 
-  test('a file sign-in: 0600, the profile holds no token, FOLIWAKE_TOKEN wins, forgetting moves the default', async () => {
+  test('a file sign-in: 0600, no token in the profile, FOLIWAKE_TOKEN wins, forgetting moves the default', async () => {
     const { env, root } = home;
     const token = `fwk_${randomBytes(8).toString('hex')}`;
-    const save = (origin, value) => saveSignIn({ origin, token: value, grant: GRANT, store: credentialStore('file', env) }, env);
+    const store = credentialStore('file', env);
+    const save = (origin, value, makeDefault) =>
+      saveSignIn({ origin, token: value, grant: GRANT, store, makeDefault }, env);
     assert.equal(save('https://a.example', `${token}old`), null);
     assert.equal(save('https://a.example', token), `${token}old`, 'a new sign-in returns the token it replaced');
     save('https://b.example', `${token}b`);
+    assert.equal(readProfiles(env).default, 'https://a.example', 'a second server does not take the default');
+    save('https://b.example', `${token}b`, true);
     const credentials = path.join(root, 'config', 'credentials.json');
     assert.equal((await stat(credentials)).mode & 0o777, 0o600);
-    assert.deepEqual(Object.keys(JSON.parse(await readFile(credentials, 'utf8'))).sort(), ['https://a.example', 'https://b.example']);
+    assert.deepEqual(Object.keys(JSON.parse(await readFile(credentials, 'utf8'))).sort(), [
+      'https://a.example',
+      'https://b.example',
+    ]);
     const profiles = readProfiles(env);
     assert.equal(profiles.default, 'https://b.example');
     assert.equal(profiles.servers['https://a.example'].store, 'file');
@@ -116,7 +127,12 @@ describe('macOS Keychain', { skip: process.platform !== 'darwin' && 'macOS only'
 
 describe('polling the token endpoint', () => {
   test('transient failures back off and polling goes on; the token arrives', async () => {
-    const answers = [[503, {}], [502, {}], [400, { error: 'authorization_pending' }], [200, { access_token: 'fwk_ok' }]];
+    const answers = [
+      [503, {}],
+      [502, {}],
+      [400, { error: 'authorization_pending' }],
+      [200, { access_token: 'fwk_ok' }],
+    ];
     const server = createServer((req, res) => {
       const [status, body] = answers.shift();
       res.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(body));
@@ -243,6 +259,55 @@ describe('login, whoami and logout against a fake server', () => {
     } finally {
       await ci.cleanup();
     }
+  });
+
+  test('a second server: login keeps the default unless --default; servers lists both; servers use', async () => {
+    const other = await startFakeCoreServer();
+    try {
+      const login = await runCli(['login', other.origin, '--no-browser', '--insecure-storage', '--json'], home);
+      assert.equal(login.code, 0, login.stderr);
+      assert.equal(login.json.default, false);
+      assert.equal(readProfiles(home.env).default, fake.origin);
+      const list = await runCli(['servers', '--json'], home);
+      assert.equal(list.json.default, fake.origin);
+      assert.deepEqual(
+        list.json.servers.map((row) => [row.origin, row.default]).sort(),
+        [
+          [fake.origin, true],
+          [other.origin, false],
+        ].sort(),
+      );
+      assert.equal(list.json.servers[0].email, 'owner@example.com');
+      assert.doesNotMatch(list.stdout, new RegExp(FAKE_TOKEN));
+      const text = await runCli(['servers'], home);
+      assert.match(
+        text.stdout,
+        new RegExp(`^\\* ${fake.origin}  owner@example\\.com  acme-org \\(admin\\)  \\(file\\)$`, 'm'),
+      );
+      const use = await runCli(['servers', 'use', other.origin, '--json'], home);
+      assert.deepEqual(use.json, { default: other.origin });
+      assert.equal(readProfiles(home.env).default, other.origin);
+      const unknown = await runCli(['servers', 'use', 'https://unknown.example'], home);
+      assert.equal(unknown.code, 1);
+      assert.match(unknown.stderr, /not signed in to https:\/\/unknown\.example/);
+      const again = await runCli(['login', fake.origin, '--no-browser', '--insecure-storage', '--default'], home);
+      assert.equal(again.code, 0, again.stderr);
+      assert.equal(readProfiles(home.env).default, fake.origin);
+      assert.equal((await runCli(['logout', other.origin], home)).code, 0);
+    } finally {
+      await other.close();
+    }
+  });
+
+  test('login needs a server: none named outside a terminal is a usage error; the cloud is not available', async () => {
+    const none = await runCli(['login', '--no-browser'], home);
+    assert.equal(none.code, 2);
+    assert.match(none.stderr, /Name the server to sign in to/);
+    const cloud = await runCli(['login', 'cloud', '--no-browser'], home);
+    assert.equal(cloud.code, 1);
+    assert.match(cloud.stderr, /Foliwake Cloud is not available yet/);
+    const call = await runCli(['whoami', '--server', 'cloud'], home);
+    assert.match(call.stderr, /Foliwake Cloud is not available yet/);
   });
 
   test('logout revokes the token on the server and forgets it here', async () => {

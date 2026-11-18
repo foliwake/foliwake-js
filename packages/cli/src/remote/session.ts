@@ -6,6 +6,7 @@ import { type CredentialStore, credentialStore } from './credentials.js';
 import { createRemoteCaller } from './remote-caller.js';
 import {
   type Grant,
+  type Profiles,
   readProfiles,
   serverName,
   serverOrigin,
@@ -94,14 +95,24 @@ export interface NewSignIn {
   grant: Grant;
   store: CredentialStore;
   email?: string | null;
+  /** Make this server the default even when another one is: `login --default`. */
+  makeDefault?: boolean;
+}
+
+/** The default after a sign-in to `name`: it, when asked or when the default is none or gone; else unchanged. */
+function defaultAfter(profiles: Profiles, name: string, makeDefault: boolean): string {
+  const current = profiles.default;
+  const usable = current !== null && current !== name && Boolean(profiles.servers[current]);
+  return makeDefault || !usable ? name : current;
 }
 
 /**
- * Keeps a new sign-in and makes its server the default; returns the token it replaced, which the caller
- * revokes. The new token is read back first: if the store did not keep it, the earlier sign-in stays.
+ * Keeps a new sign-in; its server becomes the default only when asked (`makeDefault`) or when there is no
+ * other default. Returns the token it replaced, which the caller revokes. The new token is read back first:
+ * if the store did not keep it, the earlier sign-in stays.
  */
 export function saveSignIn(
-  { origin, token, grant, store, email = null }: NewSignIn,
+  { origin, token, grant, store, email = null, makeDefault = false }: NewSignIn,
   env: NodeJS.ProcessEnv = process.env,
 ): string | null {
   const name = serverName(origin, env);
@@ -119,7 +130,7 @@ export function saveSignIn(
   const signedInAt = new Date().toISOString();
   const profile = { principal, memberships, installation, signedInAt, store: store.kind, origin };
   profiles.servers[name] = { ...profile, ...(email ? { email } : {}) };
-  profiles.default = name;
+  profiles.default = defaultAfter(profiles, name, makeDefault);
   profiles.signedOut = profiles.signedOut.filter((known) => known !== name);
   writeProfiles(profiles, env);
   return superseded && superseded !== token ? superseded : null;

@@ -15,6 +15,8 @@ export interface SignInOptions {
   insecureStorage: boolean;
   /** Where the code, the address and warnings go. */
   log: (text: string) => void;
+  /** Make the server the default even when another one is (`login --default`). */
+  makeDefault?: boolean;
   /** Aborting stops the wait (SignInCancelled). */
   signal?: AbortSignal;
   env?: NodeJS.ProcessEnv;
@@ -48,7 +50,7 @@ async function settleMovedSignIn(origin: string, log: (text: string) => void, en
 
 /** Signs this computer in to `origin`; throws SignInError (SignInCancelled too) or CredentialStoreError. */
 export async function deviceSignIn(origin: string, options: SignInOptions): Promise<SignedIn> {
-  const { browser, tty, insecureStorage, log, signal, env = process.env } = options;
+  const { browser, tty, insecureStorage, log, signal, makeDefault = false, env = process.env } = options;
   const store = storeForSignIn({ insecureStorage }, env);
   const start = await startDeviceSignIn(origin).catch((error: unknown) => {
     throw cloudHint(error, origin, env);
@@ -59,7 +61,7 @@ export async function deviceSignIn(origin: string, options: SignInOptions): Prom
   const { token, email } = await waitForSignIn(origin, start, signal ? { sleep: abortableSleep(signal) } : {});
   const grant = await createRemoteCaller({ origin, token }).whoami();
   await settleMovedSignIn(origin, log, env);
-  const superseded = saveSignIn({ origin, token, grant, store, email }, env);
+  const superseded = saveSignIn({ origin, token, grant, store, email, makeDefault }, env);
   // The earlier sign-in of this computer would stay valid on the server until it expired.
   if (superseded && !(await revokeToken(origin, superseded))) {
     log(`Warning: ${origin} could not revoke this computer's earlier token; it expires 90 days after its last use.\n`);
@@ -67,7 +69,7 @@ export async function deviceSignIn(origin: string, options: SignInOptions): Prom
   return { origin, grant, email, store: store.kind };
 }
 
-/** The cloud's API may not be live yet: say so instead of only "cannot be reached". */
+/** The cloud is not available yet: say so instead of only "cannot be reached". */
 export function cloudHint(error: unknown, origin: string, env: NodeJS.ProcessEnv = process.env): unknown {
   if (!(error instanceof SignInError) || origin !== cloudOrigin(env)) return error;
   if (error.code !== 'SERVER_UNREACHABLE' && error.code !== 'SERVER_FAILED') return error;

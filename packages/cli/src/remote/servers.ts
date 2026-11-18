@@ -14,19 +14,22 @@ export type Grant = CoreOutput<'whoami'>;
 export type Membership = Grant['memberships'][number];
 
 /**
- * The official Foliwake Cloud: the built-in server name `cloud` (FOLIWAKE_CLOUD_ORIGIN overrides its origin,
- * for tests or a move). Its profile and credential are kept under "cloud", never by its URL.
+ * Foliwake Cloud: the reserved server name `cloud`. The Cloud is not available yet; its origin is
+ * CLOUD_ORIGIN (FOLIWAKE_CLOUD_ORIGIN overrides it, for tests or a move). A sign-in to it is kept under
+ * "cloud", never by its URL.
  */
 export const CLOUD = 'cloud';
-export const CLOUD_ORIGIN = 'https://foliwake.dev';
+export const CLOUD_ORIGIN = 'https://cloud.foliwake.org';
 export const CLOUD_TITLE = 'Foliwake Cloud';
-/** Said when the cloud cannot be reached: its API may not be live yet. */
+/** Said when someone names the cloud: it does not exist yet. */
 export const CLOUD_NOTE =
-  `${CLOUD_TITLE} may not be available yet; sign in to your own server instead, ` +
-  `e.g. \`${COMMAND} login http://localhost:8080\`.`;
+  `${CLOUD_TITLE} is not available yet; sign in to your own Foliwake server instead, ` +
+  `e.g. \`${COMMAND} login https://foliwake.example\`.`;
 
-/** The default of `foliwake login`. */
-export const DEFAULT_SERVER = CLOUD;
+/** True when the cloud's origin was set for this run (FOLIWAKE_CLOUD_ORIGIN): only then may `cloud` be used. */
+export function cloudConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(setting('CLOUD_ORIGIN', env));
+}
 
 export type CredentialStoreKind = 'keychain' | 'secret-service' | 'file';
 
@@ -179,6 +182,16 @@ export function signInMoved(origin: string, env: NodeJS.ProcessEnv = process.env
     `This computer's sign-in to ${entry.key} was made at ${entry.issuer ?? 'an unknown address'}, ` +
     `but ${entry.key} now means ${origin}${now}; its token is not sent there. Sign in to ${origin}: \`${login}\`.`
   );
+}
+
+/** Makes a signed-in server the default; false when this computer is not signed in to it. */
+export function useServer(origin: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  const profiles = readProfiles(env);
+  const entry = signInEntry(origin, env, profiles);
+  if (!entry || entry.issuer !== origin) return false;
+  profiles.default = entry.key;
+  writeProfiles(profiles, env);
+  return true;
 }
 
 /** The origin of the default server (the last `login`), or null. */

@@ -23,9 +23,13 @@
     "bin": "foliwake",
     "dirname": "foliwake",
     "commands": "./dist/commands",
-    "topicSeparator": " "
+    "topicSeparator": " ",
+    "topics": {
+      "servers": { "description": "The Foliwake servers this computer is signed in to" }
+    }
   },
   "dependencies": {
+    "@clack/prompts": "1.8.1",
     "@foliwake/core-contract": "workspace:*",
     "@oclif/core": "4.14.0"
   },
