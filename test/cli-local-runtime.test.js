@@ -87,6 +87,15 @@ describe('with the engine registered', () => {
     assert.ok(!localCalls(run.stderr).some((line) => line.includes('sites.status')), run.stderr);
   });
 
+  test('--content in a linked folder checks the local files with the folder configuration', async () => {
+    const folder = path.join(home.root, 'linked');
+    const before = fake.rpcCalls('content.validate').length;
+    const run = await engine(['page', 'check', '--content', 'content'], { cwd: folder });
+    const calls = localCalls(run.stderr);
+    assert.ok(calls.some((line) => line.startsWith('local: open {') && line.includes('"content":')), run.stderr);
+    assert.equal(fake.rpcCalls('content.validate').length, before, 'nothing went to the linked server');
+  });
+
   test('--server with --config, or --content with a server, exit 2', async () => {
     const both = await engine(['site', 'status', '--server', fake.origin, '--config', 'x.json']);
     assert.equal(both.code, 2);
