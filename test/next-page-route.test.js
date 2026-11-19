@@ -2,14 +2,24 @@
 // the route component itself needs Next's bundler (a client reference) and is covered by the example app (S8).
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { checkMount, checkPageChannel, metadataOf, mountRewriter, pagePathOf, readOrNull } from '../packages/next/dist/page-route.js';
+import {
+  checkMount,
+  checkPageChannel,
+  metadataOf,
+  mountRewriter,
+  pagePathOf,
+  readOrNull,
+} from '../packages/next/dist/page-route.js';
 
 const pageError = (kind) => Object.assign(new Error(kind), { name: 'FoliwakePageError', kind });
 
 describe('page-route', () => {
   test('channel: live by default; preview only with an author check', () => {
     assert.equal(checkPageChannel(undefined, undefined), 'live');
-    assert.equal(checkPageChannel('preview', () => true), 'preview');
+    assert.equal(
+      checkPageChannel('preview', () => true),
+      'preview',
+    );
     assert.throws(() => checkPageChannel('preview', undefined), /needs authorize/);
     assert.throws(() => checkPageChannel('draft', undefined), /channel/);
   });
@@ -37,9 +47,24 @@ describe('page-route', () => {
   });
 
   test('readOrNull: not_found and not_allowed are null; other errors throw', async () => {
-    assert.equal(await readOrNull(async () => { throw pageError('not_found'); }), null);
-    assert.equal(await readOrNull(async () => { throw pageError('not_allowed'); }), null);
-    await assert.rejects(readOrNull(async () => { throw pageError('origin'); }), /origin/);
+    assert.equal(
+      await readOrNull(async () => {
+        throw pageError('not_found');
+      }),
+      null,
+    );
+    assert.equal(
+      await readOrNull(async () => {
+        throw pageError('not_allowed');
+      }),
+      null,
+    );
+    await assert.rejects(
+      readOrNull(async () => {
+        throw pageError('origin');
+      }),
+      /origin/,
+    );
     assert.deepEqual(await readOrNull(async () => ({ title: 'x' })), { title: 'x' });
   });
 });
