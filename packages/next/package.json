@@ -16,6 +16,7 @@
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
     "./config": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },
+    "./handler": { "types": "./dist/handler.d.ts", "default": "./dist/handler.js" },
     "./routes": { "types": "./dist/routes.d.ts", "default": "./dist/routes.js" },
     "./cache": { "types": "./dist/cache.d.ts", "default": "./dist/cache.js" },
     "./revalidate": { "types": "./dist/revalidate.d.ts", "default": "./dist/revalidate.js" },

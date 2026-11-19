@@ -14,6 +14,7 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 | --- | --- |
 | `@foliwake/next/config` | `withFoliwake`, `foliwakeCspHeader` for `next.config.ts` |
 | `@foliwake/next` | server-only: `<FoliwakeServerPage>`, `readPage`, `readEnvelopeCached`, `foliwakeTags`, config and origin client |
+| `@foliwake/next/handler` | `GET`, `HEAD`, `POST`, `createFoliwakeHandler`: every Foliwake route (code, media, hook, health) in one route file |
 | `@foliwake/next/routes` | `codeRoute`, `mediaRoute`: the code and media proxies |
 | `@foliwake/next/cache` | `readEnvelopeCached`: the cached live read alone; `setGenerationFloor` |
 | `@foliwake/next/revalidate` | `foliwakeRevalidateHandler`: the route of the hook a Foliwake server calls after a change |
@@ -487,6 +488,88 @@ interface WithFoliwakeOptions
 | --- | --- | --- |
 | `configFile?` | `string` | The config file (default FOLIWAKE_REMOTE, else ./foliwake.remote.json). |
 | `csp?` | `false \| { reportUri?: string; extra?: CspOptions['extra']; source?: string; }` | Adds the Content-Security-Policy header (strategy 'self-inline': `script-src 'self' 'unsafe-inline'`) to the routes matching `source` (default every route, `/:path*`). `reportUri` adds `report-uri`; `extra` adds sources per directive. `false` (default): the app sets its own; use foliwakeCspHeader() for the value. |
+
+### `@foliwake/next/handler`
+
+**Functions and components**
+
+#### `createFoliwakeHandler()`
+
+The Foliwake routes of a Next app (code and media proxies, hook, health) for `app/foliwake/[...path]/route.ts`. Preview is off unless `authorizePreview` is given.
+
+```ts
+function createFoliwakeHandler(opts?: FoliwakeNextHandlerOptions): FoliwakeRoutes
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `opts?` | `FoliwakeNextHandlerOptions` | `authorizePreview` (default false), `hook` (default on, secret in FOLIWAKE_HOOK_SECRET), `base`. |
+
+**Returns** `FoliwakeRoutes`
+
+**Constants**
+
+#### `GET`
+
+The default routes: preview off, hook on (FOLIWAKE_HOOK_SECRET).
+
+```ts
+const GET: RouteHandler
+```
+
+#### `HEAD`
+
+```ts
+const HEAD: RouteHandler
+```
+
+#### `POST`
+
+```ts
+const POST: RouteHandler
+```
+
+**Interfaces**
+
+#### `FoliwakeNextHandlerOptions`
+
+Options of `createFoliwakeHandler`.
+
+```ts
+interface FoliwakeNextHandlerOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `authorizePreview?` | `AuthorizePreview` | The app's author check for preview files; default `false` (preview answers 404). |
+| `hook?` | `false \| FoliwakeNextHookOptions` | The hook (default secret variable FOLIWAKE_HOOK_SECRET); `false` answers 404 on `/foliwake/hook`. |
+| `base?` | `string` | The app path of the hook and health routes; default `/foliwake` (the route file's folder). |
+
+#### `FoliwakeRoutes`
+
+The route module exports: `export const { GET, HEAD, POST } = createFoliwakeHandler(…)`.
+
+```ts
+interface FoliwakeRoutes
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `GET` | `RouteHandler` |  |
+| `HEAD` | `RouteHandler` |  |
+| `POST` | `RouteHandler` |  |
+
+**Types**
+
+#### `FoliwakeNextHookOptions`
+
+The hook options of the Next handler: those of `foliwakeRevalidateHandler`, the secret variable optional.
+
+```ts
+type FoliwakeNextHookOptions = Omit<FoliwakeRevalidateOptions, 'secretEnv'> & {
+    secretEnv?: string;
+}
+```
 
 ### `@foliwake/next/routes`
 
