@@ -8,9 +8,11 @@ import { problemText } from './helpers/site-check.js';
 const parse = (text) => parseSiteConfig(Buffer.from(text));
 
 test('a valid file gives the default dialect; no authoring key gives no default', () => {
-  assert.deepEqual(parse('version: 1\nauthoring: blocks-v3\n').config, { authoring: 'blocks-v3' });
-  assert.deepEqual(parse('version: 1\nauthoring: blocks-v2\n').config, { authoring: 'blocks-v2' });
-  assert.deepEqual(parse('version: 1\n').config, { authoring: null });
+  assert.deepEqual(parse('version: 1\nauthoring: blocks-v3\n').config, { authoring: 'blocks-v3', blocks: null });
+  assert.deepEqual(parse('version: 1\nauthoring: blocks-v2\n').config, { authoring: 'blocks-v2', blocks: null });
+  assert.deepEqual(parse('version: 1\n').config, { authoring: null, blocks: null });
+  const blocks = 'version: 1\nblocks:\n  entry: scripts/blocks.js\n  contract: 2\n  eventPrefix: demo\n';
+  assert.deepEqual(parse(blocks).config.blocks, { entry: 'scripts/blocks.js', contract: 2, eventPrefix: 'demo' });
 });
 
 test('invalid files are refused, naming the problem', () => {

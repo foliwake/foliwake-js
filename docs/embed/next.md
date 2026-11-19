@@ -153,9 +153,9 @@ is added to `img-src`. See [Step 3 of the manual setup](/embed/next-manual#step-
 ## Limitations
 
 - One site per app.
-- A page's code release names its blocks module only when the site's `components/components.json` declares
-  `"blocks"` (a site whose descriptor the engine generates cannot yet); otherwise pages stay static until you set
-  `app.blocks.entry` in the version 3 file.
+- A page's code release names its blocks module only when the site's code declares it: `blocks` in `site.yaml`
+  (or `"blocks"` in a hand-written `components/components.json`). Without it pages stay static until you set
+  `app.blocks.entry` in the version 3 file. The `create-foliwake` starters ship no blocks module for apps yet.
 - `withFoliwake` is required with `FOLIWAKE_URL`: without it the app refuses to start and says so.
 - `init` edits `next.config` only when it exports a name or an object literal as an ES module; otherwise it
   prints the lines to add.

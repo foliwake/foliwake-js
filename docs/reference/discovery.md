@@ -38,10 +38,16 @@ retry on a network failure or a 5xx, at most 16 KiB, `application/json` only. Ot
 
 The blocks module of a page is a fact of the page's code release, not of the site, so it comes with each page:
 `.plain.html` answers carry `X-Foliwake-Blocks: entry="scripts/blocks.js", contract=2, prefix="demo"` when the
-release's `components/components.json` has
+site's code names its blocks module, in `site.yaml`:
 
-```json
-"blocks": { "entry": "scripts/blocks.js", "contract": 2, "eventPrefix": "demo" }
+```yaml
+version: 1
+blocks:
+  entry: scripts/blocks.js
+  contract: 2
+  eventPrefix: demo
 ```
 
-`@foliwake/site-check` checks that key with the same rule as the engine.
+The engine copies it into the `components/components.json` it generates from the block folders. A site with a
+hand-written `components/components.json` puts the same object there as `"blocks"` instead (both is an error).
+`@foliwake/site-check` checks either with the same rule as the engine, and that the entry file exists.

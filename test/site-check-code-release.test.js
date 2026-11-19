@@ -335,4 +335,21 @@ sitemap:
     assert.equal(valid.siteCode.authoringDefault, 'blocks-v3');
   });
 
+  test('site.yaml blocks: into the generated descriptor; its entry must exist; not with a hand-written one', async () => {
+    const yaml = 'version: 1\nblocks:\n  entry: scripts/blocks.js\n  contract: 2\n  eventPrefix: demo\n';
+    const blocks = { entry: 'scripts/blocks.js', contract: 2, eventPrefix: 'demo' };
+    const valid = await checkCodeRelease(release({ 'site.yaml': yaml, 'scripts/blocks.js': 'export {};\n' }));
+    assert.deepEqual(errorsOf(valid), []);
+    assert.deepEqual(valid.siteCode.descriptor.blocks, blocks);
+    const missing = await checkCodeRelease(release({ 'site.yaml': yaml }));
+    assert.match(errorText(missing), /CODE_ASSET_MISSING scripts\/blocks\.js/);
+    const bad = await checkCodeRelease(release({ 'site.yaml': 'version: 1\nblocks:\n  entry: lib/x.js\n' }));
+    assert.match(errorText(bad), /SITE_CONFIG_INVALID site\.yaml/);
+    const handWritten = JSON.stringify({ htmlContract: 2, components: { note: { css: false, js: false } } });
+    const both = await checkCodeRelease(
+      release({ 'site.yaml': yaml, 'scripts/blocks.js': 'export {};\n', 'components/components.json': handWritten }),
+    );
+    assert.match(errorText(both), /site\.yaml names `blocks`, but the site has a hand-written/);
+  });
+
 });
