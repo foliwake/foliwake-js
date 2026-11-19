@@ -13,7 +13,7 @@
 // (`<proxies.code>[/preview]/<cd>/<path>`) that the code proxy's allow-list accepts, so CSP 'self' covers it.
 import { KIT_PATH, KIT_SPECIFIER } from '@foliwake/blocks-contract/import-map';
 import type { FoliwakePageData, PreloadHint } from '@foliwake/blocks-contract/page';
-import { appOf, type FoliwakeAppConfig } from './config.js';
+import type { FoliwakeAppConfig } from './config.js';
 import { CODE_ROOTS, CODE_SEGMENT } from './constants.js';
 import type { OriginClient } from './origin.js';
 import { readLimited } from './stream.js';
@@ -94,8 +94,9 @@ export async function preloadHints(
   client: OriginClient,
   page: FoliwakePageData,
 ): Promise<PreloadHint[]> {
-  const app = appOf(config);
-  if (!page.codeBase || !page.codeRelease || !app.blocks.entry) return [];
+  // The entry is the page's (the config's, or the one its code release names), as preparePage chose it.
+  if (!page.codeBase || !page.codeRelease || !page.blocksUrl?.startsWith(page.codeBase)) return [];
+  const entry = page.blocksUrl.slice(page.codeBase.length);
   const cd = page.codeRelease;
   const descriptorText = await readText(client, page.channel, cd, 'components/components.json');
   let declared: Record<string, { js?: boolean; css?: boolean }> = {};
@@ -105,7 +106,7 @@ export async function preloadHints(
   } catch {
     declared = {};
   }
-  const roots = [app.blocks.entry];
+  const roots = [entry];
   const styles: string[] = [];
   for (const name of page.blocks) {
     const entry = declared[name];

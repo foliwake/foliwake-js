@@ -2,6 +2,7 @@
 // working folder and for the captured files of a code release alike; the caller supplies file access, so both
 // see one rule set. A site without a hand-written descriptor gets one generated from its block folders.
 
+import { BLOCKS_ENTRY_RULE, type BlocksEntry, parseBlocksEntry } from './blocks-entry.js';
 import { COMPONENT_NAME_PATTERN } from './constants.js';
 import { type Diagnostic, makeDiagnostic } from './diagnostics.js';
 
@@ -12,7 +13,11 @@ export interface ComponentDescriptor {
   htmlContract: number;
   /** `ui`: the block's labels by UI language, then key (blocks contract BlockMeta.ui) */
   components: Record<string, { css: boolean; js: boolean; ui?: Record<string, Record<string, string>> }>;
+  /** The module an embedding app loads to enhance blocks (blocks-entry.ts); absent: pages stay static. */
+  blocks?: BlocksEntry;
 }
+
+const TOP_LEVEL_KEYS = ['htmlContract', 'components', 'blocks'];
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -40,6 +45,16 @@ function diagnostic(
 function entryShapeMessage(name: string): string {
   const shape = '{"css": boolean, "js": boolean}';
   return `Component "${name}" must be exactly ${shape}, optionally with "ui": {language: {key: text}}.`;
+}
+
+// The optional `blocks` key: valid by the shared rule, and its entry is a file of the release.
+async function blocksDiagnostics(value: unknown, hasFile: DescriptorChecks['hasFile']): Promise<Diagnostic[]> {
+  const blocks = parseBlocksEntry(value);
+  if (blocks === null) return [diagnostic('CODE_DESCRIPTOR_INVALID', DESCRIPTOR_PATH, BLOCKS_ENTRY_RULE)];
+  if (await hasFile(blocks.entry)) return [];
+  const message = `"blocks.entry" names ${blocks.entry}, which is not in the release.`;
+  const fix = `Create ${blocks.entry} or point "blocks.entry" at the module that enhances the blocks.`;
+  return [diagnostic('CODE_ASSET_MISSING', blocks.entry, message, fix)];
 }
 
 export interface DescriptorChecks {
@@ -88,9 +103,11 @@ export async function validateDescriptor({
   }
   const record = descriptor as Record<string, unknown>; // a JSON object (checked above)
   for (const key of Object.keys(record)) {
-    if (key !== 'htmlContract' && key !== 'components')
-      invalid(`Unknown top-level key "${key}".`, 'Allowed keys: htmlContract, components.');
+    if (!TOP_LEVEL_KEYS.includes(key)) {
+      invalid(`Unknown top-level key "${key}".`, `Allowed keys: ${TOP_LEVEL_KEYS.join(', ')}.`);
+    }
   }
+  if ('blocks' in record) diagnostics.push(...(await blocksDiagnostics(record.blocks, hasFile)));
   if (record.htmlContract !== htmlContract) {
     invalid(
       `htmlContract is ${JSON.stringify(record.htmlContract)}, but the generator produces version ${htmlContract}.`,

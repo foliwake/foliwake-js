@@ -594,16 +594,37 @@ interface OriginRequestOptions
 
 #### `blocksUrlOf()`
 
-The same-origin URL of the blocks module, or null when the config names no blocks entry.
+The same-origin URL of the blocks module, or null without an entry.
 
 ```ts
-function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeRelease: CodeReleaseId): {
+function blocksUrlOf(config: FoliwakeAppConfig, channel: ChannelName, codeRelease: CodeReleaseId, entry?: string | null): {
     base: string;
     url: string;
 } | null
 ```
 
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `config` | `FoliwakeAppConfig` |  |
+| `channel` | `ChannelName` |  |
+| `codeRelease` | `CodeReleaseId` |  |
+| `entry?` | `string \| null` | The module inside the code release; default the config's `app.blocks.entry`. |
+
 **Returns** `{ base: string; url: string; } \| null`
+
+#### `pageBlocksOf()`
+
+The blocks a page mounts: the config's, or (version 3 without `app.blocks`) the ones its code release names.
+
+```ts
+function pageBlocksOf(config: FoliwakeAppConfig, envelope: PageEnvelope): {
+    entry: string | null;
+    major: number;
+    eventPrefix: string;
+}
+```
+
+**Returns** `{ entry: string \| null; major: number; eventPrefix: string; }`
 
 #### `plainPath()`
 

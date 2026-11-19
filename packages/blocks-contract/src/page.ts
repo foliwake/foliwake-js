@@ -7,6 +7,16 @@ export type { ChannelName } from './index.js';
 /** A code release id (`cd_` + 32–64 hex), or `local` from `foliwake dev`. */
 export type CodeReleaseId = `cd_${string}` | 'local';
 
+/** The blocks module a page's code release names (`X-Foliwake-Blocks`). */
+export interface ReleaseBlocks {
+  /** Its path inside the code release, such as `scripts/blocks.js`. */
+  entry: string;
+  /** The blocks contract major it implements (`foliwake-blocks/<contract>`). */
+  contract: number;
+  /** The prefix of the events its blocks emit. */
+  eventPrefix: string;
+}
+
 /** What the origin answered for `<path>.plain.html`: the only thing an app caches. */
 export interface PageEnvelope {
   site: string;
@@ -25,6 +35,8 @@ export interface PageEnvelope {
   etag: string | null;
   /** `X-Site-Generation`: the live generation the answer belongs to (it only grows), or null without it. */
   generation: number | null;
+  /** `X-Foliwake-Blocks`, or null without it; absent in envelopes cached by older versions. */
+  blocks?: ReleaseBlocks | null;
 }
 
 /** What a client component receives: serialisable, prepared per request. */
@@ -42,6 +54,8 @@ export interface FoliwakePageData {
   mode: string | null;
   /** Prepared: checked, rewritten, transformed, checked again. */
   html: string;
+  /** The text of the body's first `<h1>`, or null (for the document title). */
+  title: string | null;
   codeRelease: CodeReleaseId;
   htmlContract: string;
   lang: string | null;
