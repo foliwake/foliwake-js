@@ -1,5 +1,18 @@
 # @foliwake/cli
 
+## 0.10.1
+
+### Patch Changes
+
+- Updated dependencies [44822ad]
+- Updated dependencies [e448fbb]
+  - @foliwake/server@0.10.1
+  - create-foliwake@0.10.1
+  - @foliwake/block-kit@0.10.1
+  - @foliwake/blocks-contract@0.10.1
+  - @foliwake/core-contract@0.10.1
+  - @foliwake/site-check@0.10.1
+
 ## 0.10.0
 
 ### Minor Changes
