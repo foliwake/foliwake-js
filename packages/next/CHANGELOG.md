@@ -7,6 +7,24 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.10.1
+
+### Patch Changes
+
+- 44822ad: The hook trims leading and trailing whitespace and newlines from the secret read from `secretEnv` and
+  `previousSecretEnv` (a secret pasted with a trailing newline used to fail every signature), warns once naming the
+  variable (never the value), and treats an all-whitespace value as unset. New: `hookSecretsFrom` in
+  `@foliwake/server/hook-endpoint`. The docs make the secret with `openssl rand -hex 32 | tr -d '\n'`.
+- e81a756: `npx @foliwake/next init` turns on `cacheComponents: true` in `next.config.(ts|mjs|js)` for the same forms it
+  wraps in `withFoliwake` (`export default { … }` and `export default <name>` of a `const` object literal, wrapped or
+  not), including the file `create-next-app` writes. A second run changes nothing; `--dry-run` and `--json` report it
+  as its own step. Any other form (a config built elsewhere, `cacheComponents: false`) is left alone and the line to
+  add, `cacheComponents: true,`, is printed.
+- Updated dependencies [44822ad]
+  - @foliwake/server@0.10.1
+  - @foliwake/blocks-contract@0.10.1
+  - @foliwake/react@0.10.1
+
 ## 0.10.0
 
 ### Minor Changes

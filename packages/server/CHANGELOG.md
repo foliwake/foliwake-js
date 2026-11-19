@@ -7,6 +7,16 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.10.1
+
+### Patch Changes
+
+- 44822ad: The hook trims leading and trailing whitespace and newlines from the secret read from `secretEnv` and
+  `previousSecretEnv` (a secret pasted with a trailing newline used to fail every signature), warns once naming the
+  variable (never the value), and treats an all-whitespace value as unset. New: `hookSecretsFrom` in
+  `@foliwake/server/hook-endpoint`. The docs make the secret with `openssl rand -hex 32 | tr -d '\n'`.
+- @foliwake/blocks-contract@0.10.1
+
 ## 0.10.0
 
 ### Minor Changes

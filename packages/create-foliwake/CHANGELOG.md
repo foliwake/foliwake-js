@@ -5,6 +5,18 @@ with them. While the version is 0.x, a minor release may break; breaking changes
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.10.1
+
+### Patch Changes
+
+- e448fbb: The starter blocks' stylesheets (`note`, `quiz`, `steps`) give every site variable a fallback, so the blocks keep
+  their styles inside an app that embeds the page: an app loads `components/<name>/<name>.css` but not the site's
+  `styles/styles.css` where `--color-accent` and the other variables are defined, and a `var()` without a fallback
+  dropped its declaration (the note's border was missing in a Next app). The docs say why, and troubleshooting
+  covers it and an app's unlayered reset that wins over `@layer blocks`.
+- @foliwake/block-kit@0.10.1
+  - @foliwake/site-check@0.10.1
+
 ## 0.10.0
 
 ### Patch Changes
