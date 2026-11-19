@@ -2,7 +2,13 @@
 // env names that are missing; edits next.config once.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { editNextConfig, hasCacheComponents, MANUAL_STEPS } from './next-config.js';
+import {
+  addCacheComponents,
+  CACHE_COMPONENTS_LINE,
+  editNextConfig,
+  MANUAL_STEPS,
+  type CacheEdit,
+} from './next-config.js';
 import type { Step } from './plan.js';
 import { GENERATED } from './templates.js';
 
@@ -69,24 +75,34 @@ function applyEnv(step: Extract<Step, { kind: 'env' }>, opts: ApplyOptions): Ste
 
 const nameOf = (line: string): string => line.split('=')[0]!;
 
-function cacheNote(text: string): string | undefined {
-  if (hasCacheComponents(text)) return undefined;
-  return 'cacheComponents: true not found; the page route needs it (init does not turn it on for you)';
+const CACHE_WHAT = 'cacheComponents: true (the page route needs it)';
+
+function cacheStep(file: string, cache: CacheEdit): StepResult {
+  const base = { path: file, what: CACHE_WHAT };
+  if (cache.kind === 'manual') {
+    return { ...base, outcome: 'manual', note: `${cache.reason}; add \`${CACHE_COMPONENTS_LINE}\` to the config` };
+  }
+  return { ...base, outcome: cache.kind === 'added' ? 'updated' : 'exists' };
 }
 
-function applyConfig(step: Extract<Step, { kind: 'next-config' }>, opts: ApplyOptions): StepResult {
+// Two results: the withFoliwake() wrap, then cacheComponents; the file is written once, when either changed it.
+function applyConfig(step: Extract<Step, { kind: 'next-config' }>, opts: ApplyOptions): StepResult[] {
   const file = path.join(opts.cwd, step.path);
   const base = { path: step.path, what: step.what };
   if (step.create !== null) {
     write(file, step.create, opts);
-    return { ...base, outcome: 'created' };
+    return [{ ...base, outcome: 'created' }];
   }
-  const text = readFileSync(file, 'utf8');
-  const edit = editNextConfig(text, step.path);
-  if (edit.kind === 'present') return { ...base, outcome: 'exists', note: cacheNote(text) };
-  if (edit.kind === 'manual') return { ...base, outcome: 'manual', note: `${edit.reason}. ${MANUAL_STEPS.join(' ')}` };
-  write(file, edit.text, opts);
-  return { ...base, outcome: 'updated', note: cacheNote(text) };
+  const original = readFileSync(file, 'utf8');
+  const wrap = editNextConfig(original, step.path);
+  if (wrap.kind === 'manual') {
+    return [{ ...base, outcome: 'manual', note: `${wrap.reason}. ${MANUAL_STEPS.join(' ')}` }];
+  }
+  const wrapped = wrap.kind === 'wrapped' ? wrap.text : original;
+  const cache = addCacheComponents(wrapped);
+  const final = cache.kind === 'added' ? cache.text : wrapped;
+  if (final !== original) write(file, final, opts);
+  return [{ ...base, outcome: wrap.kind === 'present' ? 'exists' : 'updated' }, cacheStep(step.path, cache)];
 }
 
 /** Applies every step in order. */
@@ -94,7 +110,7 @@ export function applySteps(steps: readonly Step[], opts: ApplyOptions): StepResu
   const results: StepResult[] = [];
   for (const step of steps) {
     if (step.kind === 'file') results.push(applyFile(step, opts));
-    else if (step.kind === 'next-config') results.push(applyConfig(step, opts));
+    else if (step.kind === 'next-config') results.push(...applyConfig(step, opts));
     else {
       const result = applyEnv(step, opts);
       if (result) results.push(result);

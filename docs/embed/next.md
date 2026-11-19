@@ -32,7 +32,7 @@ Foliwake engine that serves `/.well-known/foliwake.json`.
 | File | What |
 | --- | --- |
 | `.env.local` | `FOLIWAKE_URL`, the site's live URL: the only setting |
-| `next.config.ts` | `withFoliwake(…)`: reads the site's discovery document when Next starts or builds |
+| `next.config.ts` | `withFoliwake(…)` reads the discovery document at start and build; `cacheComponents: true` |
 | `app/foliwake/[...path]/route.ts` | `export { GET, HEAD, POST } from '@foliwake/next/handler'` |
 | `app/[...path]/page.tsx` | `export { default, generateMetadata } from '@foliwake/next/page'` |
 
@@ -40,6 +40,8 @@ Foliwake engine that serves `/.well-known/foliwake.json`.
   its media CDN, the contract versions) and builds the app's config into the server bundle.
   Nothing is fetched at run time; a site that cannot be read fails the build with the address and the reason.
   See [the discovery document](/reference/discovery).
+- **`cacheComponents`.** init adds `cacheComponents: true,` to the config object when the default export is the
+  object or a `const` holding one; otherwise it prints that line for you to add.
 - **The route** serves the page's code release and pictures from your own origin (`/foliwake/code/…`,
   `/foliwake/media/…`), so `script-src 'self'` covers the blocks and the browser never talks to Foliwake.
   It also answers `POST /foliwake/hook` and `GET /foliwake/health`.
