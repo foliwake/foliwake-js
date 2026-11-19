@@ -627,6 +627,7 @@ interface FoliwakePageData
 | `path` | `string` |  |
 | `mode` | `string \| null` | The site's mode of the page (`PrepareOptions.mode`), or null. |
 | `html` | `string` | Prepared: checked, rewritten, transformed, checked again. |
+| `title` | `string \| null` | The text of the body's first `<h1>`, or null (for the document title). |
 | `codeRelease` | `CodeReleaseId` |  |
 | `htmlContract` | `string` |  |
 | `lang` | `string \| null` |  |
@@ -656,6 +657,7 @@ interface PageEnvelope
 | `pageId` | `string \| null` | `X-Page-Id`. |
 | `etag` | `string \| null` |  |
 | `generation` | `number \| null` | `X-Site-Generation`: the live generation the answer belongs to (it only grows), or null without it. |
+| `blocks?` | `ReleaseBlocks \| null` | `X-Foliwake-Blocks`, or null without it; absent in envelopes cached by older versions. |
 
 #### `PreloadHint`
 
@@ -686,6 +688,20 @@ interface QueryIndex<Row = Record<string, string>>
 | `limit` | `number` |  |
 | `columns` | `string[]` |  |
 | `data` | `Row[]` |  |
+
+#### `ReleaseBlocks`
+
+The blocks module a page's code release names (`X-Foliwake-Blocks`).
+
+```ts
+interface ReleaseBlocks
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `entry` | `string` | Its path inside the code release, such as `scripts/blocks.js`. |
+| `contract` | `number` | The blocks contract major it implements (`foliwake-blocks/<contract>`). |
+| `eventPrefix` | `string` | The prefix of the events its blocks emit. |
 
 **Types**
 

@@ -90,3 +90,38 @@ test('checkDescriptor of a folder: a declared asset that is missing is CODE_ASSE
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+// The optional `blocks` key (the engine names it in X-Foliwake-Blocks): same rule as code release validation.
+const blocksDiagnostics = (blocks, files = []) =>
+  validateDescriptor({
+    readText: async () => JSON.stringify({ ...WITH_QUESTION, blocks }),
+    hasFile: async (relative) => files.includes(relative),
+    htmlContract: 1,
+    schemaNames: CATALOGUE_COMPONENTS,
+  });
+
+test('blocks: a valid entry that exists in the release passes', async () => {
+  const blocks = { entry: 'scripts/blocks.js', contract: 2, eventPrefix: 'demo' };
+  assert.deepEqual(await blocksDiagnostics(blocks, ['scripts/blocks.js']), []);
+});
+
+test('blocks: a missing entry file is CODE_ASSET_MISSING', async () => {
+  const diagnostics = await blocksDiagnostics({ entry: 'scripts/blocks.js', contract: 2, eventPrefix: 'demo' });
+  assert.deepEqual(diagnostics.map((d) => [d.code, d.file]), [['CODE_ASSET_MISSING', 'scripts/blocks.js']]);
+});
+
+test('blocks: bad shapes are CODE_DESCRIPTOR_INVALID', async () => {
+  const bad = [
+    { entry: 'lib/blocks.js', contract: 2, eventPrefix: 'demo' },
+    { entry: 'scripts/../x.js', contract: 2, eventPrefix: 'demo' },
+    { entry: 'scripts/blocks.mjs', contract: 2, eventPrefix: 'demo' },
+    { entry: 'scripts/blocks.js', contract: '2', eventPrefix: 'demo' },
+    { entry: 'scripts/blocks.js', contract: 2, eventPrefix: 'Demo' },
+    { entry: 'scripts/blocks.js', contract: 2, eventPrefix: 'demo', extra: true },
+    'scripts/blocks.js',
+  ];
+  for (const blocks of bad) {
+    const codes = (await blocksDiagnostics(blocks, ['scripts/blocks.js'])).map((d) => d.code);
+    assert.deepEqual(codes, ['CODE_DESCRIPTOR_INVALID'], JSON.stringify(blocks));
+  }
+});

@@ -20,10 +20,12 @@ const METADATA = { 'block-kit': { blocksContract: 2 }, 'core-contract': { coreAp
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const manifest = (name) => JSON.parse(read(`packages/${name}/package.json`));
 
-test('the hook endpoint of @foliwake/next answers a ping with the built version', () => {
-  const core = read('packages/next/dist/revalidate-core.js');
-  assert.doesNotMatch(core, /__FOLIWAKE_NEXT_VERSION__/);
-  assert.ok(core.includes(`'@foliwake/next/${manifest('next').version}'`));
+test('the hook endpoints answer a ping with the built version', () => {
+  for (const name of ['next', 'server']) {
+    const stamped = read(`packages/${name}/dist/version.js`);
+    assert.doesNotMatch(stamped, /__FOLIWAKE_[A-Z]+_VERSION__/);
+    assert.ok(stamped.includes(`'@foliwake/${name}/${manifest(name).version}'`), name);
+  }
 });
 
 test("'use client', 'use cache' and the runtime import comments are kept in dist/", () => {
@@ -33,7 +35,7 @@ test("'use client', 'use cache' and the runtime import comments are kept in dist
   assert.match(read('packages/next/dist/cache.js'), /async function readEnvelopeCachedEntry\(path\) \{\s+'use cache';/);
   assert.doesNotMatch(read('packages/react/dist/foliwake-page.js'), /import\(/, 'the React wrapper imports no blocks module itself');
   for (const file of ['index.js', 'mount.js', 'events.js', 'host.js', 'load.js', 'import-map.js', 'css-registry.js', 'dev.js']) assert.doesNotMatch(read(`packages/client/dist/${file}`), /from ['"](react|react-dom|next)[/'"]/, `client ${file} imports no framework`);
-  for (const file of ['index.js', 'cache.js', 'routes.js', 'server.js', 'page.js', 'revalidate.js']) assert.match(read(`packages/next/dist/${file}`), /import 'server-only';/, file);
+  for (const file of ['index.js', 'cache.js', 'routes.js', 'server.js', 'page.js', 'revalidate.js', 'handler.js', 'ready-page.js']) assert.match(read(`packages/next/dist/${file}`), /import 'server-only';/, file);
 });
 
 test('one coordinated 0.x version, compatibility metadata, public npm metadata', () => {
@@ -43,7 +45,7 @@ test('one coordinated 0.x version, compatibility metadata, public npm metadata',
   for (const name of NAMES) {
     const m = manifest(name);
     assert.equal(m.name, PACKAGES.find((p) => p.dir === name).name);
-    const app = { plain: 2, blocksContract: 2, remoteConfig: 2 };
+    const app = { plain: 2, blocksContract: 2, remoteConfig: 3, discovery: 1 };
     const compatibility = APP_PACKAGES.includes(name) ? app : (METADATA[name] ?? FORMATS);
     assert.deepEqual(m.foliwake, compatibility, name);
     const publicOnNpm = { access: 'public', provenance: true };
@@ -77,7 +79,7 @@ test('tarballs: dist/ without maps or build stamps, plus LICENSE, README and CHA
     const files = JSON.parse(stdout)[0].files.map((f) => f.path);
     const always = ['LICENSE', 'README.md', 'CHANGELOG.md', 'package.json'];
     assert.ok(always.every((f) => files.includes(f)), `${name}: ${files.join(', ')}`);
-    const unexpected = files.filter((f) => !always.includes(f) && !(f.startsWith('dist/') && /\.(js|d\.ts)$/.test(f)) && !(name === 'server' && f.startsWith('schemas/')) && !(name === 'create-foliwake' && /^(starters|vendor)\//.test(f)) && !(name === 'block-kit' && f === 'dist/lit-html.LICENSE') && !(name === 'foliwake' && f === 'bin/foliwake.js'));
+    const unexpected = files.filter((f) => !always.includes(f) && !(f.startsWith('dist/') && /\.(js|d\.ts)$/.test(f)) && !((name === 'server' || name === 'next') && f.startsWith('schemas/')) && !(name === 'create-foliwake' && /^(starters|vendor)\//.test(f)) && !(name === 'block-kit' && f === 'dist/lit-html.LICENSE') && !(name === 'foliwake' && f === 'bin/foliwake.js'));
     assert.deepEqual(unexpected, [], name);
     const exported = Object.values(manifest(name).exports).flatMap((e) => (typeof e === 'string' ? [e] : Object.values(e))).map((p) => p.replace(/^\.\//, ''));
     for (const target of exported) if (target !== 'package.json') assert.ok(files.includes(target), `${name} exports ${target}`);

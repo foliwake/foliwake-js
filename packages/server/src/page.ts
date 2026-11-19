@@ -2,10 +2,12 @@
 // (design §6.5, §9.4): check → rewrite media and links → the app's transform → check again.
 import { createHash } from 'node:crypto';
 import type { ChannelName, CodeReleaseId, FoliwakePageData, PageEnvelope } from '@foliwake/blocks-contract/page';
+import { BLOCKS_HEADER, parseBlocksHeader } from './blocks-header.js';
 import { appOf, isLoopbackName, pageAllowed, type FoliwakeAppConfig } from './config.js';
 import { CODE_ID_PATTERN, LIMITS, PAGE_PATH_PATTERN } from './constants.js';
 import { FoliwakePageError } from './errors.js';
 import { checkBody, componentNames, elements, serialize, type HtmlNode } from './html.js';
+import { firstHeading } from './page-title.js';
 import { mediaRewriter } from './media-rewrite.js';
 import type { OriginClient } from './origin.js';
 import { readLimited, TooLargeError } from './stream.js';
@@ -93,6 +95,7 @@ export async function readEnvelope(config: FoliwakeAppConfig, client: OriginClie
   const pageId = header(response, 'x-page-id', PAGE_ID);
   const generation = generationOf(header(response, 'x-site-generation', GENERATION));
   const etag = response.headers.get('etag');
+  const blocks = parseBlocksHeader(response.headers.get(BLOCKS_HEADER));
   let bytes: Uint8Array;
   try {
     bytes = await readLimited(response, LIMITS.body);
@@ -107,7 +110,8 @@ export async function readEnvelope(config: FoliwakeAppConfig, client: OriginClie
     throw new FoliwakePageError('invalid', 'The body is not UTF-8.');
   }
   checkBody(html, path); // an invalid body is refused before anything caches it
-  return { site, channel, path, html, codeRelease, htmlContract, lang, pageId, etag: etag && etag.length <= 200 ? etag : null, generation };
+  const keptEtag = etag && etag.length <= 200 ? etag : null;
+  return { site, channel, path, html, codeRelease, htmlContract, lang, pageId, etag: keptEtag, generation, blocks };
 }
 
 /** Options of `preparePage`. */
@@ -139,16 +143,31 @@ function rewrite(nodes: HtmlNode[], config: FoliwakeAppConfig, channel: ChannelN
   }
 }
 
-/** The same-origin URL of the blocks module, or null when the config names no blocks entry. */
+/**
+ * The same-origin URL of the blocks module, or null without an entry.
+ *
+ * @param entry - The module inside the code release; default the config's `app.blocks.entry`.
+ */
 export function blocksUrlOf(
   config: FoliwakeAppConfig,
   channel: ChannelName,
   codeRelease: CodeReleaseId,
+  entry: string | null = appOf(config).blocks.entry,
 ): { base: string; url: string } | null {
-  const app = appOf(config);
-  if (!app.blocks.entry) return null;
-  const base = `${app.proxies.code}${channel === 'preview' ? '/preview' : ''}/${codeRelease}/`;
-  return { base, url: `${base}${app.blocks.entry}` };
+  if (!entry) return null;
+  const base = `${appOf(config).proxies.code}${channel === 'preview' ? '/preview' : ''}/${codeRelease}/`;
+  return { base, url: `${base}${entry}` };
+}
+
+/** The blocks a page mounts: the config's, or (version 3 without `app.blocks`) the ones its code release names. */
+export function pageBlocksOf(
+  config: FoliwakeAppConfig,
+  envelope: PageEnvelope,
+): { entry: string | null; major: number; eventPrefix: string } {
+  const own = appOf(config).blocks;
+  const named = envelope.blocks ?? null;
+  if (!own.fromRelease || named === null) return { entry: own.entry, major: own.major, eventPrefix: own.eventPrefix };
+  return { entry: named.entry, major: named.contract, eventPrefix: named.eventPrefix };
 }
 
 /** The React key of a prepared page: see `FoliwakePageData.identity`. */
@@ -165,7 +184,6 @@ function identityOf(envelope: PageEnvelope, mode: string | null, digest: string)
  *   fills it). Throws FoliwakePageError('invalid') when the body or the transform's output is refused.
  */
 export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, opts: PrepareOptions = {}): FoliwakePageData {
-  const app = appOf(config);
   const mode = opts.mode ?? null;
   if (mode !== null && (typeof mode !== 'string' || !MODE.test(mode))) throw new FoliwakePageError('invalid', `mode must be a token [a-z][a-z0-9-], at most 32 characters`);
   if (mode === 'exam') throw new FoliwakePageError('not_allowed', 'mode exam is not available (the origin does not strip answers yet)');
@@ -175,8 +193,9 @@ export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, o
   if (opts.transform) html = opts.transform(html, envelope);
   const final = checkBody(html, envelope.path); // a transform cannot add what the first check refused
   html = serialize(final);
-  const blocks = blocksUrlOf(config, envelope.channel, envelope.codeRelease);
-  const contract = { major: app.blocks.major, eventPrefix: app.blocks.eventPrefix };
+  const named = pageBlocksOf(config, envelope);
+  const blocks = blocksUrlOf(config, envelope.channel, envelope.codeRelease, named.entry);
+  const contract = { major: named.major, eventPrefix: named.eventPrefix };
   // The digest covers what the browser mounts: the final prepared body (after the app's transform, so two
   // transforms of one envelope differ, and a missing ETag cannot collide) and every mount-defining setting.
   const digest = createHash('sha256')
@@ -190,6 +209,7 @@ export function preparePage(config: FoliwakeAppConfig, envelope: PageEnvelope, o
     path: envelope.path,
     mode,
     html,
+    title: firstHeading(final),
     codeRelease: envelope.codeRelease,
     htmlContract: envelope.htmlContract,
     lang: envelope.lang,

@@ -60,6 +60,8 @@ export const ERROR_CODES: Readonly<Record<string, string>> = Object.freeze({
   PAGE_REPLACE_UNSUPPORTED: 'refused',
   PREVIEW_BUSY: 'busy',
   PREVIEW_CHANGED: 'conflict',
+  PREVIEW_TOKEN_NOT_SET: 'refused',
+  PREVIEW_TOKEN_NO_AUDIT: 'refused',
   PREVIEW_UNAVAILABLE: 'refused',
   PREVIEW_UNREADABLE: 'unavailable',
   PROCEDURE_UNKNOWN: 'not_found',

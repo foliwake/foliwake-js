@@ -11,14 +11,19 @@
   "keywords": ["foliwake", "cms", "headless", "blocks", "nextjs", "next", "react", "app-router"],
   "engines": { "node": ">=22.22" },
   "publishConfig": { "access": "public", "provenance": true },
-  "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 2 },
+  "bin": { "foliwake-next": "./dist/init/bin.js" },
+  "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 3, "discovery": 1 },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./client": { "types": "./dist/client.d.ts", "default": "./dist/client.js" },
     "./config": { "types": "./dist/config.d.ts", "default": "./dist/config.js" },
+    "./page": { "types": "./dist/ready-page.d.ts", "default": "./dist/ready-page.js" },
+    "./handler": { "types": "./dist/handler.d.ts", "default": "./dist/handler.js" },
     "./routes": { "types": "./dist/routes.d.ts", "default": "./dist/routes.js" },
     "./cache": { "types": "./dist/cache.d.ts", "default": "./dist/cache.js" },
     "./revalidate": { "types": "./dist/revalidate.d.ts", "default": "./dist/revalidate.js" },
+    "./schemas/remote-2.schema.json": "./schemas/remote-2.schema.json",
+    "./schemas/remote-3.schema.json": "./schemas/remote-3.schema.json",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -38,5 +43,5 @@
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
-  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md", "CHANGELOG.md"]
+  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "schemas/", "LICENSE", "README.md", "CHANGELOG.md"]
 }

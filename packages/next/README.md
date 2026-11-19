@@ -14,23 +14,39 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 | --- | --- |
 | `@foliwake/next/config` | `withFoliwake`, `foliwakeCspHeader` for `next.config.ts` |
 | `@foliwake/next` | server-only: `<FoliwakeServerPage>`, `readPage`, `readEnvelopeCached`, `foliwakeTags`, config and origin client |
+| `@foliwake/next/page` | `default`, `generateMetadata`, `createFoliwakePage`: a ready page route (`app/[...path]/page.tsx`) |
+| `@foliwake/next/handler` | `GET`, `HEAD`, `POST`, `createFoliwakeHandler`: every Foliwake route (code, media, hook, health) in one route file |
 | `@foliwake/next/routes` | `codeRoute`, `mediaRoute`: the code and media proxies |
 | `@foliwake/next/cache` | `readEnvelopeCached`: the cached live read alone; `setGenerationFloor` |
 | `@foliwake/next/revalidate` | `foliwakeRevalidateHandler`: the route of the hook a Foliwake server calls after a change |
 | `@foliwake/next/client` | `'use client'`: everything of `@foliwake/react` |
 
+## Quick start
+
+```bash
+npm install @foliwake/next
+npx @foliwake/next init --url https://my-site.example.org
+npm run dev
+```
+
+`init` writes `FOLIWAKE_URL` to `.env.local`, wraps `next.config` in `withFoliwake()`, and adds
+`app/foliwake/[...path]/route.ts` (code, media, hook) and `app/[...path]/page.tsx` (site pages). It is idempotent,
+never overwrites your files, writes no secret values, and takes `--preview`, `--hook`, `--mount /pages`, `--dry-run`,
+`--json`, `--check` and `--yes` (`npx @foliwake/next init --help`).
+
 ## Install
 
 The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
-needed. Install exact versions, the same for every `@foliwake/*` package:
+needed. Install one package; it brings `@foliwake/react` and `@foliwake/server` at its own exact version:
 
 ```bash
-pnpm add @foliwake/next@0.3.0 @foliwake/react@0.3.0 @foliwake/server@0.3.0
+pnpm add @foliwake/next
 ```
 
 The app also needs `foliwake.remote.json` in its root (or `FOLIWAKE_REMOTE` naming another file): the site,
 its live and preview origins, the names of the variables that hold passwords, and the app settings. The guide
-below describes every key; the schema ships in `@foliwake/server/schemas/remote-2.schema.json`.
+below describes every key; the schema ships in this package as `schemas/remote-2.schema.json`
+(`"$schema": "./node_modules/@foliwake/next/schemas/remote-2.schema.json"`).
 
 ## Minimal example
 
@@ -447,22 +463,17 @@ interface ReadPageOptions extends PrepareOptions
 The CSP value for this app's config (strategy A, media base included, 'unsafe-eval' in development).
 
 ```ts
-function foliwakeCspHeader(opts?: {
-    configFile?: string;
-    reportUri?: string;
-    extra?: CspOptions['extra'];
-    dev?: boolean;
-}): string
+function foliwakeCspHeader(opts?: CspHeaderOptions): string
 ```
 
 **Returns** `string`
 
 #### `withFoliwake()`
 
-Validates the Foliwake config when Next loads next.config (build and start) and makes it available to the package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages (its 'use cache' read). Throws when the file is missing or invalid, naming the field.
+Reads and validates the Foliwake config when Next loads next.config (build and start) and makes it available to the package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages (its 'use cache' read). With FOLIWAKE_URL, the site's discovery document is read now (and the optional version 3 file merged): the result is a promise, and a failure fails the build naming the address and the reason. Without it, the version 2 file is read as before. Nothing is fetched at run time.
 
 ```ts
-function withFoliwake(nextConfig?: NextConfig, opts?: WithFoliwakeOptions): NextConfig
+function withFoliwake(nextConfig?: NextConfig, opts?: WithFoliwakeOptions): FoliwakeNextConfig
 ```
 
 | Parameter | Type | Description |
@@ -470,9 +481,25 @@ function withFoliwake(nextConfig?: NextConfig, opts?: WithFoliwakeOptions): Next
 | `nextConfig?` | `NextConfig` | The app's own Next config; its `transpilePackages`, `env` and `headers` are kept. |
 | `opts?` | `WithFoliwakeOptions` |  |
 
-**Returns** `NextConfig`: The Next config to export from next.config.ts.
+**Returns** `FoliwakeNextConfig`: The Next config (or a promise of it) to export from next.config.ts.
 
 **Interfaces**
+
+#### `CspHeaderOptions`
+
+Options of `foliwakeCspHeader`.
+
+```ts
+interface CspHeaderOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `configFile?` | `string` |  |
+| `config?` | `FoliwakeAppConfig` | A config already read (withFoliwake passes it); default the version 2 file. |
+| `reportUri?` | `string` |  |
+| `extra?` | `CspOptions['extra']` |  |
+| `dev?` | `boolean` |  |
 
 #### `WithFoliwakeOptions`
 
@@ -486,6 +513,171 @@ interface WithFoliwakeOptions
 | --- | --- | --- |
 | `configFile?` | `string` | The config file (default FOLIWAKE_REMOTE, else ./foliwake.remote.json). |
 | `csp?` | `false \| { reportUri?: string; extra?: CspOptions['extra']; source?: string; }` | Adds the Content-Security-Policy header (strategy 'self-inline': `script-src 'self' 'unsafe-inline'`) to the routes matching `source` (default every route, `/:path*`). `reportUri` adds `report-uri`; `extra` adds sources per directive. `false` (default): the app sets its own; use foliwakeCspHeader() for the value. |
+
+**Types**
+
+#### `FoliwakeNextConfig`
+
+What withFoliwake returns: the config itself, or (with FOLIWAKE_URL) a promise of it; Next accepts both.
+
+```ts
+type FoliwakeNextConfig = NextConfig | Promise<NextConfig>
+```
+
+### `@foliwake/next/page`
+
+**Functions and components**
+
+#### `createFoliwakePage()`
+
+A page route of Foliwake pages: reads the page of the route's path (live: cached; preview: per request, behind `authorize`), renders it in a Suspense boundary, emits the blocks' preload hints and the import map. A missing page, one outside `app.pages`, or a refused author check is `notFound()`. `generateMetadata` gives the title (the body's first `<h1>`) and `noindex` for preview.
+
+```ts
+function createFoliwakePage(opts?: FoliwakePageOptions): FoliwakeRoute
+```
+
+**Returns** `FoliwakeRoute`
+
+**Constants**
+
+#### `default`
+
+```ts
+const route: FoliwakeRoute
+```
+
+#### `generateMetadata`
+
+The default route's metadata.
+
+```ts
+const generateMetadata: (props: FoliwakeRouteProps) => Promise<PageMetadata>
+```
+
+**Interfaces**
+
+#### `FoliwakePageOptions`
+
+Options of `createFoliwakePage`.
+
+```ts
+interface FoliwakePageOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `render?` | `(page: FoliwakePageData) => ReactNode` | Returns the app's component for the page; default `<FoliwakePage page={page} as="article" />`. |
+| `prepare?` | `PrepareOptions` | `preparePage` options; `rewriteLink` defaults to the mount's. |
+| `channel?` | `ChannelName` | `live` (default, cached) or `preview` (per request; needs `authorize`). |
+| `authorize?` | `() => boolean \| Promise<boolean>` | The app's author check (cookies(), headers(), its session); false → not found. Required for preview. |
+| `mount?` | `string` | The app path the route is mounted at, such as `/pages`; default the root. |
+| `fallback?` | `ReactNode` | The Suspense fallback while the page is read; default none. |
+
+#### `FoliwakeRouteProps`
+
+The route's props: Next's params of a catch-all segment `[...path]` or `[[...path]]`.
+
+```ts
+interface FoliwakeRouteProps
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `params` | `Promise<{ path?: string[]; }>` |  |
+
+**Types**
+
+#### `FoliwakeRoute`
+
+A page route component with its `generateMetadata`.
+
+```ts
+type FoliwakeRoute = ((props: FoliwakeRouteProps) => ReactNode) & {
+    generateMetadata: (props: FoliwakeRouteProps) => Promise<PageMetadata>;
+}
+```
+
+### `@foliwake/next/handler`
+
+**Functions and components**
+
+#### `createFoliwakeHandler()`
+
+The Foliwake routes of a Next app (code and media proxies, hook, health) for `app/foliwake/[...path]/route.ts`. Preview is off unless `authorizePreview` is given.
+
+```ts
+function createFoliwakeHandler(opts?: FoliwakeNextHandlerOptions): FoliwakeRoutes
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `opts?` | `FoliwakeNextHandlerOptions` | `authorizePreview` (default false), `hook` (default on, secret in FOLIWAKE_HOOK_SECRET), `base`. |
+
+**Returns** `FoliwakeRoutes`
+
+**Constants**
+
+#### `GET`
+
+The default routes: preview off, hook on (FOLIWAKE_HOOK_SECRET).
+
+```ts
+const GET: RouteHandler
+```
+
+#### `HEAD`
+
+```ts
+const HEAD: RouteHandler
+```
+
+#### `POST`
+
+```ts
+const POST: RouteHandler
+```
+
+**Interfaces**
+
+#### `FoliwakeNextHandlerOptions`
+
+Options of `createFoliwakeHandler`.
+
+```ts
+interface FoliwakeNextHandlerOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `authorizePreview?` | `AuthorizePreview` | The app's author check for preview files; default `false` (preview answers 404). |
+| `hook?` | `false \| FoliwakeNextHookOptions` | The hook (default secret variable FOLIWAKE_HOOK_SECRET); `false` answers 404 on `/foliwake/hook`. |
+| `base?` | `string` | The app path of the hook and health routes; default `/foliwake` (the route file's folder). |
+
+#### `FoliwakeRoutes`
+
+The route module exports: `export const { GET, HEAD, POST } = createFoliwakeHandler(…)`.
+
+```ts
+interface FoliwakeRoutes
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `GET` | `RouteHandler` |  |
+| `HEAD` | `RouteHandler` |  |
+| `POST` | `RouteHandler` |  |
+
+**Types**
+
+#### `FoliwakeNextHookOptions`
+
+The hook options of the Next handler: those of `foliwakeRevalidateHandler`, the secret variable optional.
+
+```ts
+type FoliwakeNextHookOptions = Omit<FoliwakeRevalidateOptions, 'secretEnv'> & {
+    secretEnv?: string;
+}
+```
 
 ### `@foliwake/next/routes`
 
@@ -663,5 +855,13 @@ interface FoliwakeRevalidateOptions
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/server/hook`: `FoliwakeDeliveryPayload`, `FoliwakeHookPayload`, `FoliwakeOperationKind`
+
+### `@foliwake/next/schemas/remote-2.schema.json`
+
+A file, not a module: `schemas/remote-2.schema.json` in the package.
+
+### `@foliwake/next/schemas/remote-3.schema.json`
+
+A file, not a module: `schemas/remote-3.schema.json` in the package.
 
 <!-- apistop -->

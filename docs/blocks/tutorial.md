@@ -254,7 +254,7 @@ block:answer {key: 'r1', block: 'rating', selected: ['4'], correct: null, graded
 ```
 
 Every event names its block and key. An app that embeds the page receives the types it names
-([Embed pages](/embed/next#step-6-host-and-events)).
+([Embed pages](/embed/next-manual#step-6-host-and-events)).
 
 ## 6. On a real page
 

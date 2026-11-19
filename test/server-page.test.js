@@ -50,7 +50,7 @@ const kind = (k) => (error) => error.name === 'FoliwakePageError' && error.kind 
 describe('readEnvelope', () => {
   test('reads body and metadata; credentials from the named variable, per request; nothing else sent', async () => {
     const envelope = await read('/lessons/a');
-    assert.deepEqual({ ...envelope, html: undefined }, { site: 'demo', channel: 'live', path: '/lessons/a', html: undefined, codeRelease: CD, htmlContract: '2', lang: 'ru', pageId: 'pg_1', etag: '"p2-abc"', generation: 418 });
+    assert.deepEqual({ ...envelope, html: undefined }, { site: 'demo', channel: 'live', path: '/lessons/a', html: undefined, codeRelease: CD, htmlContract: '2', lang: 'ru', pageId: 'pg_1', etag: '"p2-abc"', generation: 418, blocks: null });
     assert.equal(envelope.html, HTML);
     const last = stub.requests.at(-1);
     assert.equal(last.path, '/lessons/a.plain.html');

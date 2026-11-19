@@ -76,7 +76,8 @@ Then follow [Start a site's code](/blocks/start) and [Write a block](/blocks/wri
 Next.js App Router apps:
 
 ```sh
-npm install @foliwake/next @foliwake/react @foliwake/server
+npm install @foliwake/next
+npx @foliwake/next init --url https://my-site.example.org
 ```
 
-Then follow [Embed pages in a Next.js app](/embed/next).
+Then read [Embed pages in a Next.js app](/embed/next).

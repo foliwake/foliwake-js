@@ -7,8 +7,9 @@ import { after } from 'next/server.js';
 import type { FoliwakeDeliveryPayload } from '@foliwake/server/hook';
 import { checkEnvName } from '@foliwake/server/config';
 import { readEnvelopeCachedEntry } from './cache.js';
-import { createRevalidateHandler } from './revalidate-core.js';
+import { createHookEndpoint } from '@foliwake/server/hook-endpoint';
 import { foliwakeConfig, foliwakeTags } from './server.js';
+import { SDK } from './version.js';
 
 export type { FoliwakeDeliveryPayload, FoliwakeHookPayload, FoliwakeOperationKind } from '@foliwake/server/hook';
 
@@ -75,8 +76,9 @@ export function foliwakeRevalidateHandler(opts: FoliwakeRevalidateOptions): Foli
   checkOptions(opts);
   let handler: ((request: Request) => Promise<Response>) | null = null;
   const POST = (request: Request) => {
-    handler ??= createRevalidateHandler({
+    handler ??= createHookEndpoint({
       site: foliwakeConfig().site,
+      sdk: SDK,
       secrets: () => [process.env[opts.secretEnv], opts.previousSecretEnv && process.env[opts.previousSecretEnv]],
       liveTag,
       expire: expireWith(opts.mode ?? 'expire'),

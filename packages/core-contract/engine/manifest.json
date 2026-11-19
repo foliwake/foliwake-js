@@ -1,6 +1,6 @@
 {
   "api": 1,
-  "digest": "3a132926ee914ed6",
+  "digest": "54c29f4310c18c30",
   "procedures": {
     "account.keys.ci": "query",
     "account.keys.create": "mutation",
@@ -50,6 +50,7 @@
     "sites.get": "query",
     "sites.history": "query",
     "sites.list": "query",
+    "sites.previewToken": "mutation",
     "sites.resetStorage": "mutation",
     "sites.resetStoragePlan": "query",
     "sites.status": "query",

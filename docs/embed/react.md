@@ -10,7 +10,7 @@ npm install @foliwake/react@0.3.0 @foliwake/server@0.3.0
 ```
 
 You also need `foliwake.remote.json` in the server's working folder;
-[Embed pages in a Next.js app](/embed/next#step-2-the-config-file) describes every key.
+[Embed pages in a Next.js app](/embed/next-manual#step-2-the-config-file) describes every key.
 
 ## On the server: a page endpoint
 

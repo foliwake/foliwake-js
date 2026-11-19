@@ -52,14 +52,20 @@ export default defineConfig({
         text: 'Embed pages',
         items: [
           { text: 'Next.js', link: '/embed/next' },
+          { text: 'Next.js: manual setup', link: '/embed/next-manual' },
           { text: 'Another React app', link: '/embed/react' },
+          { text: 'Any framework: one handler', link: '/embed/any-framework' },
           { text: 'Other frameworks, or none', link: '/embed/other-frameworks' },
           { text: 'Troubleshooting', link: '/embed/troubleshooting' },
         ],
       },
       {
         text: 'Reference',
-        items: [{ text: 'All packages', link: '/reference/' }, ...referenceItems],
+        items: [
+          { text: 'All packages', link: '/reference/' },
+          { text: 'The discovery document', link: '/reference/discovery' },
+          ...referenceItems,
+        ],
       },
     ],
     socialLinks: [{ icon: 'github', link: 'https://github.com/foliwake/foliwake-js' }],

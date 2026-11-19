@@ -25,6 +25,12 @@ const HANDLERS = {
   'operations.get': () => answers.operation('rollback', answers.releaseResult),
   'org.create': (input) => ({ ...input, membership: { role: 'admin', live: false, sites: null } }),
   'sites.delete': (input) => ({ site: input.site, org: 'acme-org', livePages: 0, foldersSetAside: 2, bucket: 'kept' }),
+  'sites.previewToken': (input) => ({
+    site: input.site,
+    username: 'preview',
+    token: 'pt-0123456789abcdef',
+    variable: 'MY_SITE__PREVIEW_TOKEN',
+  }),
 };
 
 describe('remote commands with FOLIWAKE_SERVER and FOLIWAKE_TOKEN (CI)', () => {
@@ -89,6 +95,29 @@ describe('remote commands with FOLIWAKE_SERVER and FOLIWAKE_TOKEN (CI)', () => {
     assert.match(deleted.stdout, /bucket was NOT touched/);
     const unasked = await cli(['site', 'delete']);
     assert.equal(unasked.code, 2, 'without a terminal --confirm is needed');
+  });
+
+  test('site preview-token: a mutation (audited by the server); the token on its own line; --json', async () => {
+    const run = await cli(['site', 'preview-token', '--site', 'my-site']);
+    assert.equal(run.code, 0, run.stderr);
+    const [call] = fake.rpcCalls('sites.previewToken');
+    assert.equal(call.method, 'POST');
+    assert.deepEqual(call.input, { site: 'my-site' });
+    assert.equal(run.stdout.split('\n')[1], 'pt-0123456789abcdef');
+    assert.match(run.stdout, /FOLIWAKE_PREVIEW_TOKEN; never commit it/);
+    const json = await cli(['site', 'preview-token', '--site', 'my-site', '--json']);
+    assert.equal(JSON.parse(json.stdout).token, 'pt-0123456789abcdef');
+  });
+
+  test('site preview-token: refused for a non-admin; the server error, nothing on stdout', async () => {
+    const message = 'Only site admins see the token.';
+    fake.handlers['sites.previewToken'] = () => {
+      throw { status: 403, coreError: { category: 'forbidden', code: 'FORBIDDEN', retryable: false, message } };
+    };
+    const run = await cli(['site', 'preview-token', '--site', 'my-site']);
+    assert.notEqual(run.code, 0);
+    assert.equal(run.stdout, '');
+    assert.match(run.stderr, /Only site admins/);
   });
 
   test('release rollback: a mutation, followed to its commit in slices; the release report', async () => {

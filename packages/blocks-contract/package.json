@@ -11,7 +11,7 @@
   "bugs": { "url": "https://github.com/foliwake/foliwake-js/issues" },
   "keywords": ["foliwake", "cms", "headless", "blocks", "types", "typescript", "contract"],
   "publishConfig": { "access": "public", "provenance": true },
-  "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 2 },
+  "foliwake": { "plain": 2, "blocksContract": 2, "remoteConfig": 3, "discovery": 1 },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./assessment": { "types": "./dist/assessment.d.ts", "default": "./dist/assessment.js" },

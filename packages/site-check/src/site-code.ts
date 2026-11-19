@@ -18,7 +18,8 @@ import { HTML_CONTRACT } from './formats/constants.js';
 import { DESCRIPTOR_PATH } from './formats/descriptor.js';
 import { type Diagnostic, makeDiagnostic } from './formats/diagnostics.js';
 import { jsonPointerPosition } from './formats/json-position.js';
-import { SITE_FILE, parseSiteConfig } from './formats/site-config.js';
+import type { BlocksEntry } from './formats/blocks-entry.js';
+import { SITE_FILE, type SiteConfig, parseSiteConfig } from './formats/site-config.js';
 import {
   TEMPLATES_SCHEMA,
   TEMPLATE_NAME_PATTERN,
@@ -38,6 +39,8 @@ const TEMPLATES_ROOT = 'templates';
 
 export interface SiteDescriptor {
   htmlContract: number;
+  /** The blocks module an embedding app loads (from site.yaml `blocks`, for a generated descriptor) */
+  blocks?: BlocksEntry;
   /** `ui`: the block's labels (its definition's `ui`), given to its init as `meta.ui` by the loader */
   components: Record<
     string,
@@ -244,7 +247,9 @@ export async function siteCodeOf(tree: CodeTree, htmlContract: number): Promise<
   // With invalid block definitions the pack is unknown, so names in `blocks` cannot be checked.
   const blockNames = issues.length === 0 ? new Set(pack?.blocks.keys()) : null;
   const templates = await readTemplates(tree, blockNames, issues);
-  const authoringDefault = await readAuthoringDefault(tree, issues);
+  const settings = await readSiteSettings(tree, issues);
+  const authoringDefault = settings.authoring;
+  descriptor = withSiteBlocks(descriptor, isGenerated, settings.blocks, htmlContract, issues);
   const references = await readReferenceTables(tree);
   issues.push(...references.issues, ...crossFileIssues, ...folderIssues);
   return {
@@ -329,10 +334,12 @@ function withoutSchemaRef(definition: unknown): unknown {
   return rest;
 }
 
-async function readAuthoringDefault(tree: CodeTree, issues: SiteCodeIssue[]): Promise<string | null> {
-  if (!(await tree.isFile(SITE_FILE))) return null;
+const NO_SETTINGS: SiteConfig = Object.freeze({ authoring: null, blocks: null });
+
+async function readSiteSettings(tree: CodeTree, issues: SiteCodeIssue[]): Promise<SiteConfig> {
+  if (!(await tree.isFile(SITE_FILE))) return NO_SETTINGS;
   const { config, problems } = parseSiteConfig(await tree.readBytes(SITE_FILE));
-  if (config) return config.authoring;
+  if (config) return config;
   for (const { line, column, field, message } of problems) {
     issues.push({
       code: 'SITE_CONFIG_INVALID',
@@ -344,8 +351,28 @@ async function readAuthoringDefault(tree: CodeTree, issues: SiteCodeIssue[]): Pr
       column,
     });
   }
-  return null;
+  return NO_SETTINGS;
 }
+
+// site.yaml `blocks` goes into the descriptor the engine generates (a site without block folders gets one with no
+// components). A hand-written components/components.json names its own `blocks`: one place, not two.
+function withSiteBlocks(
+  descriptor: SiteDescriptor | null,
+  isGenerated: boolean,
+  blocks: BlocksEntry | null,
+  htmlContract: number,
+  issues: SiteCodeIssue[],
+): SiteDescriptor | null {
+  if (blocks === null) return descriptor;
+  if (!isGenerated) {
+    const message = 'site.yaml names `blocks`, but the site has a hand-written components/components.json.';
+    const fix = 'Move `blocks` into components/components.json, or delete that file to let the engine generate it.';
+    issues.push({ code: 'SITE_CONFIG_INVALID', pointer: 'blocks', message, fix, file: SITE_FILE });
+    return descriptor;
+  }
+  return { ...(descriptor ?? { htmlContract, components: {} }), blocks };
+}
+
 
 function folderNameIssue(name: string): SiteCodeIssue {
   return {
