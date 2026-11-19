@@ -45,6 +45,7 @@ test('the example is what init writes (a dry run changes nothing but .env.local)
     steps.map((step) => [step.path, step.outcome]),
     [
       ['next.config.ts', 'exists'],
+      ['next.config.ts', 'exists'],
       ['app/foliwake/[...path]/route.ts', 'exists'],
       ['app/[...path]/page.tsx', 'exists'],
     ],

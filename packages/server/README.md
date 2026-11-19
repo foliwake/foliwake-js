@@ -1351,6 +1351,16 @@ function deliveryTags(payload: FoliwakeDeliveryPayload, liveTag: (path?: string)
 
 **Returns** `string[]`
 
+#### `hookSecretsFrom()`
+
+The `secrets()` of the hook endpoint read from environment variables: each value is trimmed of leading and trailing whitespace and newlines (a secret pasted from `openssl rand -hex 32` often ends in one), and an all-whitespace value counts as unset. The first time trimming changes a variable's value, one warning names the variable, never the value.
+
+```ts
+function hookSecretsFrom(source: HookSecretSource): () => (string | undefined)[]
+```
+
+**Returns** `() => (string \| undefined)[]`
+
 #### `warmPaths()`
 
 The pages read again after a delivery: none on `all`, page paths only, at most WARM_LIMIT.
@@ -1395,6 +1405,20 @@ interface HookEndpointDeps
 | `toleranceS?` | `number` |  |
 | `now?` | `() => number` |  |
 | `log` | `Pick<Console, 'warn' \| 'error'>` |  |
+
+#### `HookSecretSource`
+
+Where `hookSecretsFrom` reads and what it warns on.
+
+```ts
+interface HookSecretSource
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `names` | `readonly (string \| undefined)[]` | The variables, current first, then the previous one while it is rotated; undefined entries are skipped. |
+| `env?` | `NodeJS.ProcessEnv` | Where the variables are read, per call; default process.env. |
+| `log` | `Pick<Console, 'warn'>` |  |
 
 ### `@foliwake/server/discovery`
 

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
 import { signFoliwakeHook } from '@foliwake/server/hook';
-import { createHookEndpoint, WARM_LIMIT } from '@foliwake/server/hook-endpoint';
+import { createHookEndpoint, hookSecretsFrom, WARM_LIMIT } from '@foliwake/server/hook-endpoint';
 import { SDK } from '../packages/next/dist/version.js';
 
 const SECRET = 's'.repeat(40);
@@ -33,7 +33,7 @@ function harness(extra = {}) {
   const handler = createHookEndpoint({
     site: 'demo',
     sdk: SDK,
-    secrets: () => [SECRET, extra.previous],
+    secrets: extra.secrets ?? (() => [SECRET, extra.previous]),
     liveTag: (path) => (path === undefined ? 'foliwake:demo:live' : `foliwake:demo:live:page:${path}`),
     expire: (tag) => calls.expired.push(tag),
     warm: async (path) => calls.warmed.push(path),
@@ -184,5 +184,34 @@ describe('delivery', () => {
     const response = await handler(signed(delivery()));
     assert.equal(response.status, 500);
     assert.equal(calls.expired.length, 2);
+  });
+});
+
+describe('secrets read from the environment', () => {
+  const reader = (env) => {
+    const warnings = [];
+    const read = hookSecretsFrom({ names: ['HOOK', 'HOOK_OLD'], env, log: { warn: (m) => warnings.push(m) } });
+    return { read, warnings };
+  };
+
+  test('trailing newline and spaces are trimmed; one warning per variable, without the value', () => {
+    const { read, warnings } = reader({ HOOK: `${SECRET}\n`, HOOK_OLD: `  ${PREVIOUS} ` });
+    assert.deepEqual(read(), [SECRET, PREVIOUS]);
+    assert.deepEqual(read(), [SECRET, PREVIOUS]);
+    assert.equal(warnings.length, 2);
+    assert.match(warnings[0], /HOOK has surrounding whitespace/);
+    assert.ok(warnings.every((w) => !w.includes(SECRET) && !w.includes(PREVIOUS)));
+  });
+
+  test('a clean secret warns nothing; an all-whitespace one is unset', () => {
+    const { read, warnings } = reader({ HOOK: SECRET, HOOK_OLD: '\n \t' });
+    assert.deepEqual(read(), [SECRET, undefined]);
+    assert.equal(warnings.length, 1);
+  });
+
+  test('a trimmed secret verifies a signature made with the trimmed value', async () => {
+    const { read } = reader({ HOOK: `${SECRET}\r\n` });
+    const { handler } = harness({ secrets: read });
+    assert.equal((await handler(signed(PING))).status, 200);
   });
 });

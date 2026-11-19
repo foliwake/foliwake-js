@@ -16,6 +16,8 @@
 | Live pictures blocked by CSP | the site resizes images on a CDN: name it as `app.media` with `"transform": null` |
 | Pictures missing in preview | `authorizePreview` must say yes for the signed-in author |
 | A 404 for `components/<name>/<name>.css` | a block without a stylesheet; harmless. Render the `as: 'style'` hints of `page.preload` instead |
+| A block's stylesheet loads but part of it (a border, a color) is missing | the site's variables (`--color-accent`, …) live in its `styles/styles.css`, which an app does not load: give each `var()` in the block's CSS a fallback, or define the variables in your app's global CSS |
+| A block's margins or paddings are gone | your app's global reset (`* { margin: 0 }`) is not in a layer, so it wins over the blocks' `@layer blocks` rules; put the reset in a layer, or scope it |
 | Blocks missing after a client navigation to another release | the browser lacks multiple import maps (Chrome 133+); a reload shows them |
 
 ## Status and error codes

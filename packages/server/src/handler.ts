@@ -10,7 +10,7 @@
 import { checkEnvName, type FoliwakeAppConfig } from './config.js';
 import { PREFIX } from './config-parts.js';
 import { codeHandler, mediaHandler, type AuthorizePreview, type Handler } from './handlers.js';
-import { createHookEndpoint } from './hook-endpoint.js';
+import { createHookEndpoint, hookSecretsFrom } from './hook-endpoint.js';
 import type { FoliwakeDeliveryPayload } from './hook.js';
 import { createOriginClient } from './origin.js';
 import { loadAppConfig } from './resolve.js';
@@ -116,7 +116,7 @@ function defaultHook(config: FoliwakeAppConfig, opts: FoliwakeHandlerOptions, ho
   return createHookEndpoint({
     site: config.site,
     sdk: SERVER_SDK,
-    secrets: () => [env[secretEnv], hook.previousSecretEnv && env[hook.previousSecretEnv]],
+    secrets: hookSecretsFrom({ names: [secretEnv, hook.previousSecretEnv], env, log }),
     liveTag: (path) => `foliwake:${config.site}:live${path === undefined ? '' : `:page:${path}`}`,
     expire: () => {},
     warm: async () => {},

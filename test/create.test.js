@@ -297,3 +297,17 @@ test('through the CLI: -h, --version, refused values exit 2, conflicting flags e
   assert.match(again.stderr, /^create-foliwake: cli-site is not empty/);
   await rm(path.join(w.cwd, 'cli-site'), { recursive: true });
 });
+
+// An app that embeds a page loads the blocks' stylesheets but not the site's styles/styles.css, where the site's
+// variables are defined: a `var(--x)` without a fallback is then invalid and its declaration is dropped (the note's
+// border disappeared inside a Next app). Every starter block stylesheet gives each variable a fallback.
+test('starter block stylesheets give every site variable a fallback', async () => {
+  const starters = new URL('../packages/create-foliwake/starters/', import.meta.url);
+  const entries = await readdir(starters, { recursive: true });
+  const sheets = entries.filter((file) => /(^|\/)components\/[^/]+\/[^/]+\.css$/.test(file));
+  assert.ok(sheets.includes(path.join('minimal', 'components', 'note', 'note.css')), sheets.join(', '));
+  for (const sheet of sheets) {
+    const css = readFileSync(new URL(sheet, starters), 'utf8');
+    assert.deepEqual(css.match(/var\(\s*--[\w-]+\s*\)/g) ?? [], [], `${sheet}: a var() without a fallback`);
+  }
+});

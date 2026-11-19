@@ -144,8 +144,8 @@ The schema cannot express every rule; `npx @foliwake/site-check` reports the res
 
 - Put every rule in `@layer blocks` and under `[data-component="<name>"]`, so a block styles only itself.
 - Select fields by attribute, `[data-field="title"]`, never by position or tag alone.
-- Use the site's CSS variables (`--color-border`, `--space`, …) with fallbacks;
-  an app that embeds the page supplies its own.
+- Use the site's CSS variables (`--color-border`, `--space`, …) with fallbacks: an app that embeds the page loads
+  the block's stylesheet but not `styles/styles.css`, and a `var()` without a fallback then drops its whole rule.
 
 ```css
 @layer blocks {

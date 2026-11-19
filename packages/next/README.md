@@ -175,6 +175,9 @@ import { foliwakeRevalidateHandler } from '@foliwake/next/revalidate';
 export const { POST } = foliwakeRevalidateHandler({ secretEnv: 'FOLIWAKE_HOOK_SECRET' });
 ```
 
+Make the secret with `openssl rand -hex 32 | tr -d '\n'`, and give the Foliwake server the same value. Surrounding
+whitespace and newlines are trimmed from it (with one warning naming the variable); an all-whitespace value is unset.
+
 It checks the signature (within 300 s; `previousSecretEnv` names a second accepted secret while you rotate it)
 and expires `foliwake:<site>:live:page:<path>` of every changed path, or `foliwake:<site>:live` when every page
 changed (a code release, a large publication). Paths that are not pages, such as an index, get the same tag:

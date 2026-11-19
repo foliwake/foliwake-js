@@ -70,6 +70,7 @@ async function tree(dir) {
   );
 }
 
+const IMPORT = "import { withFoliwake } from '@foliwake/next/config';";
 const read = (dir, file) => readFile(path.join(dir, file), 'utf8');
 
 describe('a fresh TypeScript app', () => {
@@ -182,7 +183,7 @@ describe('options', () => {
 });
 
 describe('existing files', () => {
-  test('next.config by name and as an object literal are wrapped; withFoliwake is not added twice', async () => {
+  test('next.config by name and as an object literal: wrapped once, cacheComponents added', async () => {
     const byName = await app({
       files: {
         'next.config.ts': [
@@ -206,12 +207,80 @@ describe('existing files', () => {
     const run = await init(object, ['--url', site.origin, '--yes', '--json']);
     assert.match(
       await read(object, 'next.config.mjs'),
-      /export default withFoliwake\(\{\n {2}reactStrictMode: true,\n\}\);/,
+      /export default withFoliwake\(\{\n {2}cacheComponents: true,\n {2}reactStrictMode: true,\n\}\);/,
     );
-    const config = run.json().steps.find((s) => s.path === 'next.config.mjs');
-    assert.match(config.note, /cacheComponents: true not found/);
+    const steps = run.json().steps.filter((s) => s.path === 'next.config.mjs');
+    assert.deepEqual(
+      steps.map((s) => s.outcome),
+      ['updated', 'updated'],
+    );
     await init(object, ['--url', site.origin, '--yes']);
     assert.equal((await read(object, 'next.config.mjs')).match(/withFoliwake\(/g).length, 1);
+  });
+
+  test('cacheComponents: added to the create-next-app config, once; --dry-run and --json report it', async () => {
+    const created = [
+      "import type { NextConfig } from 'next';",
+      '',
+      'const nextConfig: NextConfig = {',
+      '  /* config options here */',
+      '};',
+      '',
+      'export default nextConfig;',
+      '',
+    ].join('\n');
+    const dir = await app({ files: { 'next.config.ts': created } });
+    const dry = await init(dir, ['--url', site.origin, '--yes', '--dry-run']);
+    assert.match(dry.stdout, /next\.config\.ts +would be updated: cacheComponents: true/);
+    assert.equal(await read(dir, 'next.config.ts'), created);
+    const run = await init(dir, ['--url', site.origin, '--yes', '--json']);
+    const cache = run.json().steps.find((s) => s.what.startsWith('cacheComponents'));
+    assert.deepEqual([cache.path, cache.outcome], ['next.config.ts', 'updated']);
+    assert.equal(run.json().ok, true);
+    const edited = await read(dir, 'next.config.ts');
+    assert.match(edited, /const nextConfig: NextConfig = \{\n {2}cacheComponents: true,\n {2}\/\* config options/);
+    assert.match(edited, /export default withFoliwake\(nextConfig\);/);
+    const again = await init(dir, ['--url', site.origin, '--yes', '--json']);
+    assert.ok(
+      again.json().steps.every((s) => s.outcome === 'exists'),
+      again.stdout,
+    );
+    assert.equal(await read(dir, 'next.config.ts'), edited);
+  });
+
+  test('cacheComponents: one-line objects, an already wrapped config', async () => {
+    const cases = [
+      ['export default {};\n', 'export default withFoliwake({ cacheComponents: true });\n'],
+      [
+        'export default { reactStrictMode: true };\n',
+        'export default withFoliwake({ cacheComponents: true, reactStrictMode: true });\n',
+      ],
+      [
+        `${IMPORT}\nconst c = {};\nexport default withFoliwake(c);\n`,
+        `${IMPORT}\nconst c = { cacheComponents: true };\nexport default withFoliwake(c);\n`,
+      ],
+    ];
+    for (const [before, after] of cases) {
+      const dir = await app({ files: { 'next.config.mjs': before } });
+      assert.equal((await init(dir, ['--url', site.origin, '--yes'])).code, 0);
+      assert.equal(await read(dir, 'next.config.mjs'), before.startsWith(IMPORT) ? after : `${IMPORT}\n${after}`);
+    }
+  });
+
+  test('cacheComponents: other forms are left alone and the line to add is printed', async () => {
+    const forms = [
+      'import base from "./base.mjs";\nexport default base;\n',
+      'export default { cacheComponents: false };\n',
+    ];
+    for (const text of forms) {
+      const dir = await app({ files: { 'next.config.mjs': text } });
+      const run = await init(dir, ['--url', site.origin, '--yes', '--json']);
+      const cache = run.json().steps.find((s) => s.what.startsWith('cacheComponents'));
+      assert.equal(cache.outcome, 'manual');
+      assert.match(cache.note, /add `cacheComponents: true,` to the config/);
+      assert.equal(run.json().ok, false);
+      assert.doesNotMatch(await read(dir, 'next.config.mjs'), /cacheComponents: true/);
+    }
   });
 
   test('CommonJS next.config: left alone, the steps printed', async () => {
