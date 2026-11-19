@@ -1,6 +1,6 @@
 {
   "name": "@foliwake/site-check",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "The checks the Foliwake platform runs on a site's code repository (block definitions, templates, site.yaml, query.yaml, access.yaml, reference tables, layout, script and stylesheet references), as a library and the CLI `foliwake-site-check`.",
   "license": "Apache-2.0",
   "type": "module",

@@ -7,6 +7,13 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.10.0
+
+### Patch Changes
+
+- Updated dependencies [339fb47]
+  - @foliwake/blocks-contract@0.10.0
+
 ## 0.9.0
 
 ### Patch Changes

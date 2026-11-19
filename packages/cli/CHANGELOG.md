@@ -1,5 +1,37 @@
 # @foliwake/cli
 
+## 0.10.0
+
+### Minor Changes
+
+- ea82b05: `foliwake site preview-token --site <id>` shows a site's preview token (HTTP Basic user `preview`) for an app that
+  reads preview, as `FOLIWAKE_PREVIEW_TOKEN`. The server answers only site admins and writes an audit entry for every
+  answer, without the value (core `sites.previewToken`, in the contract synced from the engine). A server without
+  the operation says so.
+- d53aa34: `npx @foliwake/next init` (bin `foliwake-next`, no extra dependencies) sets up a Next app: checks the site
+  (discovery, `X-Code-Release` on `/index.plain.html`), writes `FOLIWAKE_URL` to `.env.local`, wraps `next.config` in
+  `withFoliwake()` (two ES module forms; otherwise it prints the steps), and adds `app/foliwake/[...path]/route.ts`
+  and `app/[...path]/page.tsx`. `--preview` adds a preview route behind a development-only `isAuthor()` and an empty
+  `FOLIWAKE_PREVIEW_TOKEN=`; `--hook`, `--mount /pages`, `--dry-run`, `--json`, `--force` (only files it generated),
+  `--yes` (or `CI=1`; needs `--url`), `--ignore-git-changes`, and `--check` to check an existing setup. Exit codes 0,
+  1 (error) and 2 (input needed); env equivalents `FOLIWAKE_INIT_*`. It never writes or prints a secret value.
+  `foliwake next init` in `@foliwake/cli` runs the same wizard.
+
+### Patch Changes
+
+- 886f4b4: The command reference in the README escapes `<…>` in flag descriptions, so they show on npm and on the documentation site.
+- Updated dependencies [339fb47]
+- Updated dependencies [ea82b05]
+- Updated dependencies [69caab7]
+- Updated dependencies [df85d39]
+- Updated dependencies [0bb04d6]
+  - @foliwake/blocks-contract@0.10.0
+  - @foliwake/server@0.10.0
+  - @foliwake/site-check@0.10.0
+  - @foliwake/core-contract@0.10.0
+  - @foliwake/block-kit@0.10.0
+  - create-foliwake@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes

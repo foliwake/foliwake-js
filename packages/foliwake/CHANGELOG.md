@@ -1,5 +1,14 @@
 # foliwake
 
+## 0.10.0
+
+### Patch Changes
+
+- Updated dependencies [886f4b4]
+- Updated dependencies [ea82b05]
+- Updated dependencies [d53aa34]
+  - @foliwake/cli@0.10.0
+
 ## 0.9.0
 
 ### Patch Changes

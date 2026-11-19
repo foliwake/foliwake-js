@@ -7,6 +7,39 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.10.0
+
+### Minor Changes
+
+- 339fb47: A page's code release names its blocks module. `readEnvelope` reads `X-Foliwake-Blocks`
+  (`entry="scripts/blocks.js", contract=2, prefix="demo"`) into `envelope.blocks`; with a version 3 config without
+  `app.blocks`, `preparePage` mounts that entry with its contract and event prefix (`app.blocks` still wins, and a
+  version 2 config is unchanged). Preload hints follow the page's entry. `FoliwakePageData.title` is the text of the
+  body's first `<h1>`. `@foliwake/site-check` accepts and checks the optional `blocks` key of
+  `components/components.json` with the engine's rule (an entry under scripts, components or _foliwake ending in .js
+  that exists, a contract major, an event prefix).
+- 69caab7: Configure an app by one address. `@foliwake/server/discovery` reads a site's `/.well-known/foliwake.json`
+  (no redirects, 5 s, one retry, at most 16 KiB; `live.url` must be the origin it was read from; the discovery format
+  and the plain contract are checked). `@foliwake/server/resolve` builds the app config from `FOLIWAKE_URL` and the
+  optional `foliwake.remote.json` version 3 (overrides only: pages, revalidate, proxies, media, blocks, auth by
+  variable name; schema `schemas/remote-3.schema.json`, also shipped in `@foliwake/next`). Defaults: pages `/**`
+  (required explicitly when live uses a service token), proxies `/foliwake/code` and `/foliwake/media`, preview
+  read with Basic `preview` and `FOLIWAKE_PREVIEW_TOKEN`. A version 2 file without `FOLIWAKE_URL` works unchanged.
+  `FoliwakeAppConfig.version` is now `2 | 3` and `app.blocks` has `fromRelease`. The compatibility metadata is
+  `remoteConfig: 3, discovery: 1`.
+- df85d39: `@foliwake/server/handler`: `createFoliwakeHandler()` serves every Foliwake route of an app as one
+  `(request: Request) => Promise<Response>` on the Web Fetch API, for any framework: the code and media proxies under
+  the config's prefixes (`/foliwake/code`, `/foliwake/media` by default), `POST /foliwake/hook` (secret in
+  `FOLIWAKE_HOOK_SECRET`, `onDelivery` for the app's caches) and `GET /foliwake/health`. Preview is off unless
+  `authorizePreview` is given. The config is read on the first request (`FOLIWAKE_URL`), or passed as `config`.
+  The hook endpoint core moved from `@foliwake/next` to `@foliwake/server/hook-endpoint` (`createHookEndpoint`);
+  a ping of the Next route still answers `@foliwake/next/<version>`. New guide: "Any framework: one handler".
+
+### Patch Changes
+
+- Updated dependencies [339fb47]
+  - @foliwake/blocks-contract@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes
