@@ -4,7 +4,7 @@
 export const CORE_API = 1;
 
 /** The digest of the contract; `GET /api/version` of a server with the same contract answers it too. */
-export const CONTRACT_DIGEST = "3a132926ee914ed6";
+export const CONTRACT_DIGEST = "54c29f4310c18c30";
 
 /** Every procedure of core over HTTP and its kind. */
 export const PROCEDURES: Readonly<Record<string, 'query' | 'mutation'>> = Object.freeze({
@@ -56,6 +56,7 @@ export const PROCEDURES: Readonly<Record<string, 'query' | 'mutation'>> = Object
   "sites.get": 'query',
   "sites.history": 'query',
   "sites.list": 'query',
+  "sites.previewToken": 'mutation',
   "sites.resetStorage": 'mutation',
   "sites.resetStoragePlan": 'query',
   "sites.status": 'query',

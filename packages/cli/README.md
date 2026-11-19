@@ -562,6 +562,13 @@ Link this project folder to an existing site on your Foliwake server (developer 
 
 Configured sites with hosts, repositories and bindings (core sites.list)
 
+### `foliwake site preview-token`
+
+A site's preview token, for an app that reads preview (HTTP Basic, user preview); site admins only, and every answer is
+written to the audit log without the value (core sites.previewToken)
+
+- `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
+
 ### `foliwake site reset-storage`
 
 Recreate a site's storage in one action: archive its state, delete its objects in its own bucket, bind both again,
