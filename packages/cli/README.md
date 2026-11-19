@@ -373,6 +373,10 @@ Rebuild every live page against prepared code as the preview; live is unchanged 
 - `--rev <value>`: the commit the code was prepared from, recorded with the preview
 - `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
 
+### `foliwake next init`
+
+Set up Foliwake pages in this Next.js app (runs `npx @foliwake/next init`)
+
 ### `foliwake operation cancel [id]`
 
 Ask a long operation to stop: a queued one stops at once, a running one when it can (core operations.cancel)

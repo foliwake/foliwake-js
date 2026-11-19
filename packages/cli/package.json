@@ -31,6 +31,7 @@
       "branch": { "description": "Branch previews" },
       "code": { "description": "Code releases: prepare, release and roll back the site's JS/CSS" },
       "credential": { "description": "Credential values the content sources name (stored on the server, never shown)" },
+      "next": { "description": "Next.js apps that show Foliwake pages" },
       "migration": { "description": "Whole-site rebuilds against new code, released as one" },
       "operation": { "description": "Long operations: their state, cancellation and recovery" },
       "org": { "description": "Organisations of the server" },

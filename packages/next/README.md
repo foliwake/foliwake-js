@@ -21,6 +21,19 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 | `@foliwake/next/revalidate` | `foliwakeRevalidateHandler`: the route of the hook a Foliwake server calls after a change |
 | `@foliwake/next/client` | `'use client'`: everything of `@foliwake/react` |
 
+## Quick start
+
+```bash
+npm install @foliwake/next
+npx @foliwake/next init --url https://my-site.example.org
+npm run dev
+```
+
+`init` writes `FOLIWAKE_URL` to `.env.local`, wraps `next.config` in `withFoliwake()`, and adds
+`app/foliwake/[...path]/route.ts` (code, media, hook) and `app/[...path]/page.tsx` (site pages). It is idempotent,
+never overwrites your files, writes no secret values, and takes `--preview`, `--hook`, `--mount /pages`, `--dry-run`,
+`--json`, `--check` and `--yes` (`npx @foliwake/next init --help`).
+
 ## Install
 
 The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
