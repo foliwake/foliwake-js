@@ -669,4 +669,8 @@ interface FoliwakeRevalidateOptions
 
 A file, not a module: `schemas/remote-2.schema.json` in the package.
 
+### `@foliwake/next/schemas/remote-3.schema.json`
+
+A file, not a module: `schemas/remote-3.schema.json` in the package.
+
 <!-- apistop -->

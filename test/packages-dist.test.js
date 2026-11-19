@@ -43,7 +43,7 @@ test('one coordinated 0.x version, compatibility metadata, public npm metadata',
   for (const name of NAMES) {
     const m = manifest(name);
     assert.equal(m.name, PACKAGES.find((p) => p.dir === name).name);
-    const app = { plain: 2, blocksContract: 2, remoteConfig: 2 };
+    const app = { plain: 2, blocksContract: 2, remoteConfig: 3, discovery: 1 };
     const compatibility = APP_PACKAGES.includes(name) ? app : (METADATA[name] ?? FORMATS);
     assert.deepEqual(m.foliwake, compatibility, name);
     const publicOnNpm = { access: 'public', provenance: true };

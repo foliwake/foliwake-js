@@ -38,7 +38,7 @@ const withApp = (app) => ({ ...base(), app: { ...base().app, ...app } });
 
 // [description, config, expected error pattern]; the schema must refuse the same ones.
 const REFUSED = [
-  ['version 3', { ...base(), version: 3 }, /unsupported "version" 3; it must be 2/],
+  ['version 3', { ...base(), version: 3 }, /version 3 holds overrides only; set FOLIWAKE_URL/],
   ['no site', { ...base(), site: undefined }, /"site"/],
   ['bad site', { ...base(), site: 'Acme' }, /"site"/],
   ['no channel', { version: 2, site: 'x', app: base().app }, /at least one of "live" and "preview"/],
@@ -102,11 +102,11 @@ describe('config v2', () => {
     const config = parseFoliwakeConfig(JSON.stringify(base()));
     assert.equal(config.site, 'acme');
     assert.deepEqual(config.live, { origin: 'https://live.example.org', auth });
-    assert.deepEqual(config.app.blocks, { entry: 'scripts/blocks.js', contract: 'foliwake-blocks/2', major: 2, eventPrefix: 'acme' });
+    assert.deepEqual(config.app.blocks, { entry: 'scripts/blocks.js', contract: 'foliwake-blocks/2', major: 2, eventPrefix: 'acme', fromRelease: false });
     assert.ok(Object.isFrozen(config));
     const minimal = parseFoliwakeConfig(JSON.stringify({ version: 2, site: 's', live: { url: 'http://127.0.0.1:9' }, app: { pages: ['/**'] } }));
     assert.deepEqual(minimal.app.proxies, { code: '/foliwake-code', media: '/foliwake-media', pages: null });
-    assert.deepEqual(minimal.app.blocks, { entry: null, contract: 'foliwake-blocks/2', major: 2, eventPrefix: 'block' });
+    assert.deepEqual(minimal.app.blocks, { entry: null, contract: 'foliwake-blocks/2', major: 2, eventPrefix: 'block', fromRelease: false });
     assert.equal(minimal.app.revalidate, 300);
     assert.equal(minimal.app.media, null);
     assert.equal(minimal.preview, null);

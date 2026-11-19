@@ -19,7 +19,10 @@ directly with another server framework (a Vite or Remix server, Hono, Express wi
 | `@foliwake/server/csp` | `foliwakeCsp` |
 | `@foliwake/server/preload` | `preloadHints`: modulepreload and stylesheet hints for a page's blocks |
 | `@foliwake/server/hook` | `verifyFoliwakeSignature`, `parseFoliwakeHook`: the signed hook a Foliwake server sends after a change |
-| `@foliwake/server/schemas/remote-2.schema.json` | the JSON Schema of the config file |
+| `@foliwake/server/discovery` | `fetchDiscovery`, `parseDiscovery`: the site's `/.well-known/foliwake.json` |
+| `@foliwake/server/resolve` | `loadAppConfig`, `readConfigSnapshot`, `configFromSnapshot`: `FOLIWAKE_URL` + discovery + the optional version 3 file, or a version 2 file |
+| `@foliwake/server/schemas/remote-2.schema.json` | the JSON Schema of the config file (version 2) |
+| `@foliwake/server/schemas/remote-3.schema.json` | the JSON Schema of the optional version 3 file (overrides) |
 
 ## Install
 
@@ -424,7 +427,7 @@ interface BasicAuth
 
 #### `FoliwakeAppConfig`
 
-A parsed and validated `foliwake.remote.json` (version 2). It holds credential variable names, never secrets.
+A validated app config: a `foliwake.remote.json` version 2, or (version 3) the site's discovery document merged with the optional version 3 file. It holds credential variable names, never secrets.
 
 ```ts
 interface FoliwakeAppConfig
@@ -432,7 +435,7 @@ interface FoliwakeAppConfig
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `version` | `2` |  |
+| `version` | `2 \| 3` |  |
 | `site` | `string` |  |
 | `live` | `FoliwakeEndpoint \| null` |  |
 | `preview` | `FoliwakeEndpoint \| null` |  |
@@ -451,7 +454,7 @@ interface FoliwakeAppSettings
 | --- | --- | --- |
 | `pages` | `readonly string[]` | Page globs the app may read. |
 | `proxies` | `{ code: string; media: string; pages: null; }` | App-origin URL prefixes of the proxies. |
-| `blocks` | `{ entry: string \| null; contract: string; major: number; eventPrefix: string; }` | Where `mountBlocks` lives in a code release; null: bodies stay static. |
+| `blocks` | `{ entry: string \| null; contract: string; major: number; eventPrefix: string; fromRelease: boolean; }` | Where `mountBlocks` lives in a code release; null: bodies stay static. `fromRelease`: the config names no blocks (version 3), so each page's code release names them (`X-Foliwake-Blocks`); false for version 2. |
 | `media` | `{ base: string; transform: 'cloudflare-images' \| null; } \| null` | Live media through a transforming host; null: media through the proxy. |
 | `revalidate` | `number` | Seconds before a cached envelope is stale (stale-while-revalidate). |
 
@@ -1219,8 +1222,188 @@ Why a signature was refused.
 type SignatureFailure = 'malformed' | 'expired' | 'mismatch' | 'no_secret'
 ```
 
+### `@foliwake/server/discovery`
+
+**Functions and components**
+
+#### `fetchDiscovery()`
+
+Reads and validates the discovery document of the site at `siteUrl` (FOLIWAKE_URL: https, or http for loopback hosts; origin only). 5 s per attempt, one retry, no redirects, at most 16 KiB of JSON.
+
+```ts
+function fetchDiscovery(siteUrl: string, opts?: FetchDiscoveryOptions): Promise<FoliwakeDiscovery>
+```
+
+**Returns** `Promise<FoliwakeDiscovery>`
+
+#### `parseDiscovery()`
+
+Validates a discovery document read from `origin` (the scheme, host and port of FOLIWAKE_URL). Throws FoliwakeConfigError naming the field.
+
+```ts
+function parseDiscovery(value: unknown, origin: string): FoliwakeDiscovery
+```
+
+**Returns** `FoliwakeDiscovery`
+
+**Constants**
+
+#### `DISCOVERY_LIMIT`
+
+The largest discovery document read, in bytes.
+
+```ts
+const DISCOVERY_LIMIT: number
+```
+
+#### `DISCOVERY_PATH`
+
+Where a site serves its discovery document, on each of its hosts.
+
+```ts
+const DISCOVERY_PATH = "/.well-known/foliwake.json"
+```
+
+#### `DISCOVERY_VERSION`
+
+The major of the discovery format this package reads.
+
+```ts
+const DISCOVERY_VERSION = 1
+```
+
+#### `PLAIN_CONTRACT`
+
+The plain HTML contract this package reads (`X-Code-Release` on `.plain.html`).
+
+```ts
+const PLAIN_CONTRACT = 2
+```
+
+#### `URL_ENV`
+
+The environment variable with the site's live origin.
+
+```ts
+const URL_ENV = "FOLIWAKE_URL"
+```
+
+**Interfaces**
+
+#### `FetchDiscoveryOptions`
+
+Options of `fetchDiscovery`.
+
+```ts
+interface FetchDiscoveryOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `fetch?` | `typeof fetch` | A fetch implementation (tests); default globalThis.fetch. |
+| `timeoutMs?` | `number` | Per attempt; default 5000. |
+
+#### `FoliwakeDiscovery`
+
+A validated discovery document. Unknown keys are ignored, so a newer engine may add some.
+
+```ts
+interface FoliwakeDiscovery
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `site` | `string` |  |
+| `live` | `{ url: string; }` |  |
+| `preview` | `{ url: string; } \| null` | Null when the site has no preview host. Its Basic user is always `preview`. |
+| `media` | `{ cdn: string; } \| null` | The CDN that resizes live images (its origin), or null. |
+| `contracts` | `{ plain: number; html: number \| null; blocks: number \| null; hook: number \| null; }` |  |
+
+### `@foliwake/server/resolve`
+
+**Functions and components**
+
+#### `configFromSnapshot()`
+
+The app config of a snapshot (no I/O). Throws FoliwakeConfigError naming the field.
+
+```ts
+function configFromSnapshot(snapshot: FoliwakeConfigSnapshot): FoliwakeAppConfig
+```
+
+**Returns** `FoliwakeAppConfig`
+
+#### `loadAppConfig()`
+
+readConfigSnapshot, then configFromSnapshot.
+
+```ts
+function loadAppConfig(opts?: ReadSnapshotOptions): Promise<FoliwakeAppConfig>
+```
+
+**Returns** `Promise<FoliwakeAppConfig>`
+
+#### `readConfigSnapshot()`
+
+Reads the inputs: FOLIWAKE_URL and its discovery document (fetched now), and the config file when there is one (a file named explicitly or by FOLIWAKE_REMOTE must exist). Throws FoliwakeConfigError.
+
+```ts
+function readConfigSnapshot(opts?: ReadSnapshotOptions): Promise<FoliwakeConfigSnapshot>
+```
+
+**Returns** `Promise<FoliwakeConfigSnapshot>`
+
+**Constants**
+
+#### `PREVIEW_TOKEN_ENV`
+
+The variable the default preview credential reads: Basic `preview:<site preview token>`.
+
+```ts
+const PREVIEW_TOKEN_ENV = "FOLIWAKE_PREVIEW_TOKEN"
+```
+
+**Interfaces**
+
+#### `FoliwakeConfigSnapshot`
+
+The inputs of an app's config, as plain JSON.
+
+```ts
+interface FoliwakeConfigSnapshot
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `url` | `string \| null` | FOLIWAKE_URL, or null. |
+| `discovery` | `FoliwakeDiscovery \| null` | The site's discovery document read from `url`, or null without it. |
+| `file` | `string \| null` | The config file's name (for messages) and text, or null when there is none. |
+| `text` | `string \| null` |  |
+
+#### `ReadSnapshotOptions`
+
+Options of `readConfigSnapshot` and `loadAppConfig`.
+
+```ts
+interface ReadSnapshotOptions extends FetchDiscoveryOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `cwd?` | `string` |  |
+| `env?` | `NodeJS.ProcessEnv` | Default process.env: FOLIWAKE_URL, FOLIWAKE_REMOTE. |
+| `file?` | `string` | The config file (default FOLIWAKE_REMOTE, else ./foliwake.remote.json). |
+
+**Also exported** (documented where they are defined)
+
+- from `@foliwake/server/discovery`: `DISCOVERY_PATH`, `FoliwakeDiscovery`, `URL_ENV`
+
 ### `@foliwake/server/schemas/remote-2.schema.json`
 
 A file, not a module: `schemas/remote-2.schema.json` in the package.
+
+### `@foliwake/server/schemas/remote-3.schema.json`
+
+A file, not a module: `schemas/remote-3.schema.json` in the package.
 
 <!-- apistop -->
