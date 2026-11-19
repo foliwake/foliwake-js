@@ -21,6 +21,8 @@
     "./csp": { "types": "./dist/csp.d.ts", "default": "./dist/csp.js" },
     "./preload": { "types": "./dist/preload.d.ts", "default": "./dist/preload.js" },
     "./hook": { "types": "./dist/hook.d.ts", "default": "./dist/hook.js" },
+    "./handler": { "types": "./dist/handler.d.ts", "default": "./dist/handler.js" },
+    "./hook-endpoint": { "types": "./dist/hook-endpoint.d.ts", "default": "./dist/hook-endpoint.js" },
     "./discovery": { "types": "./dist/discovery.d.ts", "default": "./dist/discovery.js" },
     "./resolve": { "types": "./dist/resolve.d.ts", "default": "./dist/resolve.js" },
     "./schemas/remote-2.schema.json": "./schemas/remote-2.schema.json",

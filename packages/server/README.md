@@ -19,6 +19,8 @@ directly with another server framework (a Vite or Remix server, Hono, Express wi
 | `@foliwake/server/csp` | `foliwakeCsp` |
 | `@foliwake/server/preload` | `preloadHints`: modulepreload and stylesheet hints for a page's blocks |
 | `@foliwake/server/hook` | `verifyFoliwakeSignature`, `parseFoliwakeHook`: the signed hook a Foliwake server sends after a change |
+| `@foliwake/server/handler` | `createFoliwakeHandler`: every Foliwake route of an app (code, media, hook, health) as one `(request) => Promise<Response>` |
+| `@foliwake/server/hook-endpoint` | `createHookEndpoint`: the hook endpoint without a framework (verify, parse, expire, answer) |
 | `@foliwake/server/discovery` | `fetchDiscovery`, `parseDiscovery`: the site's `/.well-known/foliwake.json` |
 | `@foliwake/server/resolve` | `loadAppConfig`, `readConfigSnapshot`, `configFromSnapshot`: `FOLIWAKE_URL` + discovery + the optional version 3 file, or a version 2 file |
 | `@foliwake/server/schemas/remote-2.schema.json` | the JSON Schema of the config file (version 2) |
@@ -1242,6 +1244,157 @@ Why a signature was refused.
 ```ts
 type SignatureFailure = 'malformed' | 'expired' | 'mismatch' | 'no_secret'
 ```
+
+### `@foliwake/server/handler`
+
+**Functions and components**
+
+#### `createFoliwakeHandler()`
+
+The Foliwake routes of an app as one `(request) => Promise<Response>`. The config is read on the first request (FOLIWAKE_URL and its discovery document, unless `config` is given) and kept; a failed read is tried again on the next request and answers 503 meanwhile.
+
+```ts
+function createFoliwakeHandler(opts?: FoliwakeHandlerOptions): FoliwakeFetchHandler
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `opts?` | `FoliwakeHandlerOptions` | `config`, `base`, `authorizePreview` (default false), `hook`, `env`, `fetch`, `log`. |
+
+**Returns** `FoliwakeFetchHandler`
+
+**Constants**
+
+#### `HANDLER_BASE`
+
+Where the handler is mounted by default: `/foliwake/hook`, `/foliwake/health`.
+
+```ts
+const HANDLER_BASE = "/foliwake"
+```
+
+#### `HOOK_SECRET_ENV`
+
+The variable the hook's shared secret is read from by default.
+
+```ts
+const HOOK_SECRET_ENV = "FOLIWAKE_HOOK_SECRET"
+```
+
+**Interfaces**
+
+#### `FoliwakeHandlerOptions`
+
+Options of `createFoliwakeHandler`.
+
+```ts
+interface FoliwakeHandlerOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `config?` | `FoliwakeAppConfig \| (() => FoliwakeAppConfig \| Promise<FoliwakeAppConfig>)` | The app config, or how to get it; default loadAppConfig() (FOLIWAKE_URL + the optional file), once. |
+| `base?` | `string` | The app path of the hook and health routes; default `/foliwake`. |
+| `authorizePreview?` | `AuthorizePreview` | The app's author check for preview files; default `false` (preview answers 404). |
+| `hook?` | `false \| FoliwakeHookOptions` | The hook endpoint's options; `false` answers 404 on `<base>/hook`. |
+| `env?` | `NodeJS.ProcessEnv` | Where secrets and FOLIWAKE_URL are read; default process.env. |
+| `fetch?` | `typeof fetch` | A fetch implementation (tests); default globalThis.fetch. |
+| `log?` | `Pick<Console, 'warn' \| 'error'>` |  |
+
+#### `FoliwakeHookOptions`
+
+The hook endpoint of the handler.
+
+```ts
+interface FoliwakeHookOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `secretEnv?` | `string` | The variable holding the shared secret; default FOLIWAKE_HOOK_SECRET. |
+| `previousSecretEnv?` | `string` | While the secret is rotated: the variable holding the previous one, also accepted. |
+| `onDelivery?` | `(payload: FoliwakeDeliveryPayload) => void \| Promise<void>` | Called for every delivery (expire your own caches here); a throw answers 500 and the server retries. |
+| `toleranceS?` | `number` | The allowed clock distance of the signature, in seconds; default 300. |
+| `endpoint?` | `(request: Request) => Promise<Response>` | Replaces the endpoint (a framework adapter's own, such as Next's tag expiry). |
+
+**Types**
+
+#### `FoliwakeFetchHandler`
+
+A request handler on the Web Fetch API.
+
+```ts
+type FoliwakeFetchHandler = (request: Request) => Promise<Response>
+```
+
+### `@foliwake/server/hook-endpoint`
+
+**Functions and components**
+
+#### `createHookEndpoint()`
+
+The hook endpoint as a function of a Request: 413 over 64 KiB, 401 on a bad or expired signature, 400 on a body that is not a payload or names another site, 200 otherwise.
+
+```ts
+function createHookEndpoint(deps: HookEndpointDeps): (request: Request) => Promise<Response>
+```
+
+**Returns** `(request: Request) => Promise<Response>`
+
+#### `deliveryTags()`
+
+The tags a delivery expires: the site's live tag on `all`, else one tag per listed path.
+
+```ts
+function deliveryTags(payload: FoliwakeDeliveryPayload, liveTag: (path?: string) => string): string[]
+```
+
+**Returns** `string[]`
+
+#### `warmPaths()`
+
+The pages read again after a delivery: none on `all`, page paths only, at most WARM_LIMIT.
+
+```ts
+function warmPaths(payload: FoliwakeDeliveryPayload): string[]
+```
+
+**Returns** `string[]`
+
+**Constants**
+
+#### `WARM_LIMIT`
+
+At most this many pages are read again right after a delivery (`warm`); never on `all`.
+
+```ts
+const WARM_LIMIT = 20
+```
+
+**Interfaces**
+
+#### `HookEndpointDeps`
+
+What the endpoint needs from the framework and from the app.
+
+```ts
+interface HookEndpointDeps
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `site` | `string` | The configured site. |
+| `sdk` | `string` | What a `ping` answers as `sdk`: the package and its version (`@foliwake/next/0.9.0`). |
+| `secrets()` | `() => (string \| undefined)[]` | The accepted secrets, read per request (current, then previous). |
+| `liveTag()` | `(path?: string) => string` | The live tag of the site (no path) or of one path. |
+| `expire()` | `(tag: string) => void` | Expires one tag (revalidateTag with the chosen profile). |
+| `warm()` | `(path: string) => Promise<unknown>` | Reads one page into the cache again. |
+| `schedule()` | `(task: () => Promise<void>) => void` | Runs work after the response is sent. |
+| `warmPages` | `boolean` | Whether pages are read again after a delivery. |
+| `onDelivery?` | `(payload: FoliwakeDeliveryPayload) => void \| Promise<void>` |  |
+| `toleranceS?` | `number` |  |
+| `now?` | `() => number` |  |
+| `log` | `Pick<Console, 'warn' \| 'error'>` |  |
 
 ### `@foliwake/server/discovery`
 

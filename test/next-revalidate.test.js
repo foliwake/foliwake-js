@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, test } from 'node:test';
 import { signFoliwakeHook } from '@foliwake/server/hook';
-import { createRevalidateHandler, WARM_LIMIT } from '../packages/next/dist/revalidate-core.js';
+import { createHookEndpoint, WARM_LIMIT } from '@foliwake/server/hook-endpoint';
+import { SDK } from '../packages/next/dist/version.js';
 
 const SECRET = 's'.repeat(40);
 const PREVIOUS = 'p'.repeat(40);
@@ -29,8 +30,9 @@ const PING = { version: 1, event: 'ping', site: 'demo', sentAt: '2026-11-18T12:0
 
 function harness(extra = {}) {
   const calls = { expired: [], warmed: [], delivered: [], scheduled: [], logged: [] };
-  const handler = createRevalidateHandler({
+  const handler = createHookEndpoint({
     site: 'demo',
+    sdk: SDK,
     secrets: () => [SECRET, extra.previous],
     liveTag: (path) => (path === undefined ? 'foliwake:demo:live' : `foliwake:demo:live:page:${path}`),
     expire: (tag) => calls.expired.push(tag),
@@ -77,8 +79,9 @@ describe('signature and window', () => {
   });
 
   test('no secret configured → 500, never accepted', async () => {
-    const handler = createRevalidateHandler({
+    const handler = createHookEndpoint({
       site: 'demo',
+      sdk: SDK,
       secrets: () => [undefined],
       liveTag: () => 'x',
       expire: () => assert.fail('expired'),

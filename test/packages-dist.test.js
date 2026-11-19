@@ -20,10 +20,12 @@ const METADATA = { 'block-kit': { blocksContract: 2 }, 'core-contract': { coreAp
 const read = (rel) => readFileSync(path.join(ROOT, rel), 'utf8');
 const manifest = (name) => JSON.parse(read(`packages/${name}/package.json`));
 
-test('the hook endpoint of @foliwake/next answers a ping with the built version', () => {
-  const core = read('packages/next/dist/revalidate-core.js');
-  assert.doesNotMatch(core, /__FOLIWAKE_NEXT_VERSION__/);
-  assert.ok(core.includes(`'@foliwake/next/${manifest('next').version}'`));
+test('the hook endpoints answer a ping with the built version', () => {
+  for (const name of ['next', 'server']) {
+    const stamped = read(`packages/${name}/dist/version.js`);
+    assert.doesNotMatch(stamped, /__FOLIWAKE_[A-Z]+_VERSION__/);
+    assert.ok(stamped.includes(`'@foliwake/${name}/${manifest(name).version}'`), name);
+  }
 });
 
 test("'use client', 'use cache' and the runtime import comments are kept in dist/", () => {

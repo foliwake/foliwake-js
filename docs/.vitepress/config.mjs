@@ -53,6 +53,7 @@ export default defineConfig({
         items: [
           { text: 'Next.js', link: '/embed/next' },
           { text: 'Another React app', link: '/embed/react' },
+          { text: 'Any framework: one handler', link: '/embed/any-framework' },
           { text: 'Other frameworks, or none', link: '/embed/other-frameworks' },
           { text: 'Troubleshooting', link: '/embed/troubleshooting' },
         ],

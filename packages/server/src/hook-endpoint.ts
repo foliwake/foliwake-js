@@ -1,5 +1,6 @@
-// The hook endpoint without Next: verify, parse, expire tags, answer. `revalidate.ts` wires it to next/cache,
-// next/server and the app's config; tests drive it directly with plain Request objects.
+// The hook endpoint without a framework: verify, parse, expire tags, answer. `@foliwake/next/revalidate` wires it to
+// next/cache and next/server; `@foliwake/server/handler` uses it with the app's own callbacks; tests drive it with
+// plain Request objects.
 import {
   FoliwakeHookError,
   HOOK_BODY_LIMIT,
@@ -8,18 +9,17 @@ import {
   verifyFoliwakeSignature,
   type FoliwakeDeliveryPayload,
   type FoliwakeHookPayload,
-} from '@foliwake/server/hook';
-
-/** Replaced by the package's version when it is built (tools/build.mjs). */
-const SDK = '@foliwake/next/__FOLIWAKE_NEXT_VERSION__';
+} from './hook.js';
 
 /** At most this many pages are read again right after a delivery (`warm`); never on `all`. */
 export const WARM_LIMIT = 20;
 
-/** What the endpoint needs from Next and from the app. */
-export interface RevalidateDeps {
+/** What the endpoint needs from the framework and from the app. */
+export interface HookEndpointDeps {
   /** The configured site. */
   site: string;
+  /** What a `ping` answers as `sdk`: the package and its version (`@foliwake/next/0.9.0`). */
+  sdk: string;
   /** The accepted secrets, read per request (current, then previous). */
   secrets(): (string | undefined)[];
   /** The live tag of the site (no path) or of one path. */
@@ -93,7 +93,7 @@ export function warmPaths(payload: FoliwakeDeliveryPayload): string[] {
   return (payload.pages ?? []).filter(isFoliwakePagePath).slice(0, WARM_LIMIT);
 }
 
-function scheduleWarm(deps: RevalidateDeps, payload: FoliwakeDeliveryPayload): void {
+function scheduleWarm(deps: HookEndpointDeps, payload: FoliwakeDeliveryPayload): void {
   const paths = warmPaths(payload);
   if (!deps.warmPages || paths.length === 0) return;
   deps.schedule(async () => {
@@ -103,7 +103,7 @@ function scheduleWarm(deps: RevalidateDeps, payload: FoliwakeDeliveryPayload): v
   });
 }
 
-async function deliver(deps: RevalidateDeps, payload: FoliwakeDeliveryPayload): Promise<Response> {
+async function deliver(deps: HookEndpointDeps, payload: FoliwakeDeliveryPayload): Promise<Response> {
   const tags = deliveryTags(payload, deps.liveTag);
   for (const tag of tags) deps.expire(tag);
   try {
@@ -116,7 +116,7 @@ async function deliver(deps: RevalidateDeps, payload: FoliwakeDeliveryPayload): 
   return answer(200, { ok: true, revalidated: tags });
 }
 
-function verified(deps: RevalidateDeps, body: Uint8Array, request: Request): Response | null {
+function verified(deps: HookEndpointDeps, body: Uint8Array, request: Request): Response | null {
   const check = verifyFoliwakeSignature(body, request.headers.get('foliwake-signature'), deps.secrets(), {
     now: deps.now?.(),
     toleranceS: deps.toleranceS,
@@ -141,7 +141,7 @@ function eventMismatch(request: Request, payload: FoliwakeHookPayload): boolean 
   return event !== null && event !== payload.event;
 }
 
-async function handle(deps: RevalidateDeps, request: Request): Promise<Response> {
+async function handle(deps: HookEndpointDeps, request: Request): Promise<Response> {
   if (request.method !== 'POST') return refuse(405, 'method_not_allowed');
   const body = await readBody(request);
   const refused = verified(deps, body, request);
@@ -150,7 +150,7 @@ async function handle(deps: RevalidateDeps, request: Request): Promise<Response>
   if (payload instanceof Response) return payload;
   if (eventMismatch(request, payload)) return refuse(400, 'Foliwake-Event does not match the body');
   if (payload.site !== deps.site) return refuse(400, `this app serves the site ${deps.site}`);
-  if (payload.event === 'ping') return answer(200, { ok: true, site: deps.site, sdk: SDK });
+  if (payload.event === 'ping') return answer(200, { ok: true, site: deps.site, sdk: deps.sdk });
   return deliver(deps, payload);
 }
 
@@ -158,7 +158,7 @@ async function handle(deps: RevalidateDeps, request: Request): Promise<Response>
  * The hook endpoint as a function of a Request: 413 over 64 KiB, 401 on a bad or expired signature, 400 on a
  * body that is not a payload or names another site, 200 otherwise.
  */
-export function createRevalidateHandler(deps: RevalidateDeps): (request: Request) => Promise<Response> {
+export function createHookEndpoint(deps: HookEndpointDeps): (request: Request) => Promise<Response> {
   return async (request) => {
     try {
       return await handle(deps, request);

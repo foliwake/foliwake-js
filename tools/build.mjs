@@ -63,16 +63,19 @@ async function minifyBlockKit(staging) {
   writeFileSync(path.join(staging, 'block-kit.js'), await minifyKit(readFileSync(readable, 'utf8')));
 }
 
-/** The hook endpoint answers a ping with `@foliwake/next/<version>`: the version is stamped in at build time. */
-function stampNextVersion(staging) {
-  const file = path.join(staging, 'revalidate-core.js');
-  const { version } = JSON.parse(readFileSync(path.join(ROOT, 'packages/next/package.json'), 'utf8'));
-  writeFileSync(file, readFileSync(file, 'utf8').replace('__FOLIWAKE_NEXT_VERSION__', version));
+/** A hook endpoint answers a ping with `@foliwake/<package>/<version>`: the version is stamped in at build time. */
+function stampVersion(dir, marker) {
+  return (staging) => {
+    const file = path.join(staging, 'version.js');
+    const { version } = JSON.parse(readFileSync(path.join(ROOT, `packages/${dir}/package.json`), 'utf8'));
+    writeFileSync(file, readFileSync(file, 'utf8').replace(marker, version));
+  };
 }
 
 /** Files a package's build composes from tsc's output in dist/, after the copies. */
 const COMPOSED = {
-  next: stampNextVersion,
+  next: stampVersion('next', '__FOLIWAKE_NEXT_VERSION__'),
+  server: stampVersion('server', '__FOLIWAKE_SERVER_VERSION__'),
   'block-kit': async (staging) => {
     const kit = readFileSync(path.join(staging, 'block-kit.d.ts'), 'utf8');
     const lit = readFileSync(path.join(staging, 'lit-html.d.ts'), 'utf8');
