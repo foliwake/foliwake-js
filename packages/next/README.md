@@ -450,22 +450,17 @@ interface ReadPageOptions extends PrepareOptions
 The CSP value for this app's config (strategy A, media base included, 'unsafe-eval' in development).
 
 ```ts
-function foliwakeCspHeader(opts?: {
-    configFile?: string;
-    reportUri?: string;
-    extra?: CspOptions['extra'];
-    dev?: boolean;
-}): string
+function foliwakeCspHeader(opts?: CspHeaderOptions): string
 ```
 
 **Returns** `string`
 
 #### `withFoliwake()`
 
-Validates the Foliwake config when Next loads next.config (build and start) and makes it available to the package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages (its 'use cache' read). Throws when the file is missing or invalid, naming the field.
+Reads and validates the Foliwake config when Next loads next.config (build and start) and makes it available to the package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages (its 'use cache' read). With FOLIWAKE_URL, the site's discovery document is read now (and the optional version 3 file merged): the result is a promise, and a failure fails the build naming the address and the reason. Without it, the version 2 file is read as before. Nothing is fetched at run time.
 
 ```ts
-function withFoliwake(nextConfig?: NextConfig, opts?: WithFoliwakeOptions): NextConfig
+function withFoliwake(nextConfig?: NextConfig, opts?: WithFoliwakeOptions): FoliwakeNextConfig
 ```
 
 | Parameter | Type | Description |
@@ -473,9 +468,25 @@ function withFoliwake(nextConfig?: NextConfig, opts?: WithFoliwakeOptions): Next
 | `nextConfig?` | `NextConfig` | The app's own Next config; its `transpilePackages`, `env` and `headers` are kept. |
 | `opts?` | `WithFoliwakeOptions` |  |
 
-**Returns** `NextConfig`: The Next config to export from next.config.ts.
+**Returns** `FoliwakeNextConfig`: The Next config (or a promise of it) to export from next.config.ts.
 
 **Interfaces**
+
+#### `CspHeaderOptions`
+
+Options of `foliwakeCspHeader`.
+
+```ts
+interface CspHeaderOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `configFile?` | `string` |  |
+| `config?` | `FoliwakeAppConfig` | A config already read (withFoliwake passes it); default the version 2 file. |
+| `reportUri?` | `string` |  |
+| `extra?` | `CspOptions['extra']` |  |
+| `dev?` | `boolean` |  |
 
 #### `WithFoliwakeOptions`
 
@@ -489,6 +500,16 @@ interface WithFoliwakeOptions
 | --- | --- | --- |
 | `configFile?` | `string` | The config file (default FOLIWAKE_REMOTE, else ./foliwake.remote.json). |
 | `csp?` | `false \| { reportUri?: string; extra?: CspOptions['extra']; source?: string; }` | Adds the Content-Security-Policy header (strategy 'self-inline': `script-src 'self' 'unsafe-inline'`) to the routes matching `source` (default every route, `/:path*`). `reportUri` adds `report-uri`; `extra` adds sources per directive. `false` (default): the app sets its own; use foliwakeCspHeader() for the value. |
+
+**Types**
+
+#### `FoliwakeNextConfig`
+
+What withFoliwake returns: the config itself, or (with FOLIWAKE_URL) a promise of it; Next accepts both.
+
+```ts
+type FoliwakeNextConfig = NextConfig | Promise<NextConfig>
+```
 
 ### `@foliwake/next/page`
 

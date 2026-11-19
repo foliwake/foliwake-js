@@ -2,9 +2,10 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { NextConfig } from 'next';
-import { configFilePath, parseFoliwakeConfig } from '@foliwake/server/config';
+import { configFilePath, parseFoliwakeConfig, type FoliwakeAppConfig } from '@foliwake/server/config';
 import { foliwakeCsp, type CspOptions } from '@foliwake/server/csp';
-import { CONFIG_ENV_KEY } from './settings.js';
+import { configFromSnapshot, readConfigSnapshot, URL_ENV } from '@foliwake/server/resolve';
+import { CONFIG_ENV_KEY, type InlinedConfig } from './settings.js';
 
 /** Options of `withFoliwake`. */
 export interface WithFoliwakeOptions {
@@ -18,10 +19,27 @@ export interface WithFoliwakeOptions {
   csp?: false | { reportUri?: string; extra?: CspOptions['extra']; source?: string };
 }
 
+/** What withFoliwake returns: the config itself, or (with FOLIWAKE_URL) a promise of it; Next accepts both. */
+export type FoliwakeNextConfig = NextConfig | Promise<NextConfig>;
+
+/** Options of `foliwakeCspHeader`. */
+export interface CspHeaderOptions {
+  configFile?: string;
+  /** A config already read (withFoliwake passes it); default the version 2 file. */
+  config?: FoliwakeAppConfig;
+  reportUri?: string;
+  extra?: CspOptions['extra'];
+  dev?: boolean;
+}
+
+function readVersion2(configFile?: string): FoliwakeAppConfig {
+  const file = configFilePath({ file: configFile });
+  return parseFoliwakeConfig(readFileSync(file, 'utf8'), { file: path.basename(file) });
+}
+
 /** The CSP value for this app's config (strategy A, media base included, 'unsafe-eval' in development). */
-export function foliwakeCspHeader(opts: { configFile?: string; reportUri?: string; extra?: CspOptions['extra']; dev?: boolean } = {}): string {
-  const file = configFilePath({ file: opts.configFile });
-  const config = parseFoliwakeConfig(readFileSync(file, 'utf8'), { file: path.basename(file) });
+export function foliwakeCspHeader(opts: CspHeaderOptions = {}): string {
+  const config = opts.config ?? readVersion2(opts.configFile);
   return foliwakeCsp({
     strategy: 'self-inline',
     mediaBase: config.app?.media?.base ?? null,
@@ -31,37 +49,57 @@ export function foliwakeCspHeader(opts: { configFile?: string; reportUri?: strin
   });
 }
 
-/**
- * Validates the Foliwake config when Next loads next.config (build and start) and makes it available to the
- * package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages
- * (its 'use cache' read). Throws when the file is missing or invalid, naming the field.
- *
- * @param nextConfig - The app's own Next config; its `transpilePackages`, `env` and `headers` are kept.
- * @returns The Next config to export from next.config.ts.
- */
-export function withFoliwake(nextConfig: NextConfig = {}, opts: WithFoliwakeOptions = {}): NextConfig {
-  const file = configFilePath({ file: opts.configFile });
-  let text: string;
+function readFileText(configFile?: string): { file: string; text: string } {
+  const file = configFilePath({ file: configFile });
   try {
-    text = readFileSync(file, 'utf8');
+    return { file: path.basename(file), text: readFileSync(file, 'utf8') };
   } catch (error) {
-    throw new Error(`withFoliwake: cannot read ${file} (${(error as NodeJS.ErrnoException).code ?? 'error'}). Create foliwake.remote.json or set FOLIWAKE_REMOTE.`);
+    const code = (error as NodeJS.ErrnoException).code ?? 'error';
+    throw new Error(`withFoliwake: cannot read ${file} (${code}). Set ${URL_ENV}, or create foliwake.remote.json.`);
   }
-  parseFoliwakeConfig(text, { file: path.basename(file) }); // throws a FoliwakeConfigError naming the field
+}
+
+/** The Next config with the inlined config, transpilePackages and (optionally) the CSP header. */
+function wrapped(nextConfig: NextConfig, opts: WithFoliwakeOptions, inlined: InlinedConfig, config: FoliwakeAppConfig) {
   const transpile = new Set([...(nextConfig.transpilePackages ?? []), '@foliwake/next']);
   const out: NextConfig = {
     ...nextConfig,
     transpilePackages: [...transpile],
-    env: { ...(nextConfig.env ?? {}), [CONFIG_ENV_KEY]: JSON.stringify({ file: path.basename(file), text }) },
+    env: { ...(nextConfig.env ?? {}), [CONFIG_ENV_KEY]: JSON.stringify(inlined) },
   };
-  if (opts.csp) {
-    const csp = opts.csp;
-    const previous = nextConfig.headers;
-    out.headers = async () => {
-      const own = previous ? await previous() : [];
-      const value = foliwakeCspHeader({ ...(opts.configFile ? { configFile: opts.configFile } : {}), ...(csp.reportUri ? { reportUri: csp.reportUri } : {}), ...(csp.extra ? { extra: csp.extra } : {}) });
-      return [...own, { source: csp.source ?? '/:path*', headers: [{ key: 'Content-Security-Policy', value }] }];
-    };
-  }
+  if (!opts.csp) return out;
+  const csp = opts.csp;
+  const previous = nextConfig.headers;
+  out.headers = async () => {
+    const own = previous ? await previous() : [];
+    const value = foliwakeCspHeader({ config, reportUri: csp.reportUri, extra: csp.extra });
+    return [...own, { source: csp.source ?? '/:path*', headers: [{ key: 'Content-Security-Policy', value }] }];
+  };
   return out;
+}
+
+async function withDiscovery(nextConfig: NextConfig, opts: WithFoliwakeOptions): Promise<NextConfig> {
+  try {
+    const snapshot = await readConfigSnapshot(opts.configFile ? { file: opts.configFile } : {});
+    return wrapped(nextConfig, opts, { snapshot }, configFromSnapshot(snapshot));
+  } catch (error) {
+    throw new Error(`withFoliwake: ${(error as Error).message}`, { cause: error });
+  }
+}
+
+/**
+ * Reads and validates the Foliwake config when Next loads next.config (build and start) and makes it available to
+ * the package's server-only modules (Next `env`, never to client code); adds the package to transpilePackages
+ * (its 'use cache' read). With FOLIWAKE_URL, the site's discovery document is read now (and the optional
+ * version 3 file merged): the result is a promise, and a failure fails the build naming the address and the
+ * reason. Without it, the version 2 file is read as before. Nothing is fetched at run time.
+ *
+ * @param nextConfig - The app's own Next config; its `transpilePackages`, `env` and `headers` are kept.
+ * @returns The Next config (or a promise of it) to export from next.config.ts.
+ */
+export function withFoliwake(nextConfig: NextConfig = {}, opts: WithFoliwakeOptions = {}): FoliwakeNextConfig {
+  if (process.env[URL_ENV]) return withDiscovery(nextConfig, opts);
+  const { file, text } = readFileText(opts.configFile);
+  const config = parseFoliwakeConfig(text, { file }); // throws a FoliwakeConfigError naming the field
+  return wrapped(nextConfig, opts, { file, text }, config);
 }
