@@ -35,7 +35,7 @@ test("'use client', 'use cache' and the runtime import comments are kept in dist
   assert.match(read('packages/next/dist/cache.js'), /async function readEnvelopeCachedEntry\(path\) \{\s+'use cache';/);
   assert.doesNotMatch(read('packages/react/dist/foliwake-page.js'), /import\(/, 'the React wrapper imports no blocks module itself');
   for (const file of ['index.js', 'mount.js', 'events.js', 'host.js', 'load.js', 'import-map.js', 'css-registry.js', 'dev.js']) assert.doesNotMatch(read(`packages/client/dist/${file}`), /from ['"](react|react-dom|next)[/'"]/, `client ${file} imports no framework`);
-  for (const file of ['index.js', 'cache.js', 'routes.js', 'server.js', 'page.js', 'revalidate.js', 'handler.js']) assert.match(read(`packages/next/dist/${file}`), /import 'server-only';/, file);
+  for (const file of ['index.js', 'cache.js', 'routes.js', 'server.js', 'page.js', 'revalidate.js', 'handler.js', 'ready-page.js']) assert.match(read(`packages/next/dist/${file}`), /import 'server-only';/, file);
 });
 
 test('one coordinated 0.x version, compatibility metadata, public npm metadata', () => {

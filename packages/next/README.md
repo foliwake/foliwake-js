@@ -14,6 +14,7 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 | --- | --- |
 | `@foliwake/next/config` | `withFoliwake`, `foliwakeCspHeader` for `next.config.ts` |
 | `@foliwake/next` | server-only: `<FoliwakeServerPage>`, `readPage`, `readEnvelopeCached`, `foliwakeTags`, config and origin client |
+| `@foliwake/next/page` | `default`, `generateMetadata`, `createFoliwakePage`: a ready page route (`app/[...path]/page.tsx`) |
 | `@foliwake/next/handler` | `GET`, `HEAD`, `POST`, `createFoliwakeHandler`: every Foliwake route (code, media, hook, health) in one route file |
 | `@foliwake/next/routes` | `codeRoute`, `mediaRoute`: the code and media proxies |
 | `@foliwake/next/cache` | `readEnvelopeCached`: the cached live read alone; `setGenerationFloor` |
@@ -488,6 +489,79 @@ interface WithFoliwakeOptions
 | --- | --- | --- |
 | `configFile?` | `string` | The config file (default FOLIWAKE_REMOTE, else ./foliwake.remote.json). |
 | `csp?` | `false \| { reportUri?: string; extra?: CspOptions['extra']; source?: string; }` | Adds the Content-Security-Policy header (strategy 'self-inline': `script-src 'self' 'unsafe-inline'`) to the routes matching `source` (default every route, `/:path*`). `reportUri` adds `report-uri`; `extra` adds sources per directive. `false` (default): the app sets its own; use foliwakeCspHeader() for the value. |
+
+### `@foliwake/next/page`
+
+**Functions and components**
+
+#### `createFoliwakePage()`
+
+A page route of Foliwake pages: reads the page of the route's path (live: cached; preview: per request, behind `authorize`), renders it in a Suspense boundary, emits the blocks' preload hints and the import map. A missing page, one outside `app.pages`, or a refused author check is `notFound()`. `generateMetadata` gives the title (the body's first `<h1>`) and `noindex` for preview.
+
+```ts
+function createFoliwakePage(opts?: FoliwakePageOptions): FoliwakeRoute
+```
+
+**Returns** `FoliwakeRoute`
+
+**Constants**
+
+#### `default`
+
+```ts
+const route: FoliwakeRoute
+```
+
+#### `generateMetadata`
+
+The default route's metadata.
+
+```ts
+const generateMetadata: (props: FoliwakeRouteProps) => Promise<PageMetadata>
+```
+
+**Interfaces**
+
+#### `FoliwakePageOptions`
+
+Options of `createFoliwakePage`.
+
+```ts
+interface FoliwakePageOptions
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `render?` | `(page: FoliwakePageData) => ReactNode` | Returns the app's component for the page; default `<FoliwakePage page={page} as="article" />`. |
+| `prepare?` | `PrepareOptions` | `preparePage` options; `rewriteLink` defaults to the mount's. |
+| `channel?` | `ChannelName` | `live` (default, cached) or `preview` (per request; needs `authorize`). |
+| `authorize?` | `() => boolean \| Promise<boolean>` | The app's author check (cookies(), headers(), its session); false → not found. Required for preview. |
+| `mount?` | `string` | The app path the route is mounted at, such as `/pages`; default the root. |
+| `fallback?` | `ReactNode` | The Suspense fallback while the page is read; default none. |
+
+#### `FoliwakeRouteProps`
+
+The route's props: Next's params of a catch-all segment `[...path]` or `[[...path]]`.
+
+```ts
+interface FoliwakeRouteProps
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `params` | `Promise<{ path?: string[]; }>` |  |
+
+**Types**
+
+#### `FoliwakeRoute`
+
+A page route component with its `generateMetadata`.
+
+```ts
+type FoliwakeRoute = ((props: FoliwakeRouteProps) => ReactNode) & {
+    generateMetadata: (props: FoliwakeRouteProps) => Promise<PageMetadata>;
+}
+```
 
 ### `@foliwake/next/handler`
 
