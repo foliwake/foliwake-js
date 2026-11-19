@@ -107,7 +107,9 @@ the request is logged. Never commit the token.
 
 A Foliwake server can call your app after every change, once the change is live: the route expires Next's cache
 tags of the changed pages. `npx @foliwake/next init --hook` adds `FOLIWAKE_HOOK_SECRET=` to `.env.local`; the
-site's admin adds `https://<your app>/foliwake/hook` as the site's app hook with the same secret. Options:
+site's admin adds `https://<your app>/foliwake/hook` as the site's app hook with the same secret. Make the
+secret without a trailing newline, `openssl rand -hex 32 | tr -d '\n'`; the hook trims surrounding whitespace
+and warns once, naming the variable, when it had to. Options:
 
 ```ts
 // app/foliwake/[...path]/route.ts

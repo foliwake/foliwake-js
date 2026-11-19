@@ -38,6 +38,41 @@ export interface HookEndpointDeps {
   log: Pick<Console, 'warn' | 'error'>;
 }
 
+/** Where `hookSecretsFrom` reads and what it warns on. */
+export interface HookSecretSource {
+  /** The variables, current first, then the previous one while it is rotated; undefined entries are skipped. */
+  names: readonly (string | undefined)[];
+  /** Where the variables are read, per call; default process.env. */
+  env?: NodeJS.ProcessEnv;
+  log: Pick<Console, 'warn'>;
+}
+
+/** The value with surrounding whitespace removed; an all-whitespace value is unset. */
+function trimmedSecret(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+/**
+ * The `secrets()` of the hook endpoint read from environment variables: each value is trimmed of leading and
+ * trailing whitespace and newlines (a secret pasted from `openssl rand -hex 32` often ends in one), and an
+ * all-whitespace value counts as unset. The first time trimming changes a variable's value, one warning names
+ * the variable, never the value.
+ */
+export function hookSecretsFrom(source: HookSecretSource): () => (string | undefined)[] {
+  const warned = new Set<string>();
+  const read = (name: string): string | undefined => {
+    const raw = (source.env ?? process.env)[name];
+    const secret = trimmedSecret(raw);
+    if (raw !== undefined && raw !== secret && !warned.has(name)) {
+      warned.add(name);
+      source.log.warn(`[foliwake] hook: ${name} has surrounding whitespace; it is trimmed. Store it without.`);
+    }
+    return secret;
+  };
+  return () => source.names.map((name) => (name ? read(name) : undefined));
+}
+
 class TooLarge extends Error {}
 
 function answer(status: number, body: Record<string, unknown>): Response {

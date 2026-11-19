@@ -132,6 +132,25 @@ describe('hook', () => {
     assert.equal((await createFoliwakeHandler({ env: env(), log, hook: false })(signed(ping))).status, 404);
   });
 
+  test('a secret with a trailing newline verifies a signature made with the trimmed one; one warning', async () => {
+    const warnings = [];
+    const warnLog = { warn: (...a) => warnings.push(a.join(' ')), error: () => {} };
+    const padded = { ...env(), FOLIWAKE_HOOK_SECRET: `${SECRET}\n` };
+    const h = createFoliwakeHandler({ env: padded, log: warnLog });
+    assert.equal((await h(signed(ping))).status, 200);
+    assert.equal((await h(signed(ping))).status, 200);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /FOLIWAKE_HOOK_SECRET/);
+    assert.doesNotMatch(warnings[0], new RegExp(SECRET));
+  });
+
+  test('an all-whitespace secret is unset (500 no_secret)', async () => {
+    const blank = { ...env(), FOLIWAKE_HOOK_SECRET: ' \n\t' };
+    const response = await createFoliwakeHandler({ env: blank, log })(signed(ping));
+    assert.equal(response.status, 500);
+    assert.equal((await response.json()).error, 'no_secret');
+  });
+
   test('a delivery calls onDelivery', async () => {
     const delivered = [];
     const onDelivery = (payload) => delivered.push(payload.pages);
