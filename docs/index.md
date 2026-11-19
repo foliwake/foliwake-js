@@ -77,6 +77,7 @@ Next.js App Router apps:
 
 ```sh
 npm install @foliwake/next
+npx @foliwake/next init --url https://my-site.example.org
 ```
 
-Then follow [Embed pages in a Next.js app](/embed/next).
+Then read [Embed pages in a Next.js app](/embed/next).
