@@ -1,0 +1,24 @@
+{
+  "name": "next-minimal-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The smallest Next.js app that shows Foliwake pages: what `npx @foliwake/next init` writes. Never published.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@foliwake/next": "workspace:*",
+    "next": "16.2.12",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}
