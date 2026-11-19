@@ -73,7 +73,10 @@ function text(status: number, body: string): Response {
 function segmentsUnder(pathname: string, prefix: string): string[] | null {
   if (!pathname.startsWith(`${prefix}/`)) return null;
   try {
-    return pathname.slice(prefix.length + 1).split('/').map(decodeURIComponent);
+    return pathname
+      .slice(prefix.length + 1)
+      .split('/')
+      .map(decodeURIComponent);
   } catch {
     return null;
   }

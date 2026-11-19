@@ -17,7 +17,12 @@ before(async () => {
   stub = await startStubOrigin({
     '/.well-known/foliwake.json': (req, res) => {
       discoveryReads += 1;
-      const doc = discoveryDoc({ site: 'demo', live: { url: stub.origin }, preview: { url: stub.origin }, media: null });
+      const doc = discoveryDoc({
+        site: 'demo',
+        live: { url: stub.origin },
+        preview: { url: stub.origin },
+        media: null,
+      });
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(doc));
     },
@@ -59,7 +64,13 @@ describe('routing', () => {
     const h = handler();
     await h(get('/foliwake/health'));
     const before = stub.requests.length;
-    for (const path of ['/foliwake', '/foliwake/other', '/foliwake/code/x/../../etc', '/elsewhere', '/foliwake/hook/x']) {
+    for (const path of [
+      '/foliwake',
+      '/foliwake/other',
+      '/foliwake/code/x/../../etc',
+      '/elsewhere',
+      '/foliwake/hook/x',
+    ]) {
       assert.equal((await h(get(path))).status, 404, path);
     }
     assert.equal(stub.requests.length, before);
@@ -151,7 +162,12 @@ describe('hook', () => {
 
 describe('config', () => {
   test('a given config is used as it is (no discovery)', async () => {
-    const config = { site: 'given', app: { proxies: { code: '/c', media: '/m', pages: null } }, live: null, preview: null };
+    const config = {
+      site: 'given',
+      app: { proxies: { code: '/c', media: '/m', pages: null } },
+      live: null,
+      preview: null,
+    };
     const h = createFoliwakeHandler({ config, env: {}, log });
     assert.deepEqual(await (await h(get('/foliwake/health'))).json(), { ok: true, site: 'given' });
   });
