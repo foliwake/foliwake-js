@@ -17,7 +17,8 @@ const validate = new Ajv2020({ allErrors: true, strict: false }).compile(
 );
 
 const discovery = parseDiscovery(discoveryDoc(), ORIGIN);
-const v3 = (file) => configFromSnapshot({ url: ORIGIN, discovery, file: 'foliwake.remote.json', text: JSON.stringify(file) });
+const v3 = (file) =>
+  configFromSnapshot({ url: ORIGIN, discovery, file: 'foliwake.remote.json', text: JSON.stringify(file) });
 
 const V2 = {
   version: 2,
@@ -105,7 +106,12 @@ describe('version 3: the file overrides', () => {
 
 describe('version 2 keeps working', () => {
   test('without FOLIWAKE_URL a version 2 file is the whole config', () => {
-    const config = configFromSnapshot({ url: null, discovery: null, file: 'foliwake.remote.json', text: JSON.stringify(V2) });
+    const config = configFromSnapshot({
+      url: null,
+      discovery: null,
+      file: 'foliwake.remote.json',
+      text: JSON.stringify(V2),
+    });
     assert.equal(config.version, 2);
     assert.equal(config.live.origin, 'https://live.example.org');
     assert.deepEqual(config.app.proxies, { code: '/foliwake-code', media: '/foliwake-media', pages: null });
@@ -113,7 +119,12 @@ describe('version 2 keeps working', () => {
   });
 
   test('with FOLIWAKE_URL a version 2 file of the same site is used as it is', () => {
-    const config = configFromSnapshot({ url: ORIGIN, discovery, file: 'f.json', text: JSON.stringify({ ...V2, site: 'my-site' }) });
+    const config = configFromSnapshot({
+      url: ORIGIN,
+      discovery,
+      file: 'f.json',
+      text: JSON.stringify({ ...V2, site: 'my-site' }),
+    });
     assert.equal(config.version, 2);
     const other = { url: ORIGIN, discovery, file: 'f.json', text: JSON.stringify({ ...V2, site: 'other' }) };
     assert.throws(() => configFromSnapshot(other), /"site" is other, but FOLIWAKE_URL serves the site my-site/);
@@ -121,7 +132,7 @@ describe('version 2 keeps working', () => {
 
   test('a version 3 file without FOLIWAKE_URL names the variable', () => {
     const snapshot = { url: null, discovery: null, file: 'foliwake.remote.json', text: '{"version": 3}' };
-    assert.throws(() => configFromSnapshot(snapshot), /set FOLIWAKE_URL/);
+    assert.throws(() => configFromSnapshot(snapshot), /configured by FOLIWAKE_URL/);
   });
 });
 
@@ -137,12 +148,15 @@ describe('readConfigSnapshot', () => {
 
   test('FOLIWAKE_URL only: discovery read, no file', async () => {
     const snapshot = await readConfigSnapshot({ cwd: await tmp(), env: { FOLIWAKE_URL: ORIGIN }, fetch });
-    assert.deepEqual({ ...snapshot, discovery: snapshot.discovery.site }, {
-      url: ORIGIN,
-      discovery: 'my-site',
-      file: null,
-      text: null,
-    });
+    assert.deepEqual(
+      { ...snapshot, discovery: snapshot.discovery.site },
+      {
+        url: ORIGIN,
+        discovery: 'my-site',
+        file: null,
+        text: null,
+      },
+    );
     assert.deepEqual(JSON.parse(JSON.stringify(snapshot)), snapshot, 'plain JSON, so it can be inlined');
   });
 

@@ -96,10 +96,9 @@ export interface ParseOptions {
 }
 
 function unsupportedVersion(file: string, version: unknown): FoliwakeConfigError {
-  if (version === 3) {
-    return new FoliwakeConfigError(`${file}: version 3 holds overrides only; set FOLIWAKE_URL to the site's URL.`);
-  }
-  return new FoliwakeConfigError(`${file}: unsupported "version" ${JSON.stringify(version)}; it must be 2.`);
+  const text = `${file}: unsupported "version" ${JSON.stringify(version)}; it must be 2.`;
+  if (version !== 3) return new FoliwakeConfigError(text);
+  return new FoliwakeConfigError(`${text} Version 3 holds overrides for an app configured by FOLIWAKE_URL.`);
 }
 
 /** Parses the text of a version 2 config. Throws FoliwakeConfigError with a message that names the field. */

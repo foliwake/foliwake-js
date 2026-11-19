@@ -21,4 +21,3 @@ export function jsonResponse(body, init = {}) {
   const headers = { 'content-type': 'application/json; charset=utf-8', ...(init.headers ?? {}) };
   return new Response(text, { status: init.status ?? 200, headers });
 }
-

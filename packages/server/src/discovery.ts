@@ -56,7 +56,8 @@ function checkVersions(doc: Record<string, unknown>, where: string): FoliwakeDis
   }
   const contracts = isObject(doc.contracts) ? doc.contracts : {};
   if (contracts.plain !== PLAIN_CONTRACT) {
-    const text = `the site serves plain/${JSON.stringify(contracts.plain)}; this package reads plain/${PLAIN_CONTRACT}.`;
+    const served = JSON.stringify(contracts.plain);
+    const text = `the site serves plain/${served}; this package reads plain/${PLAIN_CONTRACT}.`;
     throw problem(where, `${text} The site runs an older or newer engine than this package expects.`);
   }
   return {

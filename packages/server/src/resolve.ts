@@ -43,7 +43,7 @@ async function readOptionalFile(file: string, required: boolean): Promise<string
 }
 
 const NOTHING =
-  `Set ${URL_ENV} to the site's live URL (https://…), or create ${CONFIG_FILE} (version 2) in the app's root.`;
+  `Set ${URL_ENV} to the site's live URL (https://…), ` + `or create ${CONFIG_FILE} (version 2) in the app's root.`;
 
 /**
  * Reads the inputs: FOLIWAKE_URL and its discovery document (fetched now), and the config file when there is one

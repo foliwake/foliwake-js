@@ -18,20 +18,29 @@ function safeUrlText(value: string): string {
 
 /** A site origin: https (http only for loopback), no credentials, path, query or fragment. */
 export function parseRemoteUrl(value: unknown, where: string): string {
-  if (typeof value !== 'string' || value.trim() === '') throw new FoliwakeConfigError(`${where}: give the URL of the deployed site, e.g. "https://preview.example.org".`);
+  if (typeof value !== 'string' || value.trim() === '')
+    throw new FoliwakeConfigError(`${where}: give the URL of the deployed site, e.g. "https://preview.example.org".`);
   let url: URL;
   try {
     url = new URL(value);
   } catch {
     throw new FoliwakeConfigError(`${where}: "${safeUrlText(value)}" is not a valid URL.`);
   }
-  if (url.username || url.password) throw new FoliwakeConfigError(`${where}: the URL must not contain a user name or password; name the password's environment variable in "auth" instead.`);
-  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new FoliwakeConfigError(`${where}: only https URLs are supported.`);
+  if (url.username || url.password)
+    throw new FoliwakeConfigError(
+      `${where}: the URL must not contain a user name or password; name the password's environment variable in "auth" instead.`,
+    );
+  if (url.protocol !== 'https:' && url.protocol !== 'http:')
+    throw new FoliwakeConfigError(`${where}: only https URLs are supported.`);
   if (url.protocol === 'http:' && !isLoopbackName(url.hostname)) {
-    throw new FoliwakeConfigError(`${where}: ${url.origin} uses plain http; use https (http is accepted only for loopback hosts such as 127.0.0.1).`);
+    throw new FoliwakeConfigError(
+      `${where}: ${url.origin} uses plain http; use https (http is accepted only for loopback hosts such as 127.0.0.1).`,
+    );
   }
   if (url.search || url.hash || (url.pathname !== '/' && url.pathname !== '')) {
-    throw new FoliwakeConfigError(`${where}: give the site origin only (scheme, host and port), without a path, query or fragment: ${url.origin}`);
+    throw new FoliwakeConfigError(
+      `${where}: give the site origin only (scheme, host and port), without a path, query or fragment: ${url.origin}`,
+    );
   }
   return url.origin;
 }

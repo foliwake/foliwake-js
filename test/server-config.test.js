@@ -38,7 +38,7 @@ const withApp = (app) => ({ ...base(), app: { ...base().app, ...app } });
 
 // [description, config, expected error pattern]; the schema must refuse the same ones.
 const REFUSED = [
-  ['version 3', { ...base(), version: 3 }, /version 3 holds overrides only; set FOLIWAKE_URL/],
+  ['version 3', { ...base(), version: 3 }, /unsupported "version" 3; it must be 2\. Version 3 holds overrides for an app configured by FOLIWAKE_URL/],
   ['no site', { ...base(), site: undefined }, /"site"/],
   ['bad site', { ...base(), site: 'Acme' }, /"site"/],
   ['no channel', { version: 2, site: 'x', app: base().app }, /at least one of "live" and "preview"/],
