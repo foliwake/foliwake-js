@@ -38,7 +38,7 @@ The config file sits in the app's root and holds no secrets, only the names of t
   "version": 2,
   "site": "mysite",
   "live": { "url": "https://mysite.example.org" },
-  "preview": { "url": "https://preview.mysite.example.org", "auth": { "type": "basic", "username": "app", "passwordEnv": "MYSITE_PREVIEW_PASSWORD" } },
+  "preview": { "url": "https://preview.mysite.example.org", "auth": { "type": "basic", "username": "preview", "passwordEnv": "MYSITE_PREVIEW_TOKEN" } },
   "app": {
     "pages": ["/**"],
     "proxies": { "code": "/foliwake-code", "media": "/foliwake-media", "pages": null },

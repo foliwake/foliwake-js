@@ -30,10 +30,12 @@ Read [Concepts](/concepts) first if "code release" or "host" are new to you.
 ## Step 1: install
 
 ```sh
-npm install @foliwake/next@0.3.0 @foliwake/react@0.3.0 @foliwake/server@0.3.0
+npm install @foliwake/next
 ```
 
-Use the same exact version for every `@foliwake/*` package.
+`@foliwake/next` brings `@foliwake/react` and `@foliwake/server` at its own exact version; do not add them.
+Add `@foliwake/blocks-contract` (same version) only when your code imports its types,
+for example `@foliwake/blocks-contract/assessment` in Step 6.
 
 ## Step 2: the config file
 
@@ -42,13 +44,13 @@ It holds no secrets, only the **names** of the variables that hold them.
 
 ```json
 {
-  "$schema": "./node_modules/@foliwake/server/schemas/remote-2.schema.json",
+  "$schema": "./node_modules/@foliwake/next/schemas/remote-2.schema.json",
   "version": 2,
   "site": "my-site",
   "live": { "url": "https://my-site.example.org" },
   "preview": {
     "url": "https://preview.my-site.example.org",
-    "auth": { "type": "basic", "username": "app", "passwordEnv": "MY_SITE_PREVIEW_PASSWORD" }
+    "auth": { "type": "basic", "username": "preview", "passwordEnv": "MY_SITE_PREVIEW_TOKEN" }
   },
   "app": {
     "pages": ["/**"],
@@ -64,7 +66,7 @@ It holds no secrets, only the **names** of the variables that hold them.
 | `site` | the site's id |
 | `live`, `preview` | `url`: the site's origin (https; http only for loopback hosts) and optional `auth` |
 | `app.pages` | page globs the app may read; `/x/**` also matches `/x`; any other path is refused |
-| `app.proxies` | your app's URL prefixes for the code and media proxies |
+| `app.proxies` | your app's URL prefixes for the code and media proxies; `pages` must be `null` (below) |
 | `app.blocks.entry` | the blocks module's path inside a code release; without it, pages stay static |
 | `app.blocks.contract` | `foliwake-blocks/2`; a module of another major is not mounted |
 | `app.blocks.eventPrefix` | the prefix you expect on block events (`demo:answer`) |
@@ -76,8 +78,16 @@ that checks signed tokens (see [`@foliwake/server`](/reference/packages/server))
 Put the secret itself in the environment of the app's server:
 
 ```sh
-export MY_SITE_PREVIEW_PASSWORD='…'
+export MY_SITE_PREVIEW_TOKEN='…'
 ```
+
+A Foliwake preview host accepts HTTP Basic only with the user name `preview` and the site's preview token
+as the password; any other user name is refused.
+A site admin gets the token with `foliwake site preview-token --site <site>`, or from the site's page in the
+admin; it is shown once and the request is logged.
+
+`app.proxies.pages` must be `null`: this version has no pages proxy, because pages are read on your server and
+never fetched by the browser. The key is reserved for client-side reads in a later version.
 
 `FOLIWAKE_REMOTE=<file>` names another config file, for example one per environment.
 The browser receives only the site id, the proxy prefixes and the blocks contract and prefix.

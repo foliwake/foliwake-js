@@ -19,6 +19,7 @@
     "./routes": { "types": "./dist/routes.d.ts", "default": "./dist/routes.js" },
     "./cache": { "types": "./dist/cache.d.ts", "default": "./dist/cache.js" },
     "./revalidate": { "types": "./dist/revalidate.d.ts", "default": "./dist/revalidate.js" },
+    "./schemas/remote-2.schema.json": "./schemas/remote-2.schema.json",
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -38,5 +39,5 @@
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
-  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "LICENSE", "README.md", "CHANGELOG.md"]
+  "files": ["dist/", "!dist/**/*.map", "!dist/.build-stamp", "!dist/.build-manifest.json", "schemas/", "LICENSE", "README.md", "CHANGELOG.md"]
 }

@@ -22,15 +22,16 @@ another React app use `@foliwake/react` with `@foliwake/server`.
 ## Install
 
 The packages are published on npm (npmjs.com) under the `@foliwake` scope; no registry setup or token is
-needed. Install exact versions, the same for every `@foliwake/*` package:
+needed. Install one package; it brings `@foliwake/react` and `@foliwake/server` at its own exact version:
 
 ```bash
-pnpm add @foliwake/next@0.3.0 @foliwake/react@0.3.0 @foliwake/server@0.3.0
+pnpm add @foliwake/next
 ```
 
 The app also needs `foliwake.remote.json` in its root (or `FOLIWAKE_REMOTE` naming another file): the site,
 its live and preview origins, the names of the variables that hold passwords, and the app settings. The guide
-below describes every key; the schema ships in `@foliwake/server/schemas/remote-2.schema.json`.
+below describes every key; the schema ships in this package as `schemas/remote-2.schema.json`
+(`"$schema": "./node_modules/@foliwake/next/schemas/remote-2.schema.json"`).
 
 ## Minimal example
 
@@ -663,5 +664,9 @@ interface FoliwakeRevalidateOptions
 **Also exported** (documented where they are defined)
 
 - from `@foliwake/server/hook`: `FoliwakeDeliveryPayload`, `FoliwakeHookPayload`, `FoliwakeOperationKind`
+
+### `@foliwake/next/schemas/remote-2.schema.json`
+
+A file, not a module: `schemas/remote-2.schema.json` in the package.
 
 <!-- apistop -->

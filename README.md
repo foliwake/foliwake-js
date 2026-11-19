@@ -29,7 +29,7 @@ and [`@foliwake/site-check`](packages/site-check/README.md) (the CLI, its exit c
 **I embed Foliwake pages in my React or Next.js app.**
 
 ```sh
-npm install @foliwake/next @foliwake/react @foliwake/server   # Next.js App Router
+npm install @foliwake/next                                    # Next.js App Router
 npm install @foliwake/react @foliwake/server                  # any other React app with a server
 ```
 
