@@ -31,7 +31,10 @@ before(async () => {
 after(() => stub?.close());
 
 function v3Config() {
-  const discovery = parseDiscovery(discoveryDoc({ live: { url: stub.origin }, preview: null, media: null }), stub.origin);
+  const discovery = parseDiscovery(
+    discoveryDoc({ live: { url: stub.origin }, preview: null, media: null }),
+    stub.origin,
+  );
   return configFromSnapshot({ url: stub.origin, discovery, file: null, text: null });
 }
 
@@ -54,7 +57,8 @@ describe('the envelope', () => {
 
   test('a bad header refuses the answer', async () => {
     const config = v3Config();
-    for (const path of ['/bad-entry', '/bad-contract', '/bad-syntax']) await assert.rejects(read(config, path), invalid);
+    for (const path of ['/bad-entry', '/bad-contract', '/bad-syntax'])
+      await assert.rejects(read(config, path), invalid);
   });
 });
 
