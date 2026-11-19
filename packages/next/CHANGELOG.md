@@ -7,6 +7,68 @@ minor release may break; breaking changes are marked **BREAKING**.
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.10.0
+
+### Minor Changes
+
+- 69caab7: Configure an app by one address. `@foliwake/server/discovery` reads a site's `/.well-known/foliwake.json`
+  (no redirects, 5 s, one retry, at most 16 KiB; `live.url` must be the origin it was read from; the discovery format
+  and the plain contract are checked). `@foliwake/server/resolve` builds the app config from `FOLIWAKE_URL` and the
+  optional `foliwake.remote.json` version 3 (overrides only: pages, revalidate, proxies, media, blocks, auth by
+  variable name; schema `schemas/remote-3.schema.json`, also shipped in `@foliwake/next`). Defaults: pages `/**`
+  (required explicitly when live uses a service token), proxies `/foliwake/code` and `/foliwake/media`, preview
+  read with Basic `preview` and `FOLIWAKE_PREVIEW_TOKEN`. A version 2 file without `FOLIWAKE_URL` works unchanged.
+  `FoliwakeAppConfig.version` is now `2 | 3` and `app.blocks` has `fromRelease`. The compatibility metadata is
+  `remoteConfig: 3, discovery: 1`.
+- d53aa34: `npx @foliwake/next init` (bin `foliwake-next`, no extra dependencies) sets up a Next app: checks the site
+  (discovery, `X-Code-Release` on `/index.plain.html`), writes `FOLIWAKE_URL` to `.env.local`, wraps `next.config` in
+  `withFoliwake()` (two ES module forms; otherwise it prints the steps), and adds `app/foliwake/[...path]/route.ts`
+  and `app/[...path]/page.tsx`. `--preview` adds a preview route behind a development-only `isAuthor()` and an empty
+  `FOLIWAKE_PREVIEW_TOKEN=`; `--hook`, `--mount /pages`, `--dry-run`, `--json`, `--force` (only files it generated),
+  `--yes` (or `CI=1`; needs `--url`), `--ignore-git-changes`, and `--check` to check an existing setup. Exit codes 0,
+  1 (error) and 2 (input needed); env equivalents `FOLIWAKE_INIT_*`. It never writes or prints a secret value.
+  `foliwake next init` in `@foliwake/cli` runs the same wizard.
+- 6b53207: `@foliwake/next/handler`: one route file, `app/foliwake/[...path]/route.ts` with
+  `export { GET, HEAD, POST } from '@foliwake/next/handler'`, serves the code and media proxies, the hook (secret in
+  `FOLIWAKE_HOOK_SECRET`, Next cache tags expired as by `foliwakeRevalidateHandler`) and `/foliwake/health`.
+  Preview is off; `createFoliwakeHandler({ authorizePreview, hook, base })` customises it. It wraps
+  `createFoliwakeHandler` of `@foliwake/server/handler`. `codeRoute`, `mediaRoute` and `foliwakeRevalidateHandler`
+  stay for the manual setup.
+- 676ecdb: `@foliwake/next/page`: a ready page route. `app/[...path]/page.tsx` with
+  `export { default, generateMetadata } from '@foliwake/next/page'` shows live site pages at the app's root (the
+  app's own routes win; `/` stays the app's): Suspense, the page read and prepared, preload hints and import map,
+  `<FoliwakePage as="article">`, `notFound()` for a missing page. `generateMetadata` gives the title (the first `<h1>`)
+  and `noindex` for preview. `createFoliwakePage({ render, prepare, channel, authorize, mount, fallback })`
+  customises it; a preview route requires `authorize`.
+- ebc65c2: `withFoliwake` reads `FOLIWAKE_URL`: when it is set, the site's discovery document is read as Next loads
+  next.config (with the optional `foliwake.remote.json` version 3 merged), validated, and inlined as a snapshot for
+  the server modules; the CSP `img-src` gets the site's media CDN. Nothing is fetched at run time. A failure fails the
+  build with the address and the reason. In that case `withFoliwake` returns a promise of the config, which Next
+  accepts (type `FoliwakeNextConfig = NextConfig | Promise<NextConfig>`; code that annotated the result as
+  `NextConfig` needs the new type). Without `FOLIWAKE_URL` the version 2 file is read as before.
+  `foliwakeCspHeader` takes an already read `config`. Without `withFoliwake`, `FOLIWAKE_URL` alone is refused at run
+  time with a message that says to wrap next.config.
+
+### Patch Changes
+
+- eff516d: `@foliwake/next` ships the config schema as `schemas/remote-2.schema.json`, so `"$schema"` in
+  `foliwake.remote.json` resolves when `@foliwake/next` is the only direct dependency (pnpm). The guide installs one
+  package, its preview example uses the user name `preview` with the site's preview token, and it explains
+  `app.proxies.pages: null`.
+- df85d39: `@foliwake/server/handler`: `createFoliwakeHandler()` serves every Foliwake route of an app as one
+  `(request: Request) => Promise<Response>` on the Web Fetch API, for any framework: the code and media proxies under
+  the config's prefixes (`/foliwake/code`, `/foliwake/media` by default), `POST /foliwake/hook` (secret in
+  `FOLIWAKE_HOOK_SECRET`, `onDelivery` for the app's caches) and `GET /foliwake/health`. Preview is off unless
+  `authorizePreview` is given. The config is read on the first request (`FOLIWAKE_URL`), or passed as `config`.
+  The hook endpoint core moved from `@foliwake/next` to `@foliwake/server/hook-endpoint` (`createHookEndpoint`);
+  a ping of the Next route still answers `@foliwake/next/<version>`. New guide: "Any framework: one handler".
+- Updated dependencies [339fb47]
+- Updated dependencies [69caab7]
+- Updated dependencies [df85d39]
+  - @foliwake/blocks-contract@0.10.0
+  - @foliwake/server@0.10.0
+  - @foliwake/react@0.10.0
+
 ## 0.9.0
 
 ### Minor Changes

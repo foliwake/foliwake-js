@@ -5,6 +5,27 @@ with them. While the version is 0.x, a minor release may break; breaking changes
 
 Entries are written from the changesets of each pull request (`.changeset/`, CONTRIBUTING.md), newest first.
 
+## 0.10.0
+
+### Minor Changes
+
+- 339fb47: A page's code release names its blocks module. `readEnvelope` reads `X-Foliwake-Blocks`
+  (`entry="scripts/blocks.js", contract=2, prefix="demo"`) into `envelope.blocks`; with a version 3 config without
+  `app.blocks`, `preparePage` mounts that entry with its contract and event prefix (`app.blocks` still wins, and a
+  version 2 config is unchanged). Preload hints follow the page's entry. `FoliwakePageData.title` is the text of the
+  body's first `<h1>`. `@foliwake/site-check` accepts and checks the optional `blocks` key of
+  `components/components.json` with the engine's rule (an entry under scripts, components or _foliwake ending in .js
+  that exists, a contract major, an event prefix).
+- 0bb04d6: `site.yaml` may name the blocks module an embedding app loads: `blocks: { entry, contract, eventPrefix }`. A site
+  whose `components/components.json` is generated from its block folders gets it in the generated descriptor (the
+  engine sends it as `X-Foliwake-Blocks`); the entry must exist. With a hand-written descriptor the key belongs there,
+  and naming it in both places is `SITE_CONFIG_INVALID`.
+
+### Patch Changes
+
+- Updated dependencies [339fb47]
+  - @foliwake/blocks-contract@0.10.0
+
 ## 0.9.0
 
 ### Patch Changes
