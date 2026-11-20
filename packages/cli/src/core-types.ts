@@ -18,6 +18,7 @@ export type SiteStatus = CoreOutput<'sites.status'>;
 export type SiteList = CoreOutput<'sites.list'>;
 export type ResetStoragePlan = CoreOutput<'sites.resetStoragePlan'>;
 export type SourceList = CoreOutput<'sources.list'>;
+export type SourceEnabled = CoreOutput<'sources.disable'>;
 export type PluginList = CoreOutput<'sources.plugins'>;
 export type PendingAnswer = CoreOutput<'sources.pending'>;
 export type ProbeAnswer = CoreOutput<'sources.probe'>;

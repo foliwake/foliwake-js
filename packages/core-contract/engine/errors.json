@@ -101,6 +101,7 @@
     "SITE_UNKNOWN": "invalid | not_found",
     "SOURCE_CONFIG_CHANGED": "conflict",
     "SOURCE_CONFIG_INVALID": "refused",
+    "SOURCE_DISABLED": "refused",
     "SOURCE_EXISTS": "conflict",
     "SOURCE_IDENTITY_UNVERIFIED": "unavailable",
     "SOURCE_MAPPINGS_SOURCE_REQUIRED": "refused",
@@ -122,6 +123,8 @@
     "STORE_UNAVAILABLE": "unavailable",
     "STORE_UNSUPPORTED": "unavailable",
     "SYNC_INCOMPLETE": "internal",
+    "SYNC_SCOPE_INVALID": "invalid",
+    "SYNC_SCOPE_UNKNOWN_PAGE": "not_found",
     "TOKEN_INVALID": "unauthorized",
     "UNAUTHORIZED": "unauthorized"
   }

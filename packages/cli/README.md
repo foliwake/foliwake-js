@@ -681,6 +681,25 @@ and the page addresses they would get; a saved source (--source) or a new one de
 - `--subfolder <value>`: Google Drive or Git: the folder inside that holds the pages
 - `--token <value>`: Git: the credential name of a read-only token (private repository)
 
+### `foliwake source disable`
+
+Stop syncing a content source: preview keeps its last accepted snapshot, its live pages and owned paths are kept (core
+sources.disable)
+
+- `--expect <value>`: the site settings revision you saw; default: the one read just before the change
+- `--input <value>`: raw JSON for the full operation input; overrides the other input flags
+- `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
+- `--source <value>`: the content source (see `source list`)
+
+### `foliwake source enable`
+
+Sync a disabled content source again; its next sync continues from its selected snapshot (core sources.enable)
+
+- `--expect <value>`: the site settings revision you saw; default: the one read just before the change
+- `--input <value>`: raw JSON for the full operation input; overrides the other input flags
+- `--site <value>`: site id (default: the site this folder is linked to, else the only site on the server)
+- `--source <value>`: the content source (see `source list`)
+
 ### `foliwake source list`
 
 The site's content sources: plugin, owned paths and selected snapshot (core sources.list)

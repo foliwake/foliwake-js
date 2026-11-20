@@ -1,6 +1,6 @@
 {
   "api": 1,
-  "digest": "54c29f4310c18c30",
+  "digest": "2d985051e6d5664a",
   "procedures": {
     "account.keys.ci": "query",
     "account.keys.create": "mutation",
@@ -57,6 +57,8 @@
     "sites.update": "mutation",
     "sources.add": "mutation",
     "sources.adoptPages": "mutation",
+    "sources.disable": "mutation",
+    "sources.enable": "mutation",
     "sources.list": "query",
     "sources.mappingsCheck": "query",
     "sources.pending": "query",
