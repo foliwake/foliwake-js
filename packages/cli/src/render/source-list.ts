@@ -4,7 +4,8 @@ import type { SourceList } from '../core-types.js';
 const C = COMMAND;
 
 /** The lines `foliwake source list` prints. */
-function notSyncedNote(source: { mode: string; id: string }): string {
+function notSyncedNote(source: { mode: string; id: string; enabled: boolean }): string {
+  if (!source.enabled) return ` — disabled: \`${C} source enable --source ${source.id}\` first`;
   if (source.mode !== 'snapshot') return ' (preview and publish read the folder at command start)';
   return ` — preview and publish need \`${C} source sync --source ${source.id}\``;
 }
@@ -15,6 +16,7 @@ export function sourceListLines({ site, sources, identity, registryProblems }: S
     const flags = [source.status, source.enabled ? 'enabled' : 'disabled'].join(', ');
     lines.push(`\n${source.id}  ${source.displayName} (${source.plugin})  owns ${source.owns.join(' ')}  ${flags}`);
     if (source.problem) lines.push(`  ${source.problem}`);
+    if (!source.enabled) lines.push(`  DISABLED: not synced; preview and publish keep its selected snapshot`);
     const selected = source.selected;
     lines.push(
       selected
